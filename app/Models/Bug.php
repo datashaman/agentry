@@ -143,6 +143,14 @@ class Bug extends Model
     }
 
     /**
+     * @return MorphMany<Attachment, $this>
+     */
+    public function attachments(): MorphMany
+    {
+        return $this->morphMany(Attachment::class, 'work_item');
+    }
+
+    /**
      * @return MorphMany<ActionLog, $this>
      */
     public function actionLogs(): MorphMany
