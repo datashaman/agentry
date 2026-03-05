@@ -14,7 +14,12 @@ new #[Title('Milestone')] #[Layout('layouts.app')] class extends Component {
 
     public function mount(): void
     {
-        $this->milestone->loadCount(['stories', 'bugs']);
+        $this->milestone->loadCount([
+            'stories',
+            'stories as completed_stories_count' => fn ($q) => $q->where('status', 'closed_done'),
+            'bugs',
+            'bugs as fixed_bugs_count' => fn ($q) => $q->where('status', 'closed_fixed'),
+        ]);
         $this->milestone->load(['stories', 'bugs']);
     }
 
@@ -60,6 +65,26 @@ new #[Title('Milestone')] #[Layout('layouts.app')] class extends Component {
             <flux:modal.trigger name="confirm-milestone-deletion">
                 <flux:button variant="danger" data-test="delete-milestone-button">{{ __('Delete') }}</flux:button>
             </flux:modal.trigger>
+        </div>
+    </div>
+
+    {{-- Progress Summary --}}
+    <div class="grid grid-cols-2 gap-4 sm:grid-cols-4" data-test="progress-summary">
+        <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+            <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('Total Stories') }}</flux:text>
+            <flux:heading size="xl">{{ $milestone->stories_count }}</flux:heading>
+        </div>
+        <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+            <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('Completed Stories') }}</flux:text>
+            <flux:heading size="xl">{{ $milestone->completed_stories_count }}</flux:heading>
+        </div>
+        <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+            <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('Total Bugs') }}</flux:text>
+            <flux:heading size="xl">{{ $milestone->bugs_count }}</flux:heading>
+        </div>
+        <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+            <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('Fixed Bugs') }}</flux:text>
+            <flux:heading size="xl">{{ $milestone->fixed_bugs_count }}</flux:heading>
         </div>
     </div>
 
