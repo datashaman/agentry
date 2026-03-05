@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\AgentType;
+use App\Models\Skill;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -10,15 +11,106 @@ use Livewire\Component;
 new #[Title('Agent Type')] #[Layout('layouts.app')] class extends Component {
     public AgentType $agentType;
 
+    public ?string $selectedSkillId = null;
+
     public function mount(): void
     {
-        $org = \Illuminate\Support\Facades\Auth::user()->currentOrganization();
+        $org = Auth::user()->currentOrganization();
         if (! $org || $this->agentType->organization_id !== $org->id) {
             abort(403);
         }
 
         $this->agentType->loadCount('agents');
-        $this->agentType->load('agents.team');
+        $this->agentType->load(['agents.team', 'skills' => fn ($q) => $q->orderByPivot('position')]);
+    }
+
+    public function attachSkill(): void
+    {
+        $validated = $this->validate([
+            'selectedSkillId' => ['required', 'exists:skills,id'],
+        ]);
+
+        $skill = Skill::findOrFail($validated['selectedSkillId']);
+
+        if ($skill->organization_id !== $this->agentType->organization_id) {
+            $this->addError('selectedSkillId', __('Skill must belong to the same organization.'));
+
+            return;
+        }
+
+        if ($this->agentType->skills()->where('skill_id', $skill->id)->exists()) {
+            $this->addError('selectedSkillId', __('Skill is already assigned.'));
+
+            return;
+        }
+
+        $maxPosition = $this->agentType->skills()->max('position') ?? -1;
+        $this->agentType->skills()->attach($skill->id, ['position' => $maxPosition + 1]);
+        $this->selectedSkillId = null;
+        $this->agentType->load(['skills' => fn ($q) => $q->orderByPivot('position')]);
+        unset($this->availableSkills);
+    }
+
+    public function detachSkill(int $skillId): void
+    {
+        $this->agentType->skills()->detach($skillId);
+        $this->reorderPositions();
+        $this->agentType->load(['skills' => fn ($q) => $q->orderByPivot('position')]);
+        unset($this->availableSkills);
+    }
+
+    public function moveSkillUp(int $skillId): void
+    {
+        $skills = $this->agentType->skills()->orderByPivot('position')->get();
+        $index = $skills->search(fn ($s) => $s->id === $skillId);
+        if ($index === false || $index === 0) {
+            return;
+        }
+        $current = $skills->get($index);
+        $previous = $skills->get($index - 1);
+        $this->agentType->skills()->updateExistingPivot($current->id, ['position' => $index - 1]);
+        $this->agentType->skills()->updateExistingPivot($previous->id, ['position' => $index]);
+        $this->agentType->load(['skills' => fn ($q) => $q->orderByPivot('position')]);
+    }
+
+    public function moveSkillDown(int $skillId): void
+    {
+        $skills = $this->agentType->skills()->orderByPivot('position')->get();
+        $index = $skills->search(fn ($s) => $s->id === $skillId);
+        if ($index === false || $index >= $skills->count() - 1) {
+            return;
+        }
+        $current = $skills->get($index);
+        $next = $skills->get($index + 1);
+        $this->agentType->skills()->updateExistingPivot($current->id, ['position' => $index + 1]);
+        $this->agentType->skills()->updateExistingPivot($next->id, ['position' => $index]);
+        $this->agentType->load(['skills' => fn ($q) => $q->orderByPivot('position')]);
+    }
+
+    protected function reorderPositions(): void
+    {
+        $skills = $this->agentType->skills()->orderByPivot('position')->get();
+        foreach ($skills as $index => $skill) {
+            $this->agentType->skills()->updateExistingPivot($skill->id, ['position' => $index]);
+        }
+    }
+
+    #[Computed]
+    public function availableSkills(): \Illuminate\Database\Eloquent\Collection
+    {
+        $org = $this->agentType->organization;
+
+        if (! $org) {
+            return collect();
+        }
+
+        $assignedIds = $this->agentType->skills->pluck('id')->toArray();
+
+        return Skill::query()
+            ->where('organization_id', $org->id)
+            ->whereNotIn('id', $assignedIds)
+            ->orderBy('name')
+            ->get();
     }
 
     public function deleteAgentType(): void
@@ -67,6 +159,43 @@ new #[Title('Agent Type')] #[Layout('layouts.app')] class extends Component {
                 <flux:button variant="danger" data-test="delete-agent-type-button">{{ __('Delete') }}</flux:button>
             </flux:modal.trigger>
         </div>
+    </div>
+
+    {{-- Assigned Skills --}}
+    <div data-test="agent-type-skills">
+        <flux:heading size="lg">{{ __('Assigned Skills') }} ({{ $agentType->skills->count() }})</flux:heading>
+        @if ($this->availableSkills->isNotEmpty())
+            <form wire:submit.prevent="attachSkill" class="mt-2 flex gap-2">
+                <flux:select wire:model="selectedSkillId" :placeholder="__('Add skill...')" data-test="skill-select" class="min-w-[200px]">
+                    @foreach ($this->availableSkills as $skill)
+                        <flux:select.option :value="(string) $skill->id">{{ $skill->name }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+                <flux:button type="submit" size="sm" variant="primary" data-test="attach-skill-button">{{ __('Add') }}</flux:button>
+            </form>
+            <flux:error name="selectedSkillId" class="mt-1" />
+        @endif
+        @if ($agentType->skills->isEmpty())
+            <flux:text class="mt-2">{{ __('No skills assigned. Add skills to extend agent instructions.') }}</flux:text>
+        @else
+            <div class="mt-2 space-y-2">
+                @foreach ($agentType->skills as $skill)
+                    <div class="flex items-center justify-between gap-2 rounded-lg border border-zinc-200 px-3 py-2 dark:border-zinc-700" wire:key="skill-{{ $skill->id }}" data-test="assigned-skill-row">
+                        <div class="min-w-0 flex-1">
+                            <flux:text class="font-medium">{{ $skill->name }}</flux:text>
+                            @if ($skill->description)
+                                <flux:text class="mt-0.5 block truncate text-sm text-zinc-500 dark:text-zinc-400">{{ Str::limit($skill->description, 60) }}</flux:text>
+                            @endif
+                        </div>
+                        <div class="flex shrink-0 items-center gap-1">
+                            <flux:button size="xs" variant="ghost" wire:click="moveSkillUp({{ $skill->id }})" wire:loading.attr="disabled" data-test="move-skill-up-{{ $skill->id }}" :disabled="$loop->first">↑</flux:button>
+                            <flux:button size="xs" variant="ghost" wire:click="moveSkillDown({{ $skill->id }})" wire:loading.attr="disabled" data-test="move-skill-down-{{ $skill->id }}" :disabled="$loop->last">↓</flux:button>
+                            <flux:button size="xs" variant="ghost" wire:click="detachSkill({{ $skill->id }})" wire:loading.attr="disabled" data-test="detach-skill-{{ $skill->id }}">×</flux:button>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
     </div>
 
     {{-- Instructions --}}
