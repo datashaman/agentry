@@ -108,12 +108,12 @@ new #[Title('Project')] #[Layout('layouts.app')] class extends Component {
             </div>
         </a>
 
-        <div class="rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
+        <a href="{{ route('projects.repos.index', $project) }}" wire:navigate class="rounded-xl border border-zinc-200 p-6 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50">
             <flux:text class="text-sm font-medium">{{ __('Repositories') }}</flux:text>
             <div class="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-100" data-test="repos-count">
                 {{ $this->reposCount }}
             </div>
-        </div>
+        </a>
     </div>
 
     @if ($this->epics->isNotEmpty())
@@ -145,7 +145,7 @@ new #[Title('Project')] #[Layout('layouts.app')] class extends Component {
                         <flux:heading size="sm" class="mb-2">{{ str_replace('_', ' ', ucfirst($status)) }} ({{ count($stories) }})</flux:heading>
                         <div class="space-y-2">
                             @foreach ($stories as $story)
-                                <div class="flex items-center justify-between rounded-lg border border-zinc-200 p-3 dark:border-zinc-700" data-test="story-row">
+                                <a href="{{ route('projects.stories.show', ['project' => $project, 'story' => $story]) }}" wire:navigate class="flex items-center justify-between rounded-lg border border-zinc-200 p-3 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50" data-test="story-row">
                                     <div>
                                         <flux:text class="font-medium">{{ $story->title }}</flux:text>
                                         <flux:text class="text-xs text-zinc-500">{{ $story->epic?->title }}</flux:text>
@@ -156,7 +156,7 @@ new #[Title('Project')] #[Layout('layouts.app')] class extends Component {
                                         @endif
                                         <flux:badge size="sm" variant="pill">P{{ $story->priority }}</flux:badge>
                                     </div>
-                                </div>
+                                </a>
                             @endforeach
                         </div>
                     </div>
@@ -170,7 +170,7 @@ new #[Title('Project')] #[Layout('layouts.app')] class extends Component {
             <flux:heading size="lg">{{ __('Milestones') }}</flux:heading>
             <div class="mt-3 space-y-2">
                 @foreach ($this->milestones as $milestone)
-                    <div class="flex items-center justify-between rounded-lg border border-zinc-200 p-3 dark:border-zinc-700" data-test="milestone-row">
+                    <a href="{{ route('projects.milestones.show', ['project' => $project, 'milestone' => $milestone]) }}" wire:navigate class="flex items-center justify-between rounded-lg border border-zinc-200 p-3 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50" data-test="milestone-row">
                         <div>
                             <flux:text class="font-medium">{{ $milestone->title }}</flux:text>
                             @if ($milestone->description)
@@ -183,7 +183,7 @@ new #[Title('Project')] #[Layout('layouts.app')] class extends Component {
                                 <flux:text class="text-sm">{{ $milestone->due_date->format('M j, Y') }}</flux:text>
                             @endif
                         </div>
-                    </div>
+                    </a>
                 @endforeach
             </div>
         </div>
