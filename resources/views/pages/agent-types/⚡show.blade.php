@@ -95,7 +95,7 @@ new #[Title('Agent Type')] #[Layout('layouts.app')] class extends Component {
                         @foreach ($agentType->agents as $agent)
                             <tr class="border-b border-zinc-200 dark:border-zinc-700" wire:key="agent-{{ $agent->id }}" data-test="agent-row">
                                 <td class="px-4 py-3">
-                                    <flux:text class="font-medium text-zinc-900 dark:text-zinc-100">{{ $agent->name }}</flux:text>
+                                    <a href="{{ route('agents.show', $agent) }}" wire:navigate class="font-medium text-zinc-900 hover:underline dark:text-zinc-100">{{ $agent->name }}</a>
                                 </td>
                                 <td class="px-4 py-3">
                                     <flux:text>{{ $agent->team?->name ?? '-' }}</flux:text>
