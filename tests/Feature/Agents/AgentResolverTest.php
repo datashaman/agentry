@@ -5,6 +5,7 @@ use App\Agents\ToolRegistry;
 use App\Models\Agent;
 use App\Models\AgentType;
 use App\Models\Organization;
+use App\Models\Skill;
 use App\Models\Team;
 
 beforeEach(function () {
@@ -125,4 +126,81 @@ test('resolver returns null instructions when type has none', function () {
 
     expect($config['instructions'])->toBeNull()
         ->and($config['tools'])->toBe([]);
+});
+
+test('resolver merges agent type instructions with assigned skill content', function () {
+    $organization = Organization::factory()->create();
+    $agentType = AgentType::factory()
+        ->forOrganization($organization)
+        ->create([
+            'instructions' => 'You are a coding agent.',
+            'tools' => [],
+        ]);
+    $skillLaravel = Skill::factory()->create([
+        'organization_id' => $organization->id,
+        'name' => 'Laravel',
+        'content' => 'Use Laravel conventions and Eloquent.',
+    ]);
+    $skillFlux = Skill::factory()->create([
+        'organization_id' => $organization->id,
+        'name' => 'Flux UI',
+        'content' => 'Use Flux UI components for forms.',
+    ]);
+    $agentType->skills()->attach($skillLaravel->id, ['position' => 0]);
+    $agentType->skills()->attach($skillFlux->id, ['position' => 1]);
+
+    $team = Team::factory()->create(['organization_id' => $organization->id]);
+    $agent = Agent::factory()->create([
+        'agent_type_id' => $agentType->id,
+        'team_id' => $team->id,
+    ]);
+
+    $config = $this->resolver->resolve($agent);
+
+    expect($config['instructions'])->toContain('You are a coding agent.')
+        ->and($config['instructions'])->toContain('## Skill: Laravel')
+        ->and($config['instructions'])->toContain('Use Laravel conventions and Eloquent.')
+        ->and($config['instructions'])->toContain('## Skill: Flux UI')
+        ->and($config['instructions'])->toContain('Use Flux UI components for forms.');
+});
+
+test('resolver skips skills with empty or null content', function () {
+    $organization = Organization::factory()->create();
+    $agentType = AgentType::factory()
+        ->forOrganization($organization)
+        ->create([
+            'instructions' => 'Base instructions.',
+            'tools' => [],
+        ]);
+    $skillWithContent = Skill::factory()->create([
+        'organization_id' => $organization->id,
+        'name' => 'With Content',
+        'content' => 'Has content.',
+    ]);
+    $skillEmpty = Skill::factory()->create([
+        'organization_id' => $organization->id,
+        'name' => 'Empty',
+        'content' => '',
+    ]);
+    $skillNull = Skill::factory()->create([
+        'organization_id' => $organization->id,
+        'name' => 'Null',
+        'content' => null,
+    ]);
+    $agentType->skills()->attach($skillWithContent->id, ['position' => 0]);
+    $agentType->skills()->attach($skillEmpty->id, ['position' => 1]);
+    $agentType->skills()->attach($skillNull->id, ['position' => 2]);
+
+    $team = Team::factory()->create(['organization_id' => $organization->id]);
+    $agent = Agent::factory()->create([
+        'agent_type_id' => $agentType->id,
+        'team_id' => $team->id,
+    ]);
+
+    $config = $this->resolver->resolve($agent);
+
+    expect($config['instructions'])->toContain('## Skill: With Content')
+        ->and($config['instructions'])->toContain('Has content.')
+        ->and($config['instructions'])->not->toContain('## Skill: Empty')
+        ->and($config['instructions'])->not->toContain('## Skill: Null');
 });

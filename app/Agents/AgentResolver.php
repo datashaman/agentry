@@ -27,15 +27,17 @@ class AgentResolver
      */
     public function resolve(Agent $agent): array
     {
-        $agent->loadMissing('agentType');
+        $agent->loadMissing(['agentType', 'agentType.skills']);
         $type = $agent->agentType;
 
         $tools = $type
             ? $this->toolRegistry->resolveTools($type, $agent->provider)
             : [];
 
+        $instructions = $this->buildInstructions($type);
+
         return [
-            'instructions' => $type?->instructions,
+            'instructions' => $instructions,
             'tools' => $tools,
             'model' => $agent->model ?? $type?->default_model ?? '',
             'provider' => $agent->provider ?? $type?->default_provider ?? 'anthropic',
@@ -44,5 +46,30 @@ class AgentResolver
             'max_tokens' => $agent->max_tokens ?? $type?->default_max_tokens,
             'timeout' => $agent->timeout ?? $type?->default_timeout,
         ];
+    }
+
+    /**
+     * Build merged instructions from agent type and assigned skills.
+     */
+    protected function buildInstructions(?\App\Models\AgentType $type): ?string
+    {
+        if ($type === null) {
+            return null;
+        }
+
+        $parts = [];
+
+        if (! empty(trim((string) $type->instructions ?? ''))) {
+            $parts[] = trim($type->instructions);
+        }
+
+        foreach ($type->skills ?? [] as $skill) {
+            $content = trim((string) ($skill->content ?? ''));
+            if ($content !== '') {
+                $parts[] = "## Skill: {$skill->name}\n{$content}";
+            }
+        }
+
+        return $parts === [] ? null : implode("\n\n", $parts);
     }
 }
