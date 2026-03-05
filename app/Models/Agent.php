@@ -93,4 +93,12 @@ class Agent extends Model
     {
         return $this->hasMany(PullRequest::class);
     }
+
+    /**
+     * @return HasMany<Review, $this>
+     */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
 }
