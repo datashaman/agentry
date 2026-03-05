@@ -48,7 +48,8 @@ test('can delete an organization', function () {
 });
 
 test('can list organizations', function () {
+    $countBefore = Organization::count();
     Organization::factory()->count(3)->create();
 
-    expect(Organization::count())->toBe(3);
+    expect(Organization::count())->toBe($countBefore + 3);
 });

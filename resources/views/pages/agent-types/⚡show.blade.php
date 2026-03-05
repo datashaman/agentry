@@ -12,6 +12,11 @@ new #[Title('Agent Type')] #[Layout('layouts.app')] class extends Component {
 
     public function mount(): void
     {
+        $org = \Illuminate\Support\Facades\Auth::user()->currentOrganization();
+        if (! $org || $this->agentType->organization_id !== $org->id) {
+            abort(403);
+        }
+
         $this->agentType->loadCount('agents');
         $this->agentType->load('agents.team');
     }

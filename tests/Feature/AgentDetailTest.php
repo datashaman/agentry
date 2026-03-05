@@ -23,7 +23,7 @@ test('agent detail displays all sections', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $team = Team::factory()->create(['organization_id' => $organization->id, 'name' => 'Dev Team']);
-    $agentType = AgentType::factory()->create(['name' => 'Code Writer', 'slug' => 'code-writer']);
+    $agentType = AgentType::factory()->create(['organization_id' => $organization->id, 'name' => 'Code Writer', 'slug' => 'code-writer']);
     $agent = Agent::factory()->create([
         'team_id' => $team->id,
         'agent_type_id' => $agentType->id,

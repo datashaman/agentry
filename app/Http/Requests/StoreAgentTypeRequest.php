@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreAgentTypeRequest extends FormRequest
 {
@@ -21,19 +22,26 @@ class StoreAgentTypeRequest extends FormRequest
      */
     public function rules(): array
     {
-        return self::getRules();
+        return self::getRules($this->user()?->currentOrganization()?->id);
     }
 
     /**
-     * Get validation rules (usable from Livewire).
+     * Get validation rules (usable from Livewire with explicit organization).
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
-    public static function getRules(): array
+    public static function getRules(?int $organizationId = null): array
     {
+        $slugRule = ['required', 'string', 'max:255'];
+        if ($organizationId !== null) {
+            $slugRule[] = Rule::unique('agent_types', 'slug')->where('organization_id', $organizationId);
+        } else {
+            $slugRule[] = 'unique:agent_types,slug';
+        }
+
         return [
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', 'unique:agent_types,slug'],
+            'slug' => $slugRule,
             'description' => ['nullable', 'string', 'max:5000'],
             'default_capabilities' => ['nullable', 'string'],
         ];

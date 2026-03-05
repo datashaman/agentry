@@ -17,7 +17,12 @@ new #[Title('Agent Types')] #[Layout('layouts.app')] class extends Component {
     #[Computed]
     public function agentTypes(): \Illuminate\Database\Eloquent\Collection
     {
+        if (! $this->organization) {
+            return collect();
+        }
+
         return AgentType::query()
+            ->where('organization_id', $this->organization->id)
             ->withCount('agents')
             ->orderBy('name')
             ->get();
@@ -27,7 +32,6 @@ new #[Title('Agent Types')] #[Layout('layouts.app')] class extends Component {
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     @if ($this->organization)
         <x-breadcrumbs :organization="$this->organization" />
-    @endif
 
     <div class="flex items-center justify-between">
         <div>
@@ -59,25 +63,33 @@ new #[Title('Agent Types')] #[Layout('layouts.app')] class extends Component {
                 </thead>
                 <tbody>
                     @foreach ($this->agentTypes as $agentType)
-                        <a href="{{ route('agent-types.show', $agentType) }}" wire:navigate class="contents" data-test="agent-type-link">
-                            <tr class="border-b border-zinc-200 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50" data-test="agent-type-row" wire:key="agent-type-{{ $agentType->id }}">
-                                <td class="px-4 py-3">
-                                    <flux:text class="font-medium text-zinc-900 dark:text-zinc-100">{{ $agentType->name }}</flux:text>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <flux:badge size="sm" variant="pill">{{ $agentType->slug }}</flux:badge>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <flux:text class="truncate">{{ Str::limit($agentType->description, 60) }}</flux:text>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <flux:text>{{ $agentType->agents_count }}</flux:text>
-                                </td>
-                            </tr>
-                        </a>
+                        <tr class="border-b border-zinc-200 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50" data-test="agent-type-row" wire:key="agent-type-{{ $agentType->id }}">
+                            <td class="px-4 py-3">
+                                <a href="{{ route('agent-types.show', $agentType) }}" wire:navigate class="font-medium text-zinc-900 hover:underline dark:text-zinc-100" data-test="agent-type-link">
+                                    {{ $agentType->name }}
+                                </a>
+                            </td>
+                            <td class="px-4 py-3">
+                                <flux:badge size="sm" variant="pill">{{ $agentType->slug }}</flux:badge>
+                            </td>
+                            <td class="px-4 py-3">
+                                <flux:text class="truncate">{{ Str::limit($agentType->description, 60) }}</flux:text>
+                            </td>
+                            <td class="px-4 py-3">
+                                <flux:text>{{ $agentType->agents_count }}</flux:text>
+                            </td>
+                        </tr>
                     @endforeach
                 </tbody>
             </table>
+        </div>
+    @endif
+    @else
+        <div class="flex flex-1 items-center justify-center">
+            <div class="text-center">
+                <flux:heading size="lg">{{ __('No Organization') }}</flux:heading>
+                <flux:text class="mt-2">{{ __('Select an organization to manage agent types.') }}</flux:text>
+            </div>
         </div>
     @endif
 </div>

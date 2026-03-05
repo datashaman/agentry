@@ -15,7 +15,7 @@ class AgentSeeder extends Seeder
     public function run(): void
     {
         $team = Team::firstOrFail();
-        $codingType = AgentType::where('slug', 'coding')->firstOrFail();
+        $codingType = AgentType::where('slug', 'coding')->where('organization_id', $team->organization_id)->firstOrFail();
 
         Agent::factory()->create([
             'agent_type_id' => $codingType->id,

@@ -21,6 +21,11 @@ new #[Title('Edit Agent Type')] #[Layout('layouts.app')] class extends Component
 
     public function mount(): void
     {
+        $org = Auth::user()->currentOrganization();
+        if (! $org || $this->agentType->organization_id !== $org->id) {
+            abort(403);
+        }
+
         $this->name = $this->agentType->name;
         $this->slug = $this->agentType->slug;
         $this->description = $this->agentType->description ?? '';
@@ -29,7 +34,12 @@ new #[Title('Edit Agent Type')] #[Layout('layouts.app')] class extends Component
 
     public function updateAgentType(): void
     {
-        $validated = $this->validate(UpdateAgentTypeRequest::getRules($this->agentType->id));
+        $org = $this->organization;
+        if (! $org || $this->agentType->organization_id !== $org->id) {
+            abort(403);
+        }
+
+        $validated = $this->validate(UpdateAgentTypeRequest::getRules($this->agentType->id, $org->id));
 
         $this->agentType->update([
             'name' => $validated['name'],

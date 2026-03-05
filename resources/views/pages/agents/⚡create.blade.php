@@ -69,7 +69,11 @@ new #[Title('New Agent')] #[Layout('layouts.app')] class extends Component {
     #[Computed]
     public function agentTypes(): \Illuminate\Database\Eloquent\Collection
     {
-        return AgentType::query()->orderBy('name')->get();
+        $org = $this->organization;
+
+        return $org
+            ? AgentType::query()->where('organization_id', $org->id)->orderBy('name')->get()
+            : collect();
     }
 
     #[Computed]

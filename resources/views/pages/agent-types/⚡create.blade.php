@@ -18,9 +18,17 @@ new #[Title('New Agent Type')] #[Layout('layouts.app')] class extends Component 
 
     public function createAgentType(): void
     {
-        $validated = $this->validate(StoreAgentTypeRequest::getRules());
+        $org = $this->organization;
+
+        if (! $org) {
+            $this->addError('organization', __('Please select an organization first.'));
+            return;
+        }
+
+        $validated = $this->validate(StoreAgentTypeRequest::getRules($org->id));
 
         $agentType = \App\Models\AgentType::create([
+            'organization_id' => $org->id,
             'name' => $validated['name'],
             'slug' => $validated['slug'],
             'description' => $validated['description'] ?: null,
@@ -42,12 +50,11 @@ new #[Title('New Agent Type')] #[Layout('layouts.app')] class extends Component 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     @if ($this->organization)
         <x-breadcrumbs :organization="$this->organization" />
-    @endif
-
-    <div>
-        <flux:heading size="xl">{{ __('New Agent Type') }}</flux:heading>
-        <flux:text class="mt-1">{{ __('Create a new agent type to define roles for agents.') }}</flux:text>
-    </div>
+        <div>
+            <flux:heading size="xl">{{ __('New Agent Type') }}</flux:heading>
+            <flux:text class="mt-1">{{ __('Create a new agent type to define roles for agents.') }}</flux:text>
+            <flux:text class="mt-1 block text-sm text-zinc-500 dark:text-zinc-400">{{ __('Organization: :name', ['name' => $this->organization->name]) }}</flux:text>
+        </div>
 
     <form wire:submit="createAgentType" class="max-w-xl space-y-6" data-test="create-agent-type-form">
         <flux:field>
@@ -82,4 +89,12 @@ new #[Title('New Agent Type')] #[Layout('layouts.app')] class extends Component 
             </a>
         </div>
     </form>
+    @else
+        <div class="flex flex-1 items-center justify-center">
+            <div class="text-center">
+                <flux:heading size="lg">{{ __('No Organization') }}</flux:heading>
+                <flux:text class="mt-2">{{ __('Select an organization to create agent types.') }}</flux:text>
+            </div>
+        </div>
+    @endif
 </div>

@@ -29,6 +29,14 @@ class Organization extends Model
     }
 
     /**
+     * @return HasMany<AgentType, $this>
+     */
+    public function agentTypes(): HasMany
+    {
+        return $this->hasMany(AgentType::class);
+    }
+
+    /**
      * @return HasMany<Project, $this>
      */
     public function projects(): HasMany

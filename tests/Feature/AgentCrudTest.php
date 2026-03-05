@@ -16,7 +16,7 @@ test('agent create form displays and creates an agent', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $team = Team::factory()->create(['organization_id' => $organization->id, 'name' => 'Dev Team']);
-    $agentType = AgentType::factory()->create(['name' => 'Code Writer', 'slug' => 'code-writer']);
+    $agentType = AgentType::factory()->create(['organization_id' => $organization->id, 'name' => 'Code Writer', 'slug' => 'code-writer']);
 
     $this->actingAs($user);
 
@@ -54,7 +54,7 @@ test('agent create validates required fields', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $team = Team::factory()->create(['organization_id' => $organization->id]);
-    $agentType = AgentType::factory()->create();
+    $agentType = AgentType::factory()->create(['organization_id' => $organization->id]);
 
     $this->actingAs($user);
 
@@ -73,7 +73,7 @@ test('agent create pre-fills agent type when passed as query param', function ()
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     Team::factory()->create(['organization_id' => $organization->id]);
-    $agentType = AgentType::factory()->create(['name' => 'PreSelected Type']);
+    $agentType = AgentType::factory()->create(['organization_id' => $organization->id, 'name' => 'PreSelected Type']);
 
     $this->actingAs($user);
 
@@ -93,7 +93,7 @@ test('agent edit form displays pre-populated values and updates', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $team = Team::factory()->create(['organization_id' => $organization->id]);
-    $agentType = AgentType::factory()->create(['name' => 'Writer']);
+    $agentType = AgentType::factory()->create(['organization_id' => $organization->id, 'name' => 'Writer']);
     $agent = Agent::factory()->create([
         'team_id' => $team->id,
         'agent_type_id' => $agentType->id,

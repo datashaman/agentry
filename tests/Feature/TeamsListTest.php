@@ -65,7 +65,7 @@ test('teams page displays agent details', function () {
     $org = $user->currentOrganization();
 
     $team = Team::factory()->create(['organization_id' => $org->id]);
-    $agentType = AgentType::factory()->create(['name' => 'Developer']);
+    $agentType = AgentType::factory()->create(['organization_id' => $org->id, 'name' => 'Developer']);
     $agent = Agent::factory()->create([
         'team_id' => $team->id,
         'agent_type_id' => $agentType->id,

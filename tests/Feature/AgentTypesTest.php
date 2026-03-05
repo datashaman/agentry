@@ -13,6 +13,7 @@ test('agent types list page displays agent types with counts', function () {
     $team = Team::factory()->create(['organization_id' => $organization->id]);
 
     $agentType = AgentType::factory()->create([
+        'organization_id' => $organization->id,
         'name' => 'Code Writer',
         'slug' => 'code-writer',
         'description' => 'Writes production code',
@@ -32,6 +33,22 @@ test('agent types list page displays agent types with counts', function () {
     $response->assertSee('3');
 });
 
+test('agent types list shows only agent types from current organization', function () {
+    $orgA = Organization::factory()->create();
+    $orgB = Organization::factory()->create();
+    $user = User::factory()->withOrganization($orgA)->create(['current_organization_id' => $orgA->id]);
+
+    AgentType::factory()->create(['organization_id' => $orgA->id, 'name' => 'Org A Type', 'slug' => 'org-a-type']);
+    AgentType::factory()->create(['organization_id' => $orgB->id, 'name' => 'Org B Type', 'slug' => 'org-b-type']);
+
+    $this->actingAs($user);
+
+    $response = $this->get(route('agent-types.index'));
+    $response->assertOk();
+    $response->assertSee('Org A Type');
+    $response->assertDontSee('Org B Type');
+});
+
 test('agent types list page shows empty state when no agent types exist', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
@@ -49,6 +66,7 @@ test('agent type detail page shows description, capabilities, and agents', funct
     $team = Team::factory()->create(['organization_id' => $organization->id]);
 
     $agentType = AgentType::factory()->create([
+        'organization_id' => $organization->id,
         'name' => 'Reviewer',
         'slug' => 'reviewer',
         'description' => 'Reviews pull requests',
@@ -90,13 +108,13 @@ test('create agent type form displays and creates an agent type', function () {
         ->call('createAgentType')
         ->assertRedirect();
 
-    $this->assertDatabaseHas('agent_types', [
-        'name' => 'Planner',
-        'slug' => 'planner',
-        'description' => 'Plans sprints',
-    ]);
+    $agentType = AgentType::where('organization_id', $organization->id)
+        ->where('slug', 'planner')
+        ->first();
 
-    $agentType = AgentType::where('slug', 'planner')->first();
+    expect($agentType)->not->toBeNull()
+        ->and($agentType->name)->toBe('Planner')
+        ->and($agentType->description)->toBe('Plans sprints');
     expect($agentType->default_capabilities)->toBe(['planning', 'estimation']);
 });
 
@@ -116,7 +134,7 @@ test('create agent type validates required fields', function () {
 test('create agent type validates slug uniqueness', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
-    AgentType::factory()->create(['slug' => 'existing-slug']);
+    AgentType::factory()->create(['organization_id' => $organization->id, 'slug' => 'existing-slug']);
 
     $this->actingAs($user);
 
@@ -132,6 +150,7 @@ test('edit agent type form displays pre-populated values and updates', function 
     $user = User::factory()->withOrganization($organization)->create();
 
     $agentType = AgentType::factory()->create([
+        'organization_id' => $organization->id,
         'name' => 'Old Name',
         'slug' => 'old-name',
         'description' => 'Old description',
@@ -165,7 +184,7 @@ test('delete agent type removes it when no agents assigned', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
 
-    $agentType = AgentType::factory()->create();
+    $agentType = AgentType::factory()->create(['organization_id' => $organization->id]);
 
     $this->actingAs($user);
 
@@ -181,7 +200,7 @@ test('delete agent type is prevented when agents are assigned', function () {
     $user = User::factory()->withOrganization($organization)->create();
     $team = Team::factory()->create(['organization_id' => $organization->id]);
 
-    $agentType = AgentType::factory()->create();
+    $agentType = AgentType::factory()->create(['organization_id' => $organization->id]);
     Agent::factory()->create([
         'agent_type_id' => $agentType->id,
         'team_id' => $team->id,

@@ -22,7 +22,9 @@ class UpdateAgentTypeRequest extends FormRequest
      */
     public function rules(): array
     {
-        return self::getRules($this->route('agentType')?->id);
+        $agentType = $this->route('agentType');
+
+        return self::getRules($agentType?->id, $this->user()?->currentOrganization()?->id);
     }
 
     /**
@@ -30,11 +32,13 @@ class UpdateAgentTypeRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
-    public static function getRules(?int $agentTypeId = null): array
+    public static function getRules(?int $agentTypeId = null, ?int $organizationId = null): array
     {
         $slugRule = ['required', 'string', 'max:255'];
 
-        if ($agentTypeId !== null) {
+        if ($agentTypeId !== null && $organizationId !== null) {
+            $slugRule[] = Rule::unique('agent_types', 'slug')->where('organization_id', $organizationId)->ignore($agentTypeId);
+        } elseif ($agentTypeId !== null) {
             $slugRule[] = Rule::unique('agent_types', 'slug')->ignore($agentTypeId);
         } else {
             $slugRule[] = 'unique:agent_types,slug';

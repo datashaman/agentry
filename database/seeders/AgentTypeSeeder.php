@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\AgentType;
+use App\Models\Organization;
 use Illuminate\Database\Seeder;
 
 class AgentTypeSeeder extends Seeder
@@ -12,6 +13,8 @@ class AgentTypeSeeder extends Seeder
      */
     public function run(): void
     {
+        $organization = Organization::where('slug', 'pinky-hq')->firstOrFail();
+
         $agentTypes = [
             ['name' => 'Monitoring', 'slug' => 'monitoring', 'description' => 'Monitors system health and alerts on anomalies'],
             ['name' => 'Triage', 'slug' => 'triage', 'description' => 'Classifies and prioritizes incoming issues'],
@@ -26,7 +29,7 @@ class AgentTypeSeeder extends Seeder
         ];
 
         foreach ($agentTypes as $agentType) {
-            AgentType::factory()->create($agentType);
+            AgentType::factory()->create(array_merge($agentType, ['organization_id' => $organization->id]));
         }
     }
 }

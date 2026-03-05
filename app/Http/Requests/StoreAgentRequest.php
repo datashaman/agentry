@@ -36,9 +36,13 @@ class StoreAgentRequest extends FormRequest
             ? ['required', Rule::exists('teams', 'id')->where('organization_id', $organizationId)]
             : ['required', 'exists:teams,id'];
 
+        $agentTypeRule = $organizationId
+            ? ['required', Rule::exists('agent_types', 'id')->where('organization_id', $organizationId)]
+            : ['required', 'exists:agent_types,id'];
+
         return [
             'name' => ['required', 'string', 'max:255'],
-            'agent_type_id' => ['required', 'exists:agent_types,id'],
+            'agent_type_id' => $agentTypeRule,
             'team_id' => $teamRule,
             'model' => ['required', 'string', 'max:255'],
             'confidence_threshold' => ['required', 'numeric', 'min:0', 'max:1'],

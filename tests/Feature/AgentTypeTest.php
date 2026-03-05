@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\AgentType;
+use App\Models\Organization;
 
 test('can create an agent type', function () {
     $agentType = AgentType::factory()->create();
@@ -24,10 +25,11 @@ test('agent type requires a name', function () {
     expect(fn () => $agentType->save())->toThrow(\Illuminate\Database\QueryException::class);
 });
 
-test('agent type requires a unique slug', function () {
-    AgentType::factory()->create(['slug' => 'test-type']);
+test('agent type requires unique slug per organization', function () {
+    $organization = Organization::factory()->create();
+    AgentType::factory()->create(['organization_id' => $organization->id, 'slug' => 'test-type']);
 
-    expect(fn () => AgentType::factory()->create(['slug' => 'test-type']))
+    expect(fn () => AgentType::factory()->create(['organization_id' => $organization->id, 'slug' => 'test-type']))
         ->toThrow(\Illuminate\Database\QueryException::class);
 });
 
@@ -80,7 +82,10 @@ test('can list agent types', function () {
 });
 
 test('seeder creates all 10 agent types', function () {
-    $this->seed(\Database\Seeders\AgentTypeSeeder::class);
+    $this->seed([
+        \Database\Seeders\OrganizationSeeder::class,
+        \Database\Seeders\AgentTypeSeeder::class,
+    ]);
 
     expect(AgentType::count())->toBe(10);
 
