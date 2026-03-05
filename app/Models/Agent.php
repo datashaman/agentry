@@ -117,4 +117,12 @@ class Agent extends Model
     {
         return $this->hasMany(HitlEscalation::class, 'raised_by_agent_id');
     }
+
+    /**
+     * @return HasMany<ActionLog, $this>
+     */
+    public function actionLogs(): HasMany
+    {
+        return $this->hasMany(ActionLog::class);
+    }
 }

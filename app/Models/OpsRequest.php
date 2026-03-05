@@ -111,6 +111,14 @@ class OpsRequest extends Model
         return $this->morphMany(HitlEscalation::class, 'work_item');
     }
 
+    /**
+     * @return MorphMany<ActionLog, $this>
+     */
+    public function actionLogs(): MorphMany
+    {
+        return $this->morphMany(ActionLog::class, 'work_item');
+    }
+
     public function hasUnresolvedEscalation(): bool
     {
         return $this->hitlEscalations()

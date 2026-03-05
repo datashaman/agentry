@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Task extends Model
 {
@@ -47,5 +48,13 @@ class Task extends Model
     public function subtasks(): HasMany
     {
         return $this->hasMany(Subtask::class);
+    }
+
+    /**
+     * @return MorphMany<ActionLog, $this>
+     */
+    public function actionLogs(): MorphMany
+    {
+        return $this->morphMany(ActionLog::class, 'work_item');
     }
 }

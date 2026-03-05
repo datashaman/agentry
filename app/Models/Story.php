@@ -174,6 +174,14 @@ class Story extends Model
             ->exists();
     }
 
+    /**
+     * @return MorphMany<ActionLog, $this>
+     */
+    public function actionLogs(): MorphMany
+    {
+        return $this->morphMany(ActionLog::class, 'work_item');
+    }
+
     public function hasUnresolvedBlockers(): bool
     {
         return $this->blockedByDependencies()

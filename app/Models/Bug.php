@@ -142,6 +142,14 @@ class Bug extends Model
             ->exists();
     }
 
+    /**
+     * @return MorphMany<ActionLog, $this>
+     */
+    public function actionLogs(): MorphMany
+    {
+        return $this->morphMany(ActionLog::class, 'work_item');
+    }
+
     public function hasBlockingCritique(): bool
     {
         return $this->critiques()
