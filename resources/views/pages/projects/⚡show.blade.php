@@ -88,12 +88,12 @@ new #[Title('Project')] #[Layout('layouts.app')] class extends Component {
             </div>
         </a>
 
-        <div class="rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
+        <a href="{{ route('projects.bugs.index', $project) }}" wire:navigate class="rounded-xl border border-zinc-200 p-6 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50">
             <flux:text class="text-sm font-medium">{{ __('Bugs') }}</flux:text>
             <div class="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-100" data-test="bugs-count">
                 {{ $this->bugsCount }}
             </div>
-        </div>
+        </a>
 
         <div class="rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
             <flux:text class="text-sm font-medium">{{ __('Repositories') }}</flux:text>
