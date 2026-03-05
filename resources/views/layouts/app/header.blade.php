@@ -19,6 +19,9 @@
                 <flux:navbar.item icon="exclamation-triangle" :href="route('escalations.index')" :current="request()->routeIs('escalations.*')" wire:navigate>
                     {{ __('Escalations') }}
                 </flux:navbar.item>
+                <flux:navbar.item icon="users" :href="route('teams.index')" :current="request()->routeIs('teams.*')" wire:navigate>
+                    {{ __('Teams') }}
+                </flux:navbar.item>
             </flux:navbar>
 
             <flux:spacer />
@@ -67,6 +70,9 @@
                     </flux:sidebar.item>
                     <flux:sidebar.item icon="exclamation-triangle" :href="route('escalations.index')" :current="request()->routeIs('escalations.*')" wire:navigate>
                         {{ __('Escalations') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="users" :href="route('teams.index')" :current="request()->routeIs('teams.*')" wire:navigate>
+                        {{ __('Teams') }}
                     </flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
