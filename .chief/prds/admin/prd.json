@@ -93,7 +93,8 @@
         "Feature test: create, read, update, delete milestones"
       ],
       "priority": 6,
-      "passes": false
+      "passes": true,
+      "inProgress": false
     },
     {
       "id": "US-007",

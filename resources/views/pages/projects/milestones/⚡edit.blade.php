@@ -1,13 +1,16 @@
 <?php
 
+use App\Models\Milestone;
 use App\Models\Project;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('New Milestone')] #[Layout('layouts.app')] class extends Component {
+new #[Title('Edit Milestone')] #[Layout('layouts.app')] class extends Component {
     public Project $project;
+
+    public Milestone $milestone;
 
     public string $title = '';
 
@@ -17,7 +20,15 @@ new #[Title('New Milestone')] #[Layout('layouts.app')] class extends Component {
 
     public string $due_date = '';
 
-    public function createMilestone(): void
+    public function mount(): void
+    {
+        $this->title = $this->milestone->title;
+        $this->description = $this->milestone->description ?? '';
+        $this->status = $this->milestone->status ?? 'open';
+        $this->due_date = $this->milestone->due_date?->format('Y-m-d') ?? '';
+    }
+
+    public function updateMilestone(): void
     {
         $validated = $this->validate([
             'title' => ['required', 'string', 'max:255'],
@@ -26,14 +37,14 @@ new #[Title('New Milestone')] #[Layout('layouts.app')] class extends Component {
             'due_date' => ['nullable', 'date'],
         ]);
 
-        $milestone = $this->project->milestones()->create([
+        $this->milestone->update([
             'title' => $validated['title'],
             'description' => $validated['description'] ?: null,
             'status' => $validated['status'],
             'due_date' => $validated['due_date'] ?: null,
         ]);
 
-        $this->redirect(route('projects.milestones.show', [$this->project, $milestone]), navigate: true);
+        $this->redirect(route('projects.milestones.show', [$this->project, $this->milestone]), navigate: true);
     }
 
     #[Computed]
@@ -47,11 +58,11 @@ new #[Title('New Milestone')] #[Layout('layouts.app')] class extends Component {
     <x-breadcrumbs :organization="$this->organization" :project="$project" />
 
     <div>
-        <flux:heading size="xl">{{ __('New Milestone') }}</flux:heading>
-        <flux:text class="mt-1">{{ __('Create a new milestone for :project.', ['project' => $project->name]) }}</flux:text>
+        <flux:heading size="xl">{{ __('Edit Milestone') }}</flux:heading>
+        <flux:text class="mt-1">{{ __('Update milestone ":title".', ['title' => $milestone->title]) }}</flux:text>
     </div>
 
-    <form wire:submit="createMilestone" class="max-w-xl space-y-6" data-test="create-milestone-form">
+    <form wire:submit="updateMilestone" class="max-w-xl space-y-6" data-test="edit-milestone-form">
         <flux:field>
             <flux:label>{{ __('Title') }}</flux:label>
             <flux:input wire:model="title" data-test="milestone-title-input" required />
@@ -81,8 +92,8 @@ new #[Title('New Milestone')] #[Layout('layouts.app')] class extends Component {
         </flux:field>
 
         <div class="flex items-center gap-2">
-            <flux:button type="submit" variant="primary" data-test="save-milestone-button">{{ __('Create Milestone') }}</flux:button>
-            <a href="{{ route('projects.milestones.index', $project) }}" wire:navigate>
+            <flux:button type="submit" variant="primary" data-test="save-milestone-button">{{ __('Update Milestone') }}</flux:button>
+            <a href="{{ route('projects.milestones.show', [$project, $milestone]) }}" wire:navigate>
                 <flux:button>{{ __('Cancel') }}</flux:button>
             </a>
         </div>

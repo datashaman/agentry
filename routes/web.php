@@ -21,6 +21,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('projects/{project}/milestones', 'pages::projects.milestones.index')->name('projects.milestones.index');
     Route::livewire('projects/{project}/milestones/create', 'pages::projects.milestones.create')->name('projects.milestones.create');
     Route::livewire('projects/{project}/milestones/{milestone}', 'pages::projects.milestones.show')->name('projects.milestones.show');
+    Route::livewire('projects/{project}/milestones/{milestone}/edit', 'pages::projects.milestones.edit')->name('projects.milestones.edit');
     Route::livewire('projects/{project}/ops-requests', 'pages::projects.ops-requests.index')->name('projects.ops-requests.index');
     Route::livewire('projects/{project}/ops-requests/{opsRequest}', 'pages::projects.ops-requests.show')->name('projects.ops-requests.show');
     Route::livewire('escalations', 'pages::escalations.index')->name('escalations.index');
