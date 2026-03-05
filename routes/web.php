@@ -18,6 +18,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('projects/{project}/repos/create', 'pages::projects.repos.create')->name('projects.repos.create');
     Route::livewire('projects/{project}/repos/{repo}', 'pages::projects.repos.show')->name('projects.repos.show');
     Route::livewire('projects/{project}/repos/{repo}/edit', 'pages::projects.repos.edit')->name('projects.repos.edit');
+    Route::livewire('projects/{project}/milestones', 'pages::projects.milestones.index')->name('projects.milestones.index');
+    Route::livewire('projects/{project}/milestones/create', 'pages::projects.milestones.create')->name('projects.milestones.create');
     Route::livewire('projects/{project}/milestones/{milestone}', 'pages::projects.milestones.show')->name('projects.milestones.show');
     Route::livewire('projects/{project}/ops-requests', 'pages::projects.ops-requests.index')->name('projects.ops-requests.index');
     Route::livewire('projects/{project}/ops-requests/{opsRequest}', 'pages::projects.ops-requests.show')->name('projects.ops-requests.show');
