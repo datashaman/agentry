@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Organization extends Model
 {
@@ -17,4 +18,12 @@ class Organization extends Model
         'name',
         'slug',
     ];
+
+    /**
+     * @return HasMany<Team, $this>
+     */
+    public function teams(): HasMany
+    {
+        return $this->hasMany(Team::class);
+    }
 }
