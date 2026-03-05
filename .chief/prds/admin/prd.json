@@ -203,7 +203,7 @@
         "Feature test: create, edit, delete teams, manage project assignments"
       ],
       "priority": 13,
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-014",

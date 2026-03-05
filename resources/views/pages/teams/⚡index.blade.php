@@ -37,9 +37,14 @@ new #[Title('Teams & Agents')] #[Layout('layouts.app')] class extends Component 
             <flux:heading size="xl">{{ __('Teams & Agents') }}</flux:heading>
             <flux:text class="mt-1">{{ __('Agent teams and their members in your organization.') }}</flux:text>
         </div>
-        <a href="{{ route('agents.create') }}" wire:navigate data-test="create-agent-button">
-            <flux:button variant="primary">{{ __('New Agent') }}</flux:button>
-        </a>
+        <div class="flex items-center gap-2">
+            <a href="{{ route('teams.create') }}" wire:navigate data-test="create-team-button">
+                <flux:button variant="primary">{{ __('New Team') }}</flux:button>
+            </a>
+            <a href="{{ route('agents.create') }}" wire:navigate data-test="create-agent-button">
+                <flux:button>{{ __('New Agent') }}</flux:button>
+            </a>
+        </div>
     </div>
 
     @if ($this->teams->isEmpty())
@@ -55,7 +60,9 @@ new #[Title('Teams & Agents')] #[Layout('layouts.app')] class extends Component 
                 <div class="rounded-lg border border-zinc-200 dark:border-zinc-700" data-test="team-card" wire:key="team-{{ $team->id }}">
                     <div class="flex items-center justify-between border-b border-zinc-200 px-6 py-4 dark:border-zinc-700">
                         <div>
-                            <flux:heading size="lg">{{ $team->name }}</flux:heading>
+                            <a href="{{ route('teams.show', $team) }}" wire:navigate class="hover:underline">
+                                <flux:heading size="lg">{{ $team->name }}</flux:heading>
+                            </a>
                             <flux:text class="mt-0.5">{{ $team->agents_count }} {{ Str::plural('agent', $team->agents_count) }}</flux:text>
                         </div>
                     </div>
