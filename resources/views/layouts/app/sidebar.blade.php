@@ -65,6 +65,9 @@
                     <flux:sidebar.item icon="users" :href="route('teams.index')" :current="request()->routeIs('teams.*')" wire:navigate>
                         {{ __('Teams') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="cpu-chip" :href="route('agent-types.index')" :current="request()->routeIs('agent-types.*')" wire:navigate>
+                        {{ __('Agent Types') }}
+                    </flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 
