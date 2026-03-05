@@ -1,7 +1,9 @@
 <?php
 
+use App\Models\HitlEscalation;
 use App\Models\Project;
 use App\Models\Story;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -11,6 +13,10 @@ new #[Title('Story')] #[Layout('layouts.app')] class extends Component {
     public Project $project;
 
     public Story $story;
+
+    public ?int $resolvingEscalationId = null;
+
+    public string $resolutionNotes = '';
 
     public function mount(): void
     {
@@ -24,6 +30,48 @@ new #[Title('Story')] #[Layout('layouts.app')] class extends Component {
             'changeSets.pullRequests',
             'blockedByDependencies.blocker',
         ]);
+    }
+
+    public function startResolving(int $escalationId): void
+    {
+        $this->resolvingEscalationId = $escalationId;
+        $this->resolutionNotes = '';
+    }
+
+    public function cancelResolving(): void
+    {
+        $this->resolvingEscalationId = null;
+        $this->resolutionNotes = '';
+    }
+
+    public function resolveEscalation(int $escalationId): void
+    {
+        $this->validate([
+            'resolutionNotes' => 'required|string|min:1',
+        ]);
+
+        $escalation = HitlEscalation::findOrFail($escalationId);
+        $escalation->update([
+            'resolution' => $this->resolutionNotes,
+            'resolved_by' => Auth::user()->name,
+            'resolved_at' => now(),
+        ]);
+
+        $this->resolvingEscalationId = null;
+        $this->resolutionNotes = '';
+        $this->story->load('hitlEscalations.raisedByAgent');
+    }
+
+    public function deferEscalation(int $escalationId): void
+    {
+        $escalation = HitlEscalation::findOrFail($escalationId);
+        $escalation->update([
+            'resolution' => 'Deferred',
+            'resolved_by' => Auth::user()->name,
+            'resolved_at' => now(),
+        ]);
+
+        $this->story->load('hitlEscalations.raisedByAgent');
     }
 
     #[Computed]
@@ -171,13 +219,35 @@ new #[Title('Story')] #[Layout('layouts.app')] class extends Component {
                             @else
                                 <flux:badge size="sm" variant="pill" color="red">{{ __('Unresolved') }}</flux:badge>
                             @endif
+                            @if ($escalation->agent_confidence !== null)
+                                <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('Confidence: :pct%', ['pct' => round($escalation->agent_confidence * 100)]) }}</flux:text>
+                            @endif
                         </div>
                         <flux:text class="mt-1 text-sm">{{ $escalation->reason }}</flux:text>
                         @if ($escalation->raisedByAgent)
                             <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ __('Raised by :agent', ['agent' => $escalation->raisedByAgent->name]) }}</flux:text>
                         @endif
                         @if ($escalation->isResolved())
-                            <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ __('Resolution: :resolution', ['resolution' => $escalation->resolution]) }}</flux:text>
+                            <div class="mt-2 rounded bg-green-50 p-3 dark:bg-green-900/20" data-test="escalation-resolution">
+                                <flux:text class="text-sm font-medium">{{ __('Resolution: :resolution', ['resolution' => $escalation->resolution]) }}</flux:text>
+                                <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('Resolved by :name on :date', ['name' => $escalation->resolved_by, 'date' => $escalation->resolved_at->format('M j, Y g:i A')]) }}</flux:text>
+                            </div>
+                        @else
+                            {{-- Resolution Actions --}}
+                            @if ($resolvingEscalationId === $escalation->id)
+                                <form wire:submit="resolveEscalation({{ $escalation->id }})" class="mt-3 space-y-3" data-test="resolution-form">
+                                    <flux:textarea wire:model="resolutionNotes" :label="__('Resolution Notes')" :placeholder="__('Describe how this escalation was resolved...')" required data-test="resolution-notes" />
+                                    <div class="flex items-center gap-2">
+                                        <flux:button type="submit" variant="primary" size="sm" data-test="resolve-button">{{ __('Resolve') }}</flux:button>
+                                        <flux:button type="button" size="sm" wire:click="cancelResolving" data-test="cancel-resolve-button">{{ __('Cancel') }}</flux:button>
+                                    </div>
+                                </form>
+                            @else
+                                <div class="mt-3 flex items-center gap-2" data-test="escalation-actions">
+                                    <flux:button size="sm" variant="primary" wire:click="startResolving({{ $escalation->id }})" data-test="start-resolve-button">{{ __('Resolve') }}</flux:button>
+                                    <flux:button size="sm" wire:click="deferEscalation({{ $escalation->id }})" data-test="defer-button">{{ __('Defer') }}</flux:button>
+                                </div>
+                            @endif
                         @endif
                     </div>
                 @endforeach
