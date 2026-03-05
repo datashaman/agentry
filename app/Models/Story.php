@@ -40,7 +40,8 @@ class Story extends Model
      * @var array<string, list<string>>
      */
     public const TRANSITIONS = [
-        'backlog' => ['refined', 'closed_wont_do'],
+        'backlog' => ['spec_critique', 'refined', 'closed_wont_do'],
+        'spec_critique' => ['refined', 'backlog'],
         'refined' => ['sprint_planned', 'backlog'],
         'sprint_planned' => ['in_development', 'backlog'],
         'in_development' => ['in_review', 'blocked'],
