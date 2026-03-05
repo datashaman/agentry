@@ -35,6 +35,12 @@ new #[Title('Project')] #[Layout('layouts.app')] class extends Component {
     }
 
     #[Computed]
+    public function opsRequestsCount(): int
+    {
+        return $this->project->opsRequests()->count();
+    }
+
+    #[Computed]
     public function epics(): \Illuminate\Database\Eloquent\Collection
     {
         return $this->project->epics()
@@ -80,7 +86,7 @@ new #[Title('Project')] #[Layout('layouts.app')] class extends Component {
         @endif
     </div>
 
-    <div class="grid gap-4 md:grid-cols-3" data-test="summary-stats">
+    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4" data-test="summary-stats">
         <a href="{{ route('projects.stories.index', $project) }}" wire:navigate class="rounded-xl border border-zinc-200 p-6 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50">
             <flux:text class="text-sm font-medium">{{ __('Stories') }}</flux:text>
             <div class="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-100" data-test="stories-count">
@@ -92,6 +98,13 @@ new #[Title('Project')] #[Layout('layouts.app')] class extends Component {
             <flux:text class="text-sm font-medium">{{ __('Bugs') }}</flux:text>
             <div class="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-100" data-test="bugs-count">
                 {{ $this->bugsCount }}
+            </div>
+        </a>
+
+        <a href="{{ route('projects.ops-requests.index', $project) }}" wire:navigate class="rounded-xl border border-zinc-200 p-6 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50">
+            <flux:text class="text-sm font-medium">{{ __('Ops Requests') }}</flux:text>
+            <div class="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-100" data-test="ops-requests-count">
+                {{ $this->opsRequestsCount }}
             </div>
         </a>
 

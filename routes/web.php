@@ -12,6 +12,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('projects/{project}/stories/{story}', 'pages::projects.stories.show')->name('projects.stories.show');
     Route::livewire('projects/{project}/bugs', 'pages::projects.bugs.index')->name('projects.bugs.index');
     Route::livewire('projects/{project}/bugs/{bug}', 'pages::projects.bugs.show')->name('projects.bugs.show');
+    Route::livewire('projects/{project}/ops-requests', 'pages::projects.ops-requests.index')->name('projects.ops-requests.index');
+    Route::livewire('projects/{project}/ops-requests/{opsRequest}', 'pages::projects.ops-requests.show')->name('projects.ops-requests.show');
     Route::livewire('escalations', 'pages::escalations.index')->name('escalations.index');
 });
 
