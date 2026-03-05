@@ -118,4 +118,20 @@ class Bug extends Model
     {
         return $this->morphMany(ChangeSet::class, 'work_item');
     }
+
+    /**
+     * @return MorphMany<Critique, $this>
+     */
+    public function critiques(): MorphMany
+    {
+        return $this->morphMany(Critique::class, 'work_item');
+    }
+
+    public function hasBlockingCritique(): bool
+    {
+        return $this->critiques()
+            ->where('severity', 'blocking')
+            ->where('disposition', 'pending')
+            ->exists();
+    }
 }

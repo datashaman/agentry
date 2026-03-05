@@ -101,4 +101,12 @@ class Agent extends Model
     {
         return $this->hasMany(Review::class);
     }
+
+    /**
+     * @return HasMany<Critique, $this>
+     */
+    public function critiques(): HasMany
+    {
+        return $this->hasMany(Critique::class);
+    }
 }
