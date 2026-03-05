@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class OpsRequest extends Model
@@ -117,6 +118,14 @@ class OpsRequest extends Model
     public function actionLogs(): MorphMany
     {
         return $this->morphMany(ActionLog::class, 'work_item');
+    }
+
+    /**
+     * @return HasMany<Runbook, $this>
+     */
+    public function runbooks(): HasMany
+    {
+        return $this->hasMany(Runbook::class);
     }
 
     public function hasUnresolvedEscalation(): bool
