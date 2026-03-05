@@ -10,10 +10,52 @@
                 <flux:sidebar.collapse class="lg:hidden" />
             </flux:sidebar.header>
 
+            @auth
+                @php
+                    $currentUser = auth()->user();
+                    $userOrganizations = $currentUser->organizations;
+                    $currentOrg = $currentUser->currentOrganization();
+                @endphp
+
+                @if ($userOrganizations->count() > 1)
+                    <flux:sidebar.nav>
+                        <flux:sidebar.group :heading="__('Organization')">
+                            <flux:dropdown>
+                                <flux:sidebar.item icon="building-office" icon:trailing="chevrons-up-down" data-test="org-switcher">
+                                    {{ $currentOrg?->name ?? __('Select Organization') }}
+                                </flux:sidebar.item>
+
+                                <flux:menu>
+                                    @foreach ($userOrganizations as $org)
+                                        <flux:menu.item
+                                            :href="route('dashboard')"
+                                            data-test="org-option"
+                                        >
+                                            {{ $org->name }}
+                                        </flux:menu.item>
+                                    @endforeach
+                                </flux:menu>
+                            </flux:dropdown>
+                        </flux:sidebar.group>
+                    </flux:sidebar.nav>
+                @elseif ($currentOrg)
+                    <div class="px-3 py-2" data-test="org-context">
+                        <flux:text class="text-xs font-medium text-zinc-400">{{ __('Organization') }}</flux:text>
+                        <flux:text class="mt-0.5 text-sm font-medium">{{ $currentOrg->name }}</flux:text>
+                    </div>
+                @endif
+            @endauth
+
             <flux:sidebar.nav>
                 <flux:sidebar.group :heading="__('Platform')" class="grid">
                     <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                         {{ __('Dashboard') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="folder" :href="route('projects.index')" :current="request()->routeIs('projects.*')" wire:navigate>
+                        {{ __('Projects') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="exclamation-triangle" :href="route('escalations.index')" :current="request()->routeIs('escalations.*')" wire:navigate>
+                        {{ __('Escalations') }}
                     </flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>

@@ -13,6 +13,12 @@
                 <flux:navbar.item icon="layout-grid" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                     {{ __('Dashboard') }}
                 </flux:navbar.item>
+                <flux:navbar.item icon="folder" :href="route('projects.index')" :current="request()->routeIs('projects.*')" wire:navigate>
+                    {{ __('Projects') }}
+                </flux:navbar.item>
+                <flux:navbar.item icon="exclamation-triangle" :href="route('escalations.index')" :current="request()->routeIs('escalations.*')" wire:navigate>
+                    {{ __('Escalations') }}
+                </flux:navbar.item>
             </flux:navbar>
 
             <flux:spacer />
@@ -54,7 +60,13 @@
             <flux:sidebar.nav>
                 <flux:sidebar.group :heading="__('Platform')">
                     <flux:sidebar.item icon="layout-grid" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Dashboard')  }}
+                        {{ __('Dashboard') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="folder" :href="route('projects.index')" :current="request()->routeIs('projects.*')" wire:navigate>
+                        {{ __('Projects') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="exclamation-triangle" :href="route('escalations.index')" :current="request()->routeIs('escalations.*')" wire:navigate>
+                        {{ __('Escalations') }}
                     </flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>

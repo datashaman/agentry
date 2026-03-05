@@ -134,6 +134,8 @@ new #[Title('Dashboard')] #[Layout('layouts.app')] class extends Component {
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
         @if ($this->organization)
+            <x-breadcrumbs :organization="$this->organization" />
+
             <div>
                 <flux:heading size="xl">{{ $this->organization->name }}</flux:heading>
                 <flux:text class="mt-1">{{ __('Organization overview') }}</flux:text>
@@ -177,10 +179,10 @@ new #[Title('Dashboard')] #[Layout('layouts.app')] class extends Component {
                     <flux:heading size="lg">{{ __('Projects') }}</flux:heading>
                     <div class="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                         @foreach ($this->projects as $project)
-                            <div class="rounded-xl border border-zinc-200 p-4 dark:border-zinc-700" data-test="project-card">
+                            <a href="{{ route('projects.index') }}" wire:navigate class="block rounded-xl border border-zinc-200 p-4 transition hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500" data-test="project-card">
                                 <flux:heading size="sm">{{ $project->name }}</flux:heading>
                                 <flux:text class="mt-1 text-sm">{{ $project->slug }}</flux:text>
-                            </div>
+                            </a>
                         @endforeach
                     </div>
                 </div>
