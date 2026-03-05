@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Exceptions\InvalidStatusTransitionException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -34,6 +35,25 @@ class Story extends Model
     ];
 
     /**
+     * Allowed status transitions.
+     *
+     * @var array<string, list<string>>
+     */
+    public const TRANSITIONS = [
+        'backlog' => ['refined', 'closed_wont_do'],
+        'refined' => ['sprint_planned', 'backlog'],
+        'sprint_planned' => ['in_development', 'backlog'],
+        'in_development' => ['in_review', 'blocked'],
+        'in_review' => ['staging', 'in_development'],
+        'staging' => ['merged'],
+        'merged' => ['deployed'],
+        'deployed' => ['closed_done'],
+        'blocked' => ['in_development'],
+        'closed_done' => [],
+        'closed_wont_do' => [],
+    ];
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
@@ -42,6 +62,40 @@ class Story extends Model
             'due_date' => 'date',
             'substantial_change' => 'boolean',
         ];
+    }
+
+    /**
+     * Transition the story to a new status, enforcing the state machine rules and invariants.
+     */
+    public function transitionTo(string $newStatus): self
+    {
+        $currentStatus = $this->status;
+        $allowed = self::TRANSITIONS[$currentStatus] ?? [];
+
+        if (! in_array($newStatus, $allowed)) {
+            throw new InvalidStatusTransitionException($currentStatus, $newStatus);
+        }
+
+        if ($newStatus === 'in_development') {
+            if ($this->hasUnresolvedBlockers()) {
+                throw new InvalidStatusTransitionException($currentStatus, $newStatus, 'Unresolved dependencies exist.');
+            }
+
+            if ($this->hasUnresolvedEscalation()) {
+                throw new InvalidStatusTransitionException($currentStatus, $newStatus, 'Unresolved HITL escalation exists.');
+            }
+        }
+
+        if ($newStatus === 'closed_done') {
+            if ($this->hasBlockingCritique()) {
+                throw new InvalidStatusTransitionException($currentStatus, $newStatus, 'Blocking critique with pending disposition exists.');
+            }
+        }
+
+        $this->status = $newStatus;
+        $this->save();
+
+        return $this;
     }
 
     /**
