@@ -151,6 +151,21 @@ class Story extends Model
         return $this->morphMany(Critique::class, 'work_item');
     }
 
+    /**
+     * @return MorphMany<HitlEscalation, $this>
+     */
+    public function hitlEscalations(): MorphMany
+    {
+        return $this->morphMany(HitlEscalation::class, 'work_item');
+    }
+
+    public function hasUnresolvedEscalation(): bool
+    {
+        return $this->hitlEscalations()
+            ->whereNull('resolved_at')
+            ->exists();
+    }
+
     public function hasBlockingCritique(): bool
     {
         return $this->critiques()

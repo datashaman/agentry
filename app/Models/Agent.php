@@ -109,4 +109,12 @@ class Agent extends Model
     {
         return $this->hasMany(Critique::class);
     }
+
+    /**
+     * @return HasMany<HitlEscalation, $this>
+     */
+    public function hitlEscalations(): HasMany
+    {
+        return $this->hasMany(HitlEscalation::class, 'raised_by_agent_id');
+    }
 }

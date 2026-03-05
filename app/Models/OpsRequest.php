@@ -102,4 +102,19 @@ class OpsRequest extends Model
     {
         return $this->morphMany(ChangeSet::class, 'work_item');
     }
+
+    /**
+     * @return MorphMany<HitlEscalation, $this>
+     */
+    public function hitlEscalations(): MorphMany
+    {
+        return $this->morphMany(HitlEscalation::class, 'work_item');
+    }
+
+    public function hasUnresolvedEscalation(): bool
+    {
+        return $this->hitlEscalations()
+            ->whereNull('resolved_at')
+            ->exists();
+    }
 }
