@@ -102,11 +102,23 @@ class Story extends Model
         return $this->morphMany(Dependency::class, 'blocker');
     }
 
+    /**
+     * @return HasMany<Bug, $this>
+     */
+    public function bugs(): HasMany
+    {
+        return $this->hasMany(Bug::class, 'linked_story_id');
+    }
+
     public function hasUnresolvedBlockers(): bool
     {
         return $this->blockedByDependencies()
-            ->whereHasMorph('blocker', [self::class], function ($query) {
-                $query->whereNotIn('status', ['closed_done', 'closed_wont_do']);
+            ->where(function ($query) {
+                $query->whereHasMorph('blocker', [self::class], function ($q) {
+                    $q->whereNotIn('status', ['closed_done', 'closed_wont_do']);
+                })->orWhereHasMorph('blocker', [Bug::class], function ($q) {
+                    $q->whereNotIn('status', ['closed_fixed', 'closed_duplicate', 'closed_cant_reproduce']);
+                });
             })
             ->exists();
     }

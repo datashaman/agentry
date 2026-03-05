@@ -48,4 +48,12 @@ class Milestone extends Model
     {
         return $this->hasMany(Story::class);
     }
+
+    /**
+     * @return HasMany<Bug, $this>
+     */
+    public function bugs(): HasMany
+    {
+        return $this->hasMany(Bug::class);
+    }
 }

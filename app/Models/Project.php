@@ -62,6 +62,14 @@ class Project extends Model
         return $this->hasMany(Milestone::class);
     }
 
+    /**
+     * @return HasMany<Bug, $this>
+     */
+    public function bugs(): HasMany
+    {
+        return $this->hasMany(Bug::class);
+    }
+
     public function hasTeam(Team $team): bool
     {
         return $this->teams()->where('teams.id', $team->id)->exists();

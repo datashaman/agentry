@@ -69,4 +69,12 @@ class Agent extends Model
     {
         return $this->hasMany(Task::class, 'assigned_agent_id');
     }
+
+    /**
+     * @return HasMany<Bug, $this>
+     */
+    public function assignedBugs(): HasMany
+    {
+        return $this->hasMany(Bug::class, 'assigned_agent_id');
+    }
 }
