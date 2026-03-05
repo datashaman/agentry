@@ -60,7 +60,7 @@ test('agent types list page shows empty state when no agent types exist', functi
     $response->assertSee('No Agent Types');
 });
 
-test('agent type detail page shows description, capabilities, and agents', function () {
+test('agent type detail page shows description, instructions, tools, and agents', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $team = Team::factory()->create(['organization_id' => $organization->id]);
@@ -70,7 +70,8 @@ test('agent type detail page shows description, capabilities, and agents', funct
         'name' => 'Reviewer',
         'slug' => 'reviewer',
         'description' => 'Reviews pull requests',
-        'default_capabilities' => ['code_review', 'testing'],
+        'instructions' => 'You are a code reviewer.',
+        'tools' => ['code_review', 'testing'],
     ]);
 
     $agent = Agent::factory()->create([
@@ -104,7 +105,8 @@ test('create agent type form displays and creates an agent type', function () {
         ->set('name', 'Planner')
         ->set('slug', 'planner')
         ->set('description', 'Plans sprints')
-        ->set('default_capabilities', 'planning, estimation')
+        ->set('instructions', 'You plan sprints.')
+        ->set('tools', 'planning, estimation')
         ->call('createAgentType')
         ->assertRedirect();
 
@@ -114,8 +116,9 @@ test('create agent type form displays and creates an agent type', function () {
 
     expect($agentType)->not->toBeNull()
         ->and($agentType->name)->toBe('Planner')
-        ->and($agentType->description)->toBe('Plans sprints');
-    expect($agentType->default_capabilities)->toBe(['planning', 'estimation']);
+        ->and($agentType->description)->toBe('Plans sprints')
+        ->and($agentType->instructions)->toBe('You plan sprints.')
+        ->and($agentType->tools)->toBe(['planning', 'estimation']);
 });
 
 test('create agent type validates required fields', function () {
@@ -154,7 +157,8 @@ test('edit agent type form displays pre-populated values and updates', function 
         'name' => 'Old Name',
         'slug' => 'old-name',
         'description' => 'Old description',
-        'default_capabilities' => ['cap1', 'cap2'],
+        'instructions' => 'Old instructions',
+        'tools' => ['cap1', 'cap2'],
     ]);
 
     $this->actingAs($user);
@@ -167,7 +171,8 @@ test('edit agent type form displays pre-populated values and updates', function 
         ->assertSet('name', 'Old Name')
         ->assertSet('slug', 'old-name')
         ->assertSet('description', 'Old description')
-        ->assertSet('default_capabilities', 'cap1, cap2')
+        ->assertSet('instructions', 'Old instructions')
+        ->assertSet('tools', 'cap1, cap2')
         ->set('name', 'New Name')
         ->set('slug', 'new-name')
         ->call('updateAgentType')

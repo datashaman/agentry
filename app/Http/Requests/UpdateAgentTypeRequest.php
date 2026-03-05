@@ -48,7 +48,8 @@ class UpdateAgentTypeRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'slug' => $slugRule,
             'description' => ['nullable', 'string', 'max:5000'],
-            'default_capabilities' => ['nullable', 'string'],
+            'instructions' => ['nullable', 'string', 'max:65535'],
+            'tools' => ['nullable', 'string'],
         ];
     }
 }

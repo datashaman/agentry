@@ -22,7 +22,8 @@ class AgentTypeFactory extends Factory
             'name' => fake()->unique()->word(),
             'slug' => fake()->unique()->slug(),
             'description' => fake()->sentence(),
-            'default_capabilities' => [fake()->word(), fake()->word()],
+            'instructions' => fake()->sentence(),
+            'tools' => [fake()->word(), fake()->word()],
         ];
     }
 

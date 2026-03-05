@@ -10,7 +10,7 @@ test('can create an agent type', function () {
         ->and($agentType->name)->not->toBeEmpty()
         ->and($agentType->slug)->not->toBeEmpty()
         ->and($agentType->description)->not->toBeEmpty()
-        ->and($agentType->default_capabilities)->toBeArray();
+        ->and($agentType->tools)->toBeArray();
 
     $this->assertDatabaseHas('agent_types', [
         'id' => $agentType->id,
@@ -33,23 +33,25 @@ test('agent type requires unique slug per organization', function () {
         ->toThrow(\Illuminate\Database\QueryException::class);
 });
 
-test('agent type casts default_capabilities to array', function () {
-    $capabilities = ['read_code', 'write_code', 'run_tests'];
-    $agentType = AgentType::factory()->create(['default_capabilities' => $capabilities]);
+test('agent type casts tools to array', function () {
+    $tools = ['read_code', 'write_code', 'run_tests'];
+    $agentType = AgentType::factory()->create(['tools' => $tools]);
 
     $fresh = $agentType->fresh();
 
-    expect($fresh->default_capabilities)->toBe($capabilities);
+    expect($fresh->tools)->toBe($tools);
 });
 
-test('agent type allows null description and default_capabilities', function () {
+test('agent type allows null description and tools', function () {
     $agentType = AgentType::factory()->create([
         'description' => null,
-        'default_capabilities' => null,
+        'instructions' => null,
+        'tools' => null,
     ]);
 
     expect($agentType->description)->toBeNull()
-        ->and($agentType->default_capabilities)->toBeNull();
+        ->and($agentType->instructions)->toBeNull()
+        ->and($agentType->tools)->toBeNull();
 });
 
 test('can update an agent type', function () {

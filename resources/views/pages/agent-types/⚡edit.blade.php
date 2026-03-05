@@ -17,7 +17,9 @@ new #[Title('Edit Agent Type')] #[Layout('layouts.app')] class extends Component
 
     public string $description = '';
 
-    public string $default_capabilities = '';
+    public string $instructions = '';
+
+    public string $tools = '';
 
     public function mount(): void
     {
@@ -29,7 +31,8 @@ new #[Title('Edit Agent Type')] #[Layout('layouts.app')] class extends Component
         $this->name = $this->agentType->name;
         $this->slug = $this->agentType->slug;
         $this->description = $this->agentType->description ?? '';
-        $this->default_capabilities = implode(', ', $this->agentType->default_capabilities ?? []);
+        $this->instructions = $this->agentType->instructions ?? '';
+        $this->tools = implode(', ', $this->agentType->tools ?? []);
     }
 
     public function updateAgentType(): void
@@ -45,9 +48,8 @@ new #[Title('Edit Agent Type')] #[Layout('layouts.app')] class extends Component
             'name' => $validated['name'],
             'slug' => $validated['slug'],
             'description' => $validated['description'] ?: null,
-            'default_capabilities' => $validated['default_capabilities']
-                ? array_map('trim', explode(',', $validated['default_capabilities']))
-                : [],
+            'instructions' => $validated['instructions'] ?: null,
+            'tools' => $validated['tools'] ? array_map('trim', explode(',', $validated['tools'])) : [],
         ]);
 
         $this->redirect(route('agent-types.show', $this->agentType), navigate: true);
@@ -90,10 +92,17 @@ new #[Title('Edit Agent Type')] #[Layout('layouts.app')] class extends Component
         </flux:field>
 
         <flux:field>
-            <flux:label>{{ __('Default Capabilities') }}</flux:label>
-            <flux:input wire:model="default_capabilities" data-test="agent-type-capabilities-input" placeholder="capability1, capability2, ..." />
-            <flux:description>{{ __('Comma-separated list of default capabilities.') }}</flux:description>
-            <flux:error name="default_capabilities" />
+            <flux:label>{{ __('Instructions') }}</flux:label>
+            <flux:textarea wire:model="instructions" data-test="agent-type-instructions-input" rows="5" placeholder="System prompt for this agent type..." />
+            <flux:description>{{ __('System prompt or instructions that define agent behavior.') }}</flux:description>
+            <flux:error name="instructions" />
+        </flux:field>
+
+        <flux:field>
+            <flux:label>{{ __('Tools') }}</flux:label>
+            <flux:input wire:model="tools" data-test="agent-type-tools-input" placeholder="tool1, tool2, ..." />
+            <flux:description>{{ __('Comma-separated list of tool IDs this type can use.') }}</flux:description>
+            <flux:error name="tools" />
         </flux:field>
 
         <div class="flex items-center gap-2">

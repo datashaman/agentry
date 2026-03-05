@@ -69,15 +69,25 @@ new #[Title('Agent Type')] #[Layout('layouts.app')] class extends Component {
         </div>
     </div>
 
-    {{-- Default Capabilities --}}
-    <div data-test="default-capabilities">
-        <flux:heading size="lg">{{ __('Default Capabilities') }}</flux:heading>
-        @if (empty($agentType->default_capabilities))
-            <flux:text class="mt-2">{{ __('No default capabilities defined.') }}</flux:text>
+    {{-- Instructions --}}
+    <div data-test="agent-type-instructions">
+        <flux:heading size="lg">{{ __('Instructions') }}</flux:heading>
+        @if (empty($agentType->instructions))
+            <flux:text class="mt-2">{{ __('No instructions defined.') }}</flux:text>
+        @else
+            <flux:text class="mt-2 whitespace-pre-wrap">{{ $agentType->instructions }}</flux:text>
+        @endif
+    </div>
+
+    {{-- Tools --}}
+    <div data-test="agent-type-tools">
+        <flux:heading size="lg">{{ __('Tools') }}</flux:heading>
+        @if (empty($agentType->tools))
+            <flux:text class="mt-2">{{ __('No tools configured.') }}</flux:text>
         @else
             <div class="mt-2 flex flex-wrap gap-2">
-                @foreach ($agentType->default_capabilities as $capability)
-                    <flux:badge size="sm" variant="pill">{{ $capability }}</flux:badge>
+                @foreach ($agentType->tools as $tool)
+                    <flux:badge size="sm" variant="pill">{{ $tool }}</flux:badge>
                 @endforeach
             </div>
         @endif

@@ -20,7 +20,8 @@ class AgentType extends Model
         'name',
         'slug',
         'description',
-        'default_capabilities',
+        'instructions',
+        'tools',
     ];
 
     /**
@@ -37,7 +38,7 @@ class AgentType extends Model
     protected function casts(): array
     {
         return [
-            'default_capabilities' => 'array',
+            'tools' => 'array',
         ];
     }
 
