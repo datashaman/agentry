@@ -8,6 +8,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('dashboard', 'pages::dashboard')->name('dashboard');
     Route::livewire('projects', 'pages::projects.index')->name('projects.index');
     Route::livewire('projects/{project}', 'pages::projects.show')->name('projects.show');
+    Route::livewire('projects/{project}/stories', 'pages::projects.stories.index')->name('projects.stories.index');
+    Route::livewire('projects/{project}/stories/{story}', 'pages::projects.stories.show')->name('projects.stories.show');
     Route::livewire('escalations', 'pages::escalations.index')->name('escalations.index');
 });
 

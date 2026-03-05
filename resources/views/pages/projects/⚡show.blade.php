@@ -81,12 +81,12 @@ new #[Title('Project')] #[Layout('layouts.app')] class extends Component {
     </div>
 
     <div class="grid gap-4 md:grid-cols-3" data-test="summary-stats">
-        <div class="rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
+        <a href="{{ route('projects.stories.index', $project) }}" wire:navigate class="rounded-xl border border-zinc-200 p-6 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50">
             <flux:text class="text-sm font-medium">{{ __('Stories') }}</flux:text>
             <div class="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-100" data-test="stories-count">
                 {{ $this->storiesCount }}
             </div>
-        </div>
+        </a>
 
         <div class="rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
             <flux:text class="text-sm font-medium">{{ __('Bugs') }}</flux:text>
