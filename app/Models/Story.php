@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 class Story extends Model
@@ -83,5 +84,30 @@ class Story extends Model
     public function labels(): MorphToMany
     {
         return $this->morphToMany(Label::class, 'labelable');
+    }
+
+    /**
+     * @return MorphMany<Dependency, $this>
+     */
+    public function blockedByDependencies(): MorphMany
+    {
+        return $this->morphMany(Dependency::class, 'blocked');
+    }
+
+    /**
+     * @return MorphMany<Dependency, $this>
+     */
+    public function blockerForDependencies(): MorphMany
+    {
+        return $this->morphMany(Dependency::class, 'blocker');
+    }
+
+    public function hasUnresolvedBlockers(): bool
+    {
+        return $this->blockedByDependencies()
+            ->whereHasMorph('blocker', [self::class], function ($query) {
+                $query->whereNotIn('status', ['closed_done', 'closed_wont_do']);
+            })
+            ->exists();
     }
 }
