@@ -119,6 +119,14 @@ class Story extends Model
         return $this->belongsToMany(OpsRequest::class)->withTimestamps();
     }
 
+    /**
+     * @return MorphMany<Branch, $this>
+     */
+    public function branches(): MorphMany
+    {
+        return $this->morphMany(Branch::class, 'work_item');
+    }
+
     public function hasUnresolvedBlockers(): bool
     {
         return $this->blockedByDependencies()

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Repo extends Model
 {
@@ -48,5 +49,13 @@ class Repo extends Model
     public function opsRequests(): BelongsToMany
     {
         return $this->belongsToMany(OpsRequest::class)->withTimestamps();
+    }
+
+    /**
+     * @return HasMany<Branch, $this>
+     */
+    public function branches(): HasMany
+    {
+        return $this->hasMany(Branch::class);
     }
 }
