@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\Bug;
 use App\Models\Critique;
+use App\Models\Dependency;
 use App\Models\HitlEscalation;
 use App\Models\Label;
 use App\Models\Project;
@@ -24,6 +26,8 @@ new #[Title('Story')] #[Layout('layouts.app')] class extends Component {
     public string $resolutionNotes = '';
 
     public string $selectedLabelId = '';
+
+    public string $selectedDependencyId = '';
 
     public function mount(): void
     {
@@ -70,6 +74,77 @@ new #[Title('Story')] #[Layout('layouts.app')] class extends Component {
         $this->story->labels()->detach($labelId);
         $this->story->load('labels');
         unset($this->availableLabels);
+    }
+
+    #[Computed]
+    public function availableDependencies(): array
+    {
+        $blockerKeys = $this->story->blockedByDependencies->map(function ($d) {
+            return strtolower(class_basename($d->blocker_type)) . '-' . $d->blocker_id;
+        })->toArray();
+
+        $options = [];
+        foreach ($this->project->stories()->where('stories.id', '!=', $this->story->id)->orderBy('stories.title')->get() as $s) {
+            $key = 'story-' . $s->id;
+            if (! in_array($key, $blockerKeys)) {
+                $options[$key] = __('Story: :title', ['title' => $s->title]);
+            }
+        }
+        foreach ($this->project->bugs()->orderBy('title')->get() as $b) {
+            $key = 'bug-' . $b->id;
+            if (! in_array($key, $blockerKeys)) {
+                $options[$key] = __('Bug: :title', ['title' => $b->title]);
+            }
+        }
+
+        return $options;
+    }
+
+    public function attachDependency(): void
+    {
+        $this->validate([
+            'selectedDependencyId' => 'required|string',
+        ]);
+
+        if (! preg_match('/^(story|bug)-(\d+)$/', $this->selectedDependencyId, $m)) {
+            $this->addError('selectedDependencyId', __('Invalid dependency selection.'));
+
+            return;
+        }
+        [, $type, $id] = $m;
+        $blockerClass = $type === 'story' ? Story::class : Bug::class;
+
+        $blocker = $blockerClass::findOrFail((int) $id);
+        if ($type === 'story' && $blocker->epic->project_id !== $this->project->id) {
+            $this->addError('selectedDependencyId', __('Dependency must be in the same project.'));
+
+            return;
+        }
+        if ($type === 'bug' && $blocker->project_id !== $this->project->id) {
+            $this->addError('selectedDependencyId', __('Dependency must be in the same project.'));
+
+            return;
+        }
+
+        Dependency::firstOrCreate([
+            'blocker_type' => $blockerClass,
+            'blocker_id' => $blocker->id,
+            'blocked_type' => Story::class,
+            'blocked_id' => $this->story->id,
+        ]);
+        $this->selectedDependencyId = '';
+        $this->story->load('blockedByDependencies.blocker');
+        unset($this->availableDependencies);
+    }
+
+    public function removeDependency(int $dependencyId): void
+    {
+        $dep = Dependency::where('blocked_type', Story::class)
+            ->where('blocked_id', $this->story->id)
+            ->findOrFail($dependencyId);
+        $dep->delete();
+        $this->story->load('blockedByDependencies.blocker');
+        unset($this->availableDependencies);
     }
 
     public function updateCritiqueDisposition(int $critiqueId, string $disposition): void
@@ -485,17 +560,43 @@ new #[Title('Story')] #[Layout('layouts.app')] class extends Component {
     @endif
 
     {{-- Dependencies --}}
-    @if ($story->blockedByDependencies->isNotEmpty())
-        <div data-test="story-dependencies">
-            <flux:heading size="lg">{{ __('Dependencies') }}</flux:heading>
-            <div class="mt-2 space-y-2">
-                @foreach ($story->blockedByDependencies as $dependency)
-                    <div class="flex items-center gap-2 text-sm" data-test="dependency-item">
-                        <flux:text>{{ __('Blocked by:') }}</flux:text>
-                        <flux:text class="font-medium">{{ $dependency->blocker?->title ?? __('Unknown') }}</flux:text>
-                    </div>
-                @endforeach
-            </div>
+    <div data-test="story-dependencies">
+        <flux:heading size="lg">{{ __('Dependencies') }}</flux:heading>
+        <div class="mt-2 space-y-2">
+            @forelse ($story->blockedByDependencies as $dependency)
+                @php
+                    $blocker = $dependency->blocker;
+                    $blockerType = $blocker ? class_basename(get_class($blocker)) : 'Unknown';
+                    $isResolved = $blocker && match (get_class($blocker)) {
+                        \App\Models\Story::class => in_array($blocker->status, ['closed_done', 'closed_wont_do']),
+                        \App\Models\Bug::class => in_array($blocker->status, ['closed_fixed', 'closed_duplicate', 'closed_cant_reproduce']),
+                        default => false,
+                    };
+                @endphp
+                <div class="flex flex-wrap items-center gap-2 rounded-lg border p-3 text-sm {{ $isResolved ? 'border-green-300 bg-green-50 dark:border-green-800 dark:bg-green-900/20' : 'border-zinc-200 dark:border-zinc-700' }}" data-test="dependency-item">
+                    <flux:badge size="sm" variant="pill" :color="$isResolved ? 'green' : 'amber'">{{ $isResolved ? __('Resolved') : __('Unresolved') }}</flux:badge>
+                    <flux:badge size="sm" variant="pill">{{ $blockerType }}</flux:badge>
+                    <flux:badge size="sm" variant="pill">{{ $blocker ? str_replace('_', ' ', $blocker->status) : '-' }}</flux:badge>
+                    @if ($blocker)
+                        <a href="{{ $blockerType === 'Story' ? route('projects.stories.show', [$project, $blocker]) : route('projects.bugs.show', [$project, $blocker]) }}" wire:navigate class="font-medium hover:underline">{{ $blocker->title }}</a>
+                    @else
+                        <flux:text class="font-medium">{{ __('Unknown') }}</flux:text>
+                    @endif
+                    <button type="button" wire:click="removeDependency({{ $dependency->id }})" class="ml-auto text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" data-test="remove-dependency-button" title="{{ __('Remove dependency') }}">&times;</button>
+                </div>
+            @empty
+                <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('No dependencies.') }}</flux:text>
+            @endforelse
         </div>
-    @endif
+        @if (count($this->availableDependencies) > 0)
+            <form wire:submit="attachDependency" class="mt-3 flex items-end gap-2" data-test="attach-dependency-form">
+                <flux:select wire:model="selectedDependencyId" :placeholder="__('Select a story or bug...')" data-test="dependency-select">
+                    @foreach ($this->availableDependencies as $key => $label)
+                        <flux:select.option :value="$key">{{ $label }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+                <flux:button type="submit" size="sm" variant="primary" data-test="attach-dependency-button">{{ __('Add') }}</flux:button>
+            </form>
+        @endif
+    </div>
 </div>
