@@ -29,10 +29,9 @@ test('agent detail displays all sections', function () {
         'agent_type_id' => $agentType->id,
         'name' => 'Alpha Agent',
         'model' => 'claude-opus-4-6',
+        'provider' => 'anthropic',
         'status' => 'active',
         'confidence_threshold' => 0.9,
-        'capabilities' => ['code_review', 'testing'],
-        'tools' => ['editor', 'terminal'],
     ]);
 
     $this->actingAs($user);
@@ -44,16 +43,9 @@ test('agent detail displays all sections', function () {
     $response->assertSee('Code Writer');
     $response->assertSee('Dev Team');
     $response->assertSee('claude-opus-4-6');
+    $response->assertSee('anthropic');
     $response->assertSee('Active');
     $response->assertSee('90%');
-
-    $response->assertSee('Capabilities');
-    $response->assertSee('code_review');
-    $response->assertSee('testing');
-
-    $response->assertSee('Tools');
-    $response->assertSee('editor');
-    $response->assertSee('terminal');
 
     $response->assertSee('Currently Assigned');
     $response->assertSee('Stories');
@@ -61,6 +53,33 @@ test('agent detail displays all sections', function () {
     $response->assertSee('Ops Requests');
 
     $response->assertSee('Recent Activity');
+});
+
+test('agent detail shows overrides when set', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->withOrganization($organization)->create();
+    $team = Team::factory()->create(['organization_id' => $organization->id]);
+    $agentType = AgentType::factory()->create(['organization_id' => $organization->id]);
+    $agent = Agent::factory()->create([
+        'team_id' => $team->id,
+        'agent_type_id' => $agentType->id,
+        'name' => 'Override Agent',
+        'temperature' => 0.7,
+        'max_steps' => 15,
+        'max_tokens' => 8192,
+        'timeout' => 120,
+    ]);
+
+    $this->actingAs($user);
+
+    $response = $this->get(route('agents.show', $agent));
+    $response->assertOk();
+
+    $response->assertSee('Overrides');
+    $response->assertSee('0.7');
+    $response->assertSee('15');
+    $response->assertSee('8192');
+    $response->assertSee('120');
 });
 
 test('agent detail shows assigned stories, bugs, and ops requests with links', function () {

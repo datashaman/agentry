@@ -45,9 +45,12 @@ class StoreAgentRequest extends FormRequest
             'agent_type_id' => $agentTypeRule,
             'team_id' => $teamRule,
             'model' => ['required', 'string', 'max:255'],
+            'provider' => ['required', 'string', 'max:255'],
             'confidence_threshold' => ['required', 'numeric', 'min:0', 'max:1'],
-            'tools' => ['nullable', 'string'],
-            'capabilities' => ['nullable', 'string'],
+            'temperature' => ['nullable', 'numeric'],
+            'max_steps' => ['nullable', 'integer', 'min:1'],
+            'max_tokens' => ['nullable', 'integer', 'min:1'],
+            'timeout' => ['nullable', 'integer', 'min:1'],
             'status' => ['required', 'string', 'in:idle,active,error,busy'],
         ];
     }
@@ -66,6 +69,7 @@ class StoreAgentRequest extends FormRequest
             'team_id.required' => __('Please select a team.'),
             'team_id.exists' => __('The selected team is invalid.'),
             'model.required' => __('The model is required.'),
+            'provider.required' => __('The provider is required.'),
             'confidence_threshold.required' => __('The confidence threshold is required.'),
             'confidence_threshold.min' => __('The confidence threshold must be between 0 and 1.'),
             'confidence_threshold.max' => __('The confidence threshold must be between 0 and 1.'),

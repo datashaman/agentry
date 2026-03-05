@@ -10,9 +10,8 @@ test('can create an agent', function () {
     expect($agent)->toBeInstanceOf(Agent::class)
         ->and($agent->name)->not->toBeEmpty()
         ->and($agent->model)->not->toBeEmpty()
+        ->and($agent->provider)->not->toBeEmpty()
         ->and($agent->confidence_threshold)->toBeFloat()
-        ->and($agent->tools)->toBeArray()
-        ->and($agent->capabilities)->toBeArray()
         ->and($agent->status)->toBe('idle');
 
     $this->assertDatabaseHas('agents', [
@@ -51,19 +50,10 @@ test('team has many agents', function () {
     expect($team->agents)->toHaveCount(3);
 });
 
-test('agent casts tools and capabilities to arrays', function () {
-    $tools = ['code_editor', 'terminal'];
-    $capabilities = ['write_code', 'run_tests'];
+test('agent casts temperature to float', function () {
+    $agent = Agent::factory()->create(['temperature' => 0.7]);
 
-    $agent = Agent::factory()->create([
-        'tools' => $tools,
-        'capabilities' => $capabilities,
-    ]);
-
-    $fresh = $agent->fresh();
-
-    expect($fresh->tools)->toBe($tools)
-        ->and($fresh->capabilities)->toBe($capabilities);
+    expect($agent->fresh()->temperature)->toBe(0.7);
 });
 
 test('agent casts confidence_threshold to float', function () {
@@ -72,14 +62,18 @@ test('agent casts confidence_threshold to float', function () {
     expect($agent->fresh()->confidence_threshold)->toBe(0.95);
 });
 
-test('agent allows null tools and capabilities', function () {
+test('agent allows null overrides', function () {
     $agent = Agent::factory()->create([
-        'tools' => null,
-        'capabilities' => null,
+        'temperature' => null,
+        'max_steps' => null,
+        'max_tokens' => null,
+        'timeout' => null,
     ]);
 
-    expect($agent->tools)->toBeNull()
-        ->and($agent->capabilities)->toBeNull();
+    expect($agent->temperature)->toBeNull()
+        ->and($agent->max_steps)->toBeNull()
+        ->and($agent->max_tokens)->toBeNull()
+        ->and($agent->timeout)->toBeNull();
 });
 
 test('can update an agent', function () {

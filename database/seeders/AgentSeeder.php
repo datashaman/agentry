@@ -22,9 +22,8 @@ class AgentSeeder extends Seeder
             'team_id' => $team->id,
             'name' => 'Pinky Coder',
             'model' => 'claude-sonnet-4-6',
+            'provider' => 'anthropic',
             'confidence_threshold' => 0.8,
-            'tools' => ['code_editor', 'terminal', 'browser'],
-            'capabilities' => ['write_code', 'run_tests', 'create_pr'],
             'status' => 'idle',
         ]);
     }

@@ -20,9 +20,12 @@ class Agent extends Model
         'team_id',
         'name',
         'model',
+        'provider',
         'confidence_threshold',
-        'tools',
-        'capabilities',
+        'temperature',
+        'max_steps',
+        'max_tokens',
+        'timeout',
         'status',
     ];
 
@@ -32,9 +35,8 @@ class Agent extends Model
     protected function casts(): array
     {
         return [
-            'tools' => 'array',
-            'capabilities' => 'array',
             'confidence_threshold' => 'float',
+            'temperature' => 'float',
         ];
     }
 

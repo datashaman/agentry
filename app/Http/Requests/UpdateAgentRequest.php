@@ -38,6 +38,7 @@ class UpdateAgentRequest extends FormRequest
             'team_id.required' => __('Please select a team.'),
             'team_id.exists' => __('The selected team is invalid.'),
             'model.required' => __('The model is required.'),
+            'provider.required' => __('The provider is required.'),
             'confidence_threshold.required' => __('The confidence threshold is required.'),
             'confidence_threshold.min' => __('The confidence threshold must be between 0 and 1.'),
             'confidence_threshold.max' => __('The confidence threshold must be between 0 and 1.'),

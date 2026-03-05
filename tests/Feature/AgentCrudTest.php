@@ -29,9 +29,8 @@ test('agent create form displays and creates an agent', function () {
         ->set('agent_type_id', (string) $agentType->id)
         ->set('team_id', (string) $team->id)
         ->set('model', 'claude-opus-4-6')
+        ->set('provider', 'anthropic')
         ->set('confidence_threshold', '0.85')
-        ->set('tools', 'editor, terminal')
-        ->set('capabilities', 'code_review, testing')
         ->set('status', 'idle')
         ->call('createAgent')
         ->assertRedirect();
@@ -39,13 +38,12 @@ test('agent create form displays and creates an agent', function () {
     $this->assertDatabaseHas('agents', [
         'name' => 'Test Agent',
         'model' => 'claude-opus-4-6',
+        'provider' => 'anthropic',
         'status' => 'idle',
     ]);
 
     $agent = Agent::where('name', 'Test Agent')->first();
     expect($agent->confidence_threshold)->toBe(0.85)
-        ->and($agent->tools)->toBe(['editor', 'terminal'])
-        ->and($agent->capabilities)->toBe(['code_review', 'testing'])
         ->and($agent->agent_type_id)->toBe($agentType->id)
         ->and($agent->team_id)->toBe($team->id);
 });
@@ -63,10 +61,11 @@ test('agent create validates required fields', function () {
         ->set('agent_type_id', '')
         ->set('team_id', '')
         ->set('model', '')
+        ->set('provider', '')
         ->set('confidence_threshold', '')
         ->set('status', '')
         ->call('createAgent')
-        ->assertHasErrors(['name', 'agent_type_id', 'team_id', 'model', 'confidence_threshold', 'status']);
+        ->assertHasErrors(['name', 'agent_type_id', 'team_id', 'model', 'provider', 'confidence_threshold', 'status']);
 });
 
 test('agent create pre-fills agent type when passed as query param', function () {
@@ -89,6 +88,35 @@ test('unauthenticated user cannot access agent edit page', function () {
         ->assertRedirect(route('login'));
 });
 
+test('agent create with overrides saves temperature max_steps max_tokens timeout', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->withOrganization($organization)->create();
+    $team = Team::factory()->create(['organization_id' => $organization->id]);
+    $agentType = AgentType::factory()->create(['organization_id' => $organization->id]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::agents.create')
+        ->set('name', 'Override Agent')
+        ->set('agent_type_id', (string) $agentType->id)
+        ->set('team_id', (string) $team->id)
+        ->set('model', 'claude-sonnet-4')
+        ->set('provider', 'anthropic')
+        ->set('temperature', '0.7')
+        ->set('max_steps', '15')
+        ->set('max_tokens', '8192')
+        ->set('timeout', '120')
+        ->call('createAgent')
+        ->assertRedirect();
+
+    $agent = Agent::where('name', 'Override Agent')->first();
+    expect($agent)->not->toBeNull()
+        ->and($agent->temperature)->toBe(0.7)
+        ->and($agent->max_steps)->toBe(15)
+        ->and($agent->max_tokens)->toBe(8192)
+        ->and($agent->timeout)->toBe(120);
+});
+
 test('agent edit form displays pre-populated values and updates', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
@@ -99,9 +127,8 @@ test('agent edit form displays pre-populated values and updates', function () {
         'agent_type_id' => $agentType->id,
         'name' => 'Old Name',
         'model' => 'claude-sonnet-4-6',
+        'provider' => 'anthropic',
         'confidence_threshold' => 0.75,
-        'tools' => ['old_tool'],
-        'capabilities' => ['old_cap'],
         'status' => 'idle',
     ]);
 

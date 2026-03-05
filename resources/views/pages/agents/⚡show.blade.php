@@ -74,6 +74,7 @@ new #[Title('Agent')] #[Layout('layouts.app')] class extends Component {
                 <flux:badge size="sm" variant="pill">{{ $agent->agentType?->name ?? '-' }}</flux:badge>
                 <flux:text class="text-sm">{{ $agent->team?->name ?? __('No team') }}</flux:text>
                 <flux:text class="text-sm">{{ $agent->model }}</flux:text>
+                <flux:text class="text-sm">{{ $agent->provider }}</flux:text>
                 <flux:badge size="sm" variant="pill" :color="match($agent->status) { 'active' => 'green', 'idle' => 'zinc', 'error' => 'red', default => 'amber' }">{{ ucfirst($agent->status) }}</flux:badge>
                 <flux:text class="text-sm">{{ __('Confidence: :threshold', ['threshold' => round(($agent->confidence_threshold ?? 0) * 100).'%']) }}</flux:text>
             </div>
@@ -106,33 +107,38 @@ new #[Title('Agent')] #[Layout('layouts.app')] class extends Component {
         </div>
     </flux:modal>
 
-    {{-- Capabilities --}}
-    <div data-test="agent-capabilities">
-        <flux:heading size="lg">{{ __('Capabilities') }}</flux:heading>
-        @if (empty($agent->capabilities))
-            <flux:text class="mt-2">{{ __('No capabilities defined.') }}</flux:text>
-        @else
-            <div class="mt-2 flex flex-wrap gap-2">
-                @foreach ($agent->capabilities as $capability)
-                    <flux:badge size="sm" variant="pill">{{ $capability }}</flux:badge>
-                @endforeach
+    {{-- Overrides --}}
+    @if ($agent->temperature !== null || $agent->max_steps || $agent->max_tokens || $agent->timeout)
+        <div data-test="agent-overrides">
+            <flux:heading size="lg">{{ __('Overrides') }}</flux:heading>
+            <div class="mt-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                @if ($agent->temperature !== null)
+                    <div>
+                        <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('Temperature') }}</flux:text>
+                        <flux:text class="block">{{ $agent->temperature }}</flux:text>
+                    </div>
+                @endif
+                @if ($agent->max_steps)
+                    <div>
+                        <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('Max Steps') }}</flux:text>
+                        <flux:text class="block">{{ $agent->max_steps }}</flux:text>
+                    </div>
+                @endif
+                @if ($agent->max_tokens)
+                    <div>
+                        <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('Max Tokens') }}</flux:text>
+                        <flux:text class="block">{{ $agent->max_tokens }}</flux:text>
+                    </div>
+                @endif
+                @if ($agent->timeout)
+                    <div>
+                        <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('Timeout (seconds)') }}</flux:text>
+                        <flux:text class="block">{{ $agent->timeout }}</flux:text>
+                    </div>
+                @endif
             </div>
-        @endif
-    </div>
-
-    {{-- Tools --}}
-    <div data-test="agent-tools">
-        <flux:heading size="lg">{{ __('Tools') }}</flux:heading>
-        @if (empty($agent->tools))
-            <flux:text class="mt-2">{{ __('No tools configured.') }}</flux:text>
-        @else
-            <div class="mt-2 flex flex-wrap gap-2">
-                @foreach ($agent->tools as $tool)
-                    <flux:badge size="sm" variant="pill">{{ $tool }}</flux:badge>
-                @endforeach
-            </div>
-        @endif
-    </div>
+        </div>
+    @endif
 
     {{-- Currently Assigned Work --}}
     <div data-test="agent-assignments">

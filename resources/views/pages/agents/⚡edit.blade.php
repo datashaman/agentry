@@ -24,9 +24,15 @@ new #[Title('Edit Agent')] #[Layout('layouts.app')] class extends Component {
 
     public string $confidence_threshold = '';
 
-    public string $tools = '';
+    public string $provider = '';
 
-    public string $capabilities = '';
+    public string $temperature = '';
+
+    public string $max_steps = '';
+
+    public string $max_tokens = '';
+
+    public string $timeout = '';
 
     public string $status = '';
 
@@ -37,8 +43,11 @@ new #[Title('Edit Agent')] #[Layout('layouts.app')] class extends Component {
         $this->team_id = (string) $this->agent->team_id;
         $this->model = $this->agent->model;
         $this->confidence_threshold = (string) ($this->agent->confidence_threshold ?? 0.8);
-        $this->tools = $this->agent->tools ? implode(', ', $this->agent->tools) : '';
-        $this->capabilities = $this->agent->capabilities ? implode(', ', $this->agent->capabilities) : '';
+        $this->provider = $this->agent->provider ?? '';
+        $this->temperature = $this->agent->temperature !== null ? (string) $this->agent->temperature : '';
+        $this->max_steps = $this->agent->max_steps !== null ? (string) $this->agent->max_steps : '';
+        $this->max_tokens = $this->agent->max_tokens !== null ? (string) $this->agent->max_tokens : '';
+        $this->timeout = $this->agent->timeout !== null ? (string) $this->agent->timeout : '';
         $this->status = $this->agent->status ?? 'idle';
     }
 
@@ -55,9 +64,12 @@ new #[Title('Edit Agent')] #[Layout('layouts.app')] class extends Component {
             'agent_type_id' => $validated['agent_type_id'],
             'team_id' => $validated['team_id'],
             'model' => $validated['model'],
+            'provider' => $validated['provider'],
             'confidence_threshold' => (float) $validated['confidence_threshold'],
-            'tools' => $validated['tools'] ? array_map('trim', explode(',', $validated['tools'])) : [],
-            'capabilities' => $validated['capabilities'] ? array_map('trim', explode(',', $validated['capabilities'])) : [],
+            'temperature' => $validated['temperature'] !== '' ? (float) $validated['temperature'] : null,
+            'max_steps' => $validated['max_steps'] !== '' ? (int) $validated['max_steps'] : null,
+            'max_tokens' => $validated['max_tokens'] !== '' ? (int) $validated['max_tokens'] : null,
+            'timeout' => $validated['timeout'] !== '' ? (int) $validated['timeout'] : null,
             'status' => $validated['status'],
         ]);
 
@@ -135,25 +147,47 @@ new #[Title('Edit Agent')] #[Layout('layouts.app')] class extends Component {
         </flux:field>
 
         <flux:field>
+            <flux:label>{{ __('Provider') }}</flux:label>
+            <flux:input wire:model="provider" data-test="agent-provider-input" placeholder="e.g. anthropic, openai" required />
+            <flux:description>{{ __('AI provider (e.g. anthropic, openai, google).') }}</flux:description>
+            <flux:error name="provider" />
+        </flux:field>
+
+        <flux:field>
             <flux:label>{{ __('Confidence Threshold') }}</flux:label>
             <flux:input wire:model="confidence_threshold" type="number" step="0.01" min="0" max="1" data-test="agent-confidence-input" required />
             <flux:description>{{ __('Value between 0 and 1 (e.g. 0.8 for 80%).') }}</flux:description>
             <flux:error name="confidence_threshold" />
         </flux:field>
 
-        <flux:field>
-            <flux:label>{{ __('Tools') }}</flux:label>
-            <flux:input wire:model="tools" data-test="agent-tools-input" placeholder="tool1, tool2, ..." />
-            <flux:description>{{ __('Comma-separated list of tools.') }}</flux:description>
-            <flux:error name="tools" />
-        </flux:field>
+        <flux:heading size="md" class="mt-6">{{ __('Optional Overrides') }}</flux:heading>
+        <flux:text class="mb-4 block text-sm text-zinc-500 dark:text-zinc-400">{{ __('Override agent type defaults (temperature, max steps, etc.).') }}</flux:text>
 
-        <flux:field>
-            <flux:label>{{ __('Capabilities') }}</flux:label>
-            <flux:input wire:model="capabilities" data-test="agent-capabilities-input" placeholder="capability1, capability2, ..." />
-            <flux:description>{{ __('Comma-separated list of capabilities.') }}</flux:description>
-            <flux:error name="capabilities" />
-        </flux:field>
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <flux:field>
+                <flux:label>{{ __('Temperature') }}</flux:label>
+                <flux:input wire:model="temperature" type="number" step="0.01" data-test="agent-temperature-input" placeholder="Provider-dependent" />
+                <flux:error name="temperature" />
+            </flux:field>
+
+            <flux:field>
+                <flux:label>{{ __('Max Steps') }}</flux:label>
+                <flux:input wire:model="max_steps" type="number" min="1" data-test="agent-max-steps-input" placeholder="e.g. 10" />
+                <flux:error name="max_steps" />
+            </flux:field>
+
+            <flux:field>
+                <flux:label>{{ __('Max Tokens') }}</flux:label>
+                <flux:input wire:model="max_tokens" type="number" min="1" data-test="agent-max-tokens-input" placeholder="e.g. 4096" />
+                <flux:error name="max_tokens" />
+            </flux:field>
+
+            <flux:field>
+                <flux:label>{{ __('Timeout (seconds)') }}</flux:label>
+                <flux:input wire:model="timeout" type="number" min="1" data-test="agent-timeout-input" placeholder="e.g. 60" />
+                <flux:error name="timeout" />
+            </flux:field>
+        </div>
 
         <flux:field>
             <flux:label>{{ __('Status') }}</flux:label>

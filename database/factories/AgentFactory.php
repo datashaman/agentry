@@ -23,9 +23,8 @@ class AgentFactory extends Factory
             'team_id' => Team::factory(),
             'name' => fake()->unique()->words(2, true),
             'model' => fake()->randomElement(['claude-sonnet-4-6', 'claude-opus-4-6', 'claude-haiku-4-5']),
+            'provider' => fake()->randomElement(['anthropic', 'openai', 'google']),
             'confidence_threshold' => fake()->randomFloat(2, 0.5, 1.0),
-            'tools' => [fake()->word(), fake()->word()],
-            'capabilities' => [fake()->word(), fake()->word()],
             'status' => 'idle',
         ];
     }
