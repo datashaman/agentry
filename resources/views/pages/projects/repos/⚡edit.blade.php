@@ -1,13 +1,16 @@
 <?php
 
 use App\Models\Project;
+use App\Models\Repo;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Create Repository')] #[Layout('layouts.app')] class extends Component {
+new #[Title('Edit Repository')] #[Layout('layouts.app')] class extends Component {
     public Project $project;
+
+    public Repo $repo;
 
     public string $name = '';
 
@@ -19,7 +22,16 @@ new #[Title('Create Repository')] #[Layout('layouts.app')] class extends Compone
 
     public string $tags = '';
 
-    public function createRepo(): void
+    public function mount(): void
+    {
+        $this->name = $this->repo->name;
+        $this->url = $this->repo->url;
+        $this->primary_language = $this->repo->primary_language ?? '';
+        $this->default_branch = $this->repo->default_branch ?? 'main';
+        $this->tags = $this->repo->tags ? implode(', ', $this->repo->tags) : '';
+    }
+
+    public function updateRepo(): void
     {
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -33,7 +45,7 @@ new #[Title('Create Repository')] #[Layout('layouts.app')] class extends Compone
             ? array_map('trim', explode(',', $validated['tags']))
             : null;
 
-        $repo = $this->project->repos()->create([
+        $this->repo->update([
             'name' => $validated['name'],
             'url' => $validated['url'],
             'primary_language' => $validated['primary_language'] ?: null,
@@ -41,7 +53,7 @@ new #[Title('Create Repository')] #[Layout('layouts.app')] class extends Compone
             'tags' => $tagsArray ? array_values(array_filter($tagsArray)) : null,
         ]);
 
-        $this->redirect(route('projects.repos.show', [$this->project, $repo]), navigate: true);
+        $this->redirect(route('projects.repos.show', [$this->project, $this->repo]), navigate: true);
     }
 
     #[Computed]
@@ -55,11 +67,11 @@ new #[Title('Create Repository')] #[Layout('layouts.app')] class extends Compone
     <x-breadcrumbs :organization="$this->organization" :project="$project" />
 
     <div>
-        <flux:heading size="xl">{{ __('Create Repository') }}</flux:heading>
-        <flux:text class="mt-1">{{ __('Add a new repository to :project.', ['project' => $project->name]) }}</flux:text>
+        <flux:heading size="xl">{{ __('Edit Repository') }}</flux:heading>
+        <flux:text class="mt-1">{{ __('Update repository ":name".', ['name' => $repo->name]) }}</flux:text>
     </div>
 
-    <form wire:submit="createRepo" class="max-w-xl space-y-6" data-test="create-repo-form">
+    <form wire:submit="updateRepo" class="max-w-xl space-y-6" data-test="edit-repo-form">
         <flux:field>
             <flux:label>{{ __('Name') }}</flux:label>
             <flux:input wire:model="name" data-test="repo-name-input" required />
@@ -92,8 +104,8 @@ new #[Title('Create Repository')] #[Layout('layouts.app')] class extends Compone
         </flux:field>
 
         <div class="flex items-center gap-2">
-            <flux:button type="submit" variant="primary" data-test="save-repo-button">{{ __('Create Repository') }}</flux:button>
-            <a href="{{ route('projects.repos.index', $project) }}" wire:navigate>
+            <flux:button type="submit" variant="primary" data-test="save-repo-button">{{ __('Update Repository') }}</flux:button>
+            <a href="{{ route('projects.repos.show', [$project, $repo]) }}" wire:navigate>
                 <flux:button>{{ __('Cancel') }}</flux:button>
             </a>
         </div>
