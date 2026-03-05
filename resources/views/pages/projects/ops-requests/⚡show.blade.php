@@ -158,7 +158,7 @@ new #[Title('Ops Request Detail')] #[Layout('layouts.app')] class extends Compon
                 @foreach ($opsRequest->runbooks as $runbook)
                     <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700" data-test="runbook-item">
                         <div class="flex items-center gap-2">
-                            <flux:text class="font-medium">{{ $runbook->title }}</flux:text>
+                            <a href="{{ route('projects.ops-requests.runbooks.show', [$project, $opsRequest, $runbook]) }}" wire:navigate class="font-medium hover:underline" data-test="runbook-link">{{ $runbook->title }}</a>
                             <flux:badge size="sm" variant="pill">{{ $runbook->status }}</flux:badge>
                         </div>
                         @if ($runbook->description)
