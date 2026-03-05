@@ -132,7 +132,7 @@ class Story extends Model
      */
     public function tasks(): HasMany
     {
-        return $this->hasMany(Task::class);
+        return $this->hasMany(Task::class)->orderBy('position');
     }
 
     /**

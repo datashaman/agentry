@@ -5,7 +5,10 @@ use App\Models\HitlEscalation;
 use App\Models\Label;
 use App\Models\Project;
 use App\Models\Story;
+use App\Models\Subtask;
+use App\Models\Task;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -116,6 +119,80 @@ new #[Title('Story')] #[Layout('layouts.app')] class extends Component {
         ]);
 
         $this->story->load('hitlEscalations.raisedByAgent');
+    }
+
+    public function updateTaskStatus(int $taskId, string $status): void
+    {
+        Validator::validate(
+            ['status' => $status],
+            ['status' => 'required|string|in:' . implode(',', Task::STATUSES)],
+            ['status.in' => __('The selected status is invalid.')]
+        );
+
+        $task = Task::where('story_id', $this->story->id)->findOrFail($taskId);
+        $task->update(['status' => $status]);
+        $this->story->load('tasks.subtasks');
+    }
+
+    public function updateSubtaskStatus(int $subtaskId, string $status): void
+    {
+        Validator::validate(
+            ['status' => $status],
+            ['status' => 'required|string|in:' . implode(',', Subtask::STATUSES)],
+            ['status.in' => __('The selected status is invalid.')]
+        );
+
+        $subtask = Subtask::whereHas('task', fn ($q) => $q->where('story_id', $this->story->id))->findOrFail($subtaskId);
+        $subtask->update(['status' => $status]);
+        $this->story->load('tasks.subtasks');
+    }
+
+    public function moveTaskUp(int $taskId): void
+    {
+        $task = Task::where('story_id', $this->story->id)->findOrFail($taskId);
+        $prev = Task::where('story_id', $this->story->id)->where('position', '<', $task->position)->orderBy('position', 'desc')->first();
+        if ($prev) {
+            [$task->position, $prev->position] = [$prev->position, $task->position];
+            $task->save();
+            $prev->save();
+        }
+        $this->story->load('tasks.subtasks');
+    }
+
+    public function moveTaskDown(int $taskId): void
+    {
+        $task = Task::where('story_id', $this->story->id)->findOrFail($taskId);
+        $next = Task::where('story_id', $this->story->id)->where('position', '>', $task->position)->orderBy('position', 'asc')->first();
+        if ($next) {
+            [$task->position, $next->position] = [$next->position, $task->position];
+            $task->save();
+            $next->save();
+        }
+        $this->story->load('tasks.subtasks');
+    }
+
+    public function moveSubtaskUp(int $subtaskId): void
+    {
+        $subtask = Subtask::whereHas('task', fn ($q) => $q->where('story_id', $this->story->id))->findOrFail($subtaskId);
+        $prev = Subtask::where('task_id', $subtask->task_id)->where('position', '<', $subtask->position)->orderBy('position', 'desc')->first();
+        if ($prev) {
+            [$subtask->position, $prev->position] = [$prev->position, $subtask->position];
+            $subtask->save();
+            $prev->save();
+        }
+        $this->story->load('tasks.subtasks');
+    }
+
+    public function moveSubtaskDown(int $subtaskId): void
+    {
+        $subtask = Subtask::whereHas('task', fn ($q) => $q->where('story_id', $this->story->id))->findOrFail($subtaskId);
+        $next = Subtask::where('task_id', $subtask->task_id)->where('position', '>', $subtask->position)->orderBy('position', 'asc')->first();
+        if ($next) {
+            [$subtask->position, $next->position] = [$next->position, $subtask->position];
+            $subtask->save();
+            $next->save();
+        }
+        $this->story->load('tasks.subtasks');
     }
 
     #[Computed]
@@ -276,21 +353,54 @@ new #[Title('Story')] #[Layout('layouts.app')] class extends Component {
             <flux:heading size="lg">{{ __('Tasks') }}</flux:heading>
             <div class="mt-2 space-y-3">
                 @foreach ($story->tasks as $task)
-                    <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700" data-test="task-item">
-                        <div class="flex items-center gap-2">
-                            <flux:text class="font-medium">{{ $task->title }}</flux:text>
-                            <flux:badge size="sm" variant="pill">{{ $task->status }}</flux:badge>
+                    <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700" data-test="task-item" x-data="{ expanded: {{ $task->subtasks->isNotEmpty() ? 'true' : 'false' }} }">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <div class="flex items-center gap-1">
+                                <flux:button size="xs" variant="ghost" icon="chevron-up" wire:click="moveTaskUp({{ $task->id }})" :disabled="$loop->first" data-test="task-move-up-button" title="{{ __('Move up') }}" />
+                                <flux:button size="xs" variant="ghost" icon="chevron-down" wire:click="moveTaskDown({{ $task->id }})" :disabled="$loop->last" data-test="task-move-down-button" title="{{ __('Move down') }}" />
+                            </div>
+                            @if ($task->subtasks->isNotEmpty())
+                                <button type="button" @click="expanded = !expanded" class="flex items-center gap-1 text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100" data-test="task-expand-toggle">
+                                    <flux:icon.chevron-down class="size-4" x-show="expanded" />
+                                    <flux:icon.chevron-right class="size-4" x-show="!expanded" />
+                                    {{ $task->subtasks->count() }} {{ Str::plural('subtask', $task->subtasks->count()) }}
+                                </button>
+                            @endif
+                            <flux:text class="flex-1 font-medium">{{ $task->title }}</flux:text>
                             <flux:badge size="sm" variant="pill">{{ $task->type }}</flux:badge>
+                            <flux:badge size="sm" variant="pill">{{ str_replace('_', ' ', $task->status) }}</flux:badge>
+                            <select
+                                wire:change="$wire.updateTaskStatus({{ $task->id }}, $event.target.value)"
+                                class="rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-800"
+                                data-test="task-status-select"
+                            >
+                                @foreach (\App\Models\Task::STATUSES as $s)
+                                    <option value="{{ $s }}" @selected($task->status === $s)>{{ __(str_replace('_', ' ', ucfirst($s))) }}</option>
+                                @endforeach
+                            </select>
                         </div>
                         @if ($task->subtasks->isNotEmpty())
-                            <ul class="ml-4 mt-2 space-y-1">
+                            <div x-show="expanded" class="ml-6 mt-2 space-y-1 border-l-2 border-zinc-200 pl-4 dark:border-zinc-700">
                                 @foreach ($task->subtasks as $subtask)
-                                    <li class="flex items-center gap-2 text-sm" data-test="subtask-item">
-                                        <flux:badge size="sm" variant="pill">{{ $subtask->status }}</flux:badge>
-                                        <span>{{ $subtask->title }}</span>
-                                    </li>
+                                    <div class="flex flex-wrap items-center gap-2 text-sm" data-test="subtask-item">
+                                        <div class="flex items-center gap-1">
+                                            <flux:button size="xs" variant="ghost" icon="chevron-up" wire:click="moveSubtaskUp({{ $subtask->id }})" :disabled="$loop->first" data-test="subtask-move-up-button" title="{{ __('Move up') }}" />
+                                            <flux:button size="xs" variant="ghost" icon="chevron-down" wire:click="moveSubtaskDown({{ $subtask->id }})" :disabled="$loop->last" data-test="subtask-move-down-button" title="{{ __('Move down') }}" />
+                                        </div>
+                                        <flux:badge size="sm" variant="pill">{{ str_replace('_', ' ', $subtask->status) }}</flux:badge>
+                                        <span class="flex-1">{{ $subtask->title }}</span>
+                                        <select
+                                            wire:change="$wire.updateSubtaskStatus({{ $subtask->id }}, $event.target.value)"
+                                            class="rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-800"
+                                            data-test="subtask-status-select"
+                                        >
+                                            @foreach (\App\Models\Subtask::STATUSES as $s)
+                                                <option value="{{ $s }}" @selected($subtask->status === $s)>{{ __(str_replace('_', ' ', ucfirst($s))) }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                 @endforeach
-                            </ul>
+                            </div>
                         @endif
                     </div>
                 @endforeach

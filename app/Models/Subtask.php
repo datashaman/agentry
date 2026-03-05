@@ -12,6 +12,13 @@ class Subtask extends Model
     use HasFactory;
 
     /**
+     * Valid statuses for subtasks.
+     *
+     * @var list<string>
+     */
+    public const STATUSES = ['pending', 'in_progress', 'completed'];
+
+    /**
      * @var list<string>
      */
     protected $fillable = [

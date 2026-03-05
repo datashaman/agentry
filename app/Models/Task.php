@@ -14,6 +14,13 @@ class Task extends Model
     use HasFactory;
 
     /**
+     * Valid statuses for tasks.
+     *
+     * @var list<string>
+     */
+    public const STATUSES = ['pending', 'in_progress', 'completed'];
+
+    /**
      * @var list<string>
      */
     protected $fillable = [
@@ -47,7 +54,7 @@ class Task extends Model
      */
     public function subtasks(): HasMany
     {
-        return $this->hasMany(Subtask::class);
+        return $this->hasMany(Subtask::class)->orderBy('position');
     }
 
     /**
