@@ -2,6 +2,7 @@
 
 use App\Models\Project;
 use App\Models\Story;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -10,11 +11,218 @@ new #[Title('Story')] #[Layout('layouts.app')] class extends Component {
     public Project $project;
 
     public Story $story;
+
+    public function mount(): void
+    {
+        $this->story->load([
+            'epic',
+            'milestone',
+            'assignedAgent',
+            'critiques.agent',
+            'tasks.subtasks',
+            'hitlEscalations.raisedByAgent',
+            'changeSets.pullRequests',
+            'blockedByDependencies.blocker',
+        ]);
+    }
+
+    #[Computed]
+    public function organization(): ?\App\Models\Organization
+    {
+        return $this->project->organization;
+    }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
-    <x-breadcrumbs :organization="$project->organization" :project="$project" />
+    <x-breadcrumbs :organization="$this->organization" :project="$project" />
 
-    <flux:heading size="xl">{{ $story->title }}</flux:heading>
-    <flux:text>{{ __('Story detail coming soon.') }}</flux:text>
+    {{-- Story Header --}}
+    <div data-test="story-header">
+        <flux:heading size="xl">{{ $story->title }}</flux:heading>
+        <div class="mt-3 flex flex-wrap gap-3">
+            <flux:badge size="sm" variant="pill" data-test="story-status">{{ str_replace('_', ' ', $story->status) }}</flux:badge>
+            <flux:badge size="sm" variant="pill" data-test="story-priority">P{{ $story->priority }}</flux:badge>
+            @if ($story->story_points)
+                <flux:badge size="sm" variant="pill" data-test="story-points">{{ $story->story_points }} {{ Str::plural('point', $story->story_points) }}</flux:badge>
+            @endif
+            @if ($story->due_date)
+                <flux:badge size="sm" variant="pill" data-test="story-due-date">{{ $story->due_date->format('M j, Y') }}</flux:badge>
+            @endif
+            @if ($story->assignedAgent)
+                <flux:badge size="sm" variant="pill" data-test="story-agent">{{ $story->assignedAgent->name }}</flux:badge>
+            @endif
+        </div>
+    </div>
+
+    {{-- Description & Acceptance Criteria --}}
+    @if ($story->description)
+        <div data-test="story-description">
+            <flux:heading size="lg">{{ __('Description') }}</flux:heading>
+            <flux:text class="mt-2 whitespace-pre-wrap">{{ $story->description }}</flux:text>
+        </div>
+    @endif
+
+    {{-- Epic & Milestone --}}
+    @if ($story->epic || $story->milestone)
+        <div class="flex flex-wrap gap-6" data-test="story-context">
+            @if ($story->epic)
+                <div>
+                    <flux:text class="font-medium text-zinc-500 dark:text-zinc-400">{{ __('Epic') }}</flux:text>
+                    <flux:text>{{ $story->epic->title }}</flux:text>
+                </div>
+            @endif
+            @if ($story->milestone)
+                <div>
+                    <flux:text class="font-medium text-zinc-500 dark:text-zinc-400">{{ __('Milestone') }}</flux:text>
+                    <flux:text>{{ $story->milestone->title }}</flux:text>
+                </div>
+            @endif
+        </div>
+    @endif
+
+    {{-- Critiques --}}
+    @if ($story->critiques->isNotEmpty())
+        <div data-test="story-critiques">
+            <flux:heading size="lg">{{ __('Critiques') }}</flux:heading>
+            <div class="mt-2 space-y-3">
+                @foreach ($story->critiques as $critique)
+                    <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700" data-test="critique-item">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <flux:badge size="sm" variant="pill">{{ $critique->critic_type }}</flux:badge>
+                            <flux:badge size="sm" variant="pill">{{ $critique->severity }}</flux:badge>
+                            <flux:badge size="sm" variant="pill">{{ $critique->disposition }}</flux:badge>
+                            <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('Rev :rev', ['rev' => $critique->revision]) }}</flux:text>
+                        </div>
+                        @if ($critique->issues && count($critique->issues) > 0)
+                            <div class="mt-2">
+                                <flux:text class="text-sm font-medium">{{ __('Issues') }}</flux:text>
+                                <ul class="ml-4 list-disc text-sm">
+                                    @foreach ($critique->issues as $issue)
+                                        <li>{{ $issue }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+                        @if ($critique->questions && count($critique->questions) > 0)
+                            <div class="mt-2">
+                                <flux:text class="text-sm font-medium">{{ __('Questions') }}</flux:text>
+                                <ul class="ml-4 list-disc text-sm">
+                                    @foreach ($critique->questions as $question)
+                                        <li>{{ $question }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+                        @if ($critique->recommendations && count($critique->recommendations) > 0)
+                            <div class="mt-2">
+                                <flux:text class="text-sm font-medium">{{ __('Recommendations') }}</flux:text>
+                                <ul class="ml-4 list-disc text-sm">
+                                    @foreach ($critique->recommendations as $recommendation)
+                                        <li>{{ $recommendation }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+    {{-- Tasks & Subtasks --}}
+    @if ($story->tasks->isNotEmpty())
+        <div data-test="story-tasks">
+            <flux:heading size="lg">{{ __('Tasks') }}</flux:heading>
+            <div class="mt-2 space-y-3">
+                @foreach ($story->tasks as $task)
+                    <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700" data-test="task-item">
+                        <div class="flex items-center gap-2">
+                            <flux:text class="font-medium">{{ $task->title }}</flux:text>
+                            <flux:badge size="sm" variant="pill">{{ $task->status }}</flux:badge>
+                            <flux:badge size="sm" variant="pill">{{ $task->type }}</flux:badge>
+                        </div>
+                        @if ($task->subtasks->isNotEmpty())
+                            <ul class="ml-4 mt-2 space-y-1">
+                                @foreach ($task->subtasks as $subtask)
+                                    <li class="flex items-center gap-2 text-sm" data-test="subtask-item">
+                                        <flux:badge size="sm" variant="pill">{{ $subtask->status }}</flux:badge>
+                                        <span>{{ $subtask->title }}</span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+    {{-- HITL Escalations --}}
+    @if ($story->hitlEscalations->isNotEmpty())
+        <div data-test="story-escalations">
+            <flux:heading size="lg">{{ __('HITL Escalations') }}</flux:heading>
+            <div class="mt-2 space-y-3">
+                @foreach ($story->hitlEscalations as $escalation)
+                    <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700" data-test="escalation-item">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <flux:badge size="sm" variant="pill">{{ $escalation->trigger_type }}</flux:badge>
+                            @if ($escalation->isResolved())
+                                <flux:badge size="sm" variant="pill" color="green">{{ __('Resolved') }}</flux:badge>
+                            @else
+                                <flux:badge size="sm" variant="pill" color="red">{{ __('Unresolved') }}</flux:badge>
+                            @endif
+                        </div>
+                        <flux:text class="mt-1 text-sm">{{ $escalation->reason }}</flux:text>
+                        @if ($escalation->raisedByAgent)
+                            <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ __('Raised by :agent', ['agent' => $escalation->raisedByAgent->name]) }}</flux:text>
+                        @endif
+                        @if ($escalation->isResolved())
+                            <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ __('Resolution: :resolution', ['resolution' => $escalation->resolution]) }}</flux:text>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+    {{-- Change Sets & PRs --}}
+    @if ($story->changeSets->isNotEmpty())
+        <div data-test="story-changesets">
+            <flux:heading size="lg">{{ __('Change Sets') }}</flux:heading>
+            <div class="mt-2 space-y-3">
+                @foreach ($story->changeSets as $changeSet)
+                    <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700" data-test="changeset-item">
+                        <div class="flex items-center gap-2">
+                            <flux:text class="font-medium">{{ $changeSet->summary }}</flux:text>
+                            <flux:badge size="sm" variant="pill">{{ $changeSet->status }}</flux:badge>
+                        </div>
+                        @if ($changeSet->pullRequests->isNotEmpty())
+                            <ul class="ml-4 mt-2 space-y-1">
+                                @foreach ($changeSet->pullRequests as $pr)
+                                    <li class="text-sm" data-test="pr-item">
+                                        <flux:text>{{ $pr->title ?? __('PR #:number', ['number' => $pr->provider_pr_number ?? $pr->id]) }}</flux:text>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+    {{-- Dependencies --}}
+    @if ($story->blockedByDependencies->isNotEmpty())
+        <div data-test="story-dependencies">
+            <flux:heading size="lg">{{ __('Dependencies') }}</flux:heading>
+            <div class="mt-2 space-y-2">
+                @foreach ($story->blockedByDependencies as $dependency)
+                    <div class="flex items-center gap-2 text-sm" data-test="dependency-item">
+                        <flux:text>{{ __('Blocked by:') }}</flux:text>
+                        <flux:text class="font-medium">{{ $dependency->blocker?->title ?? __('Unknown') }}</flux:text>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
 </div>
