@@ -179,7 +179,7 @@ new #[Title('Dashboard')] #[Layout('layouts.app')] class extends Component {
                     <flux:heading size="lg">{{ __('Projects') }}</flux:heading>
                     <div class="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                         @foreach ($this->projects as $project)
-                            <a href="{{ route('projects.index') }}" wire:navigate class="block rounded-xl border border-zinc-200 p-4 transition hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500" data-test="project-card">
+                            <a href="{{ route('projects.show', $project) }}" wire:navigate class="block rounded-xl border border-zinc-200 p-4 transition hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500" data-test="project-card">
                                 <flux:heading size="sm">{{ $project->name }}</flux:heading>
                                 <flux:text class="mt-1 text-sm">{{ $project->slug }}</flux:text>
                             </a>

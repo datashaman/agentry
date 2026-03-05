@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Project extends Model
 {
@@ -44,6 +45,14 @@ class Project extends Model
     public function epics(): HasMany
     {
         return $this->hasMany(Epic::class);
+    }
+
+    /**
+     * @return HasManyThrough<Story, Epic, $this>
+     */
+    public function stories(): HasManyThrough
+    {
+        return $this->hasManyThrough(Story::class, Epic::class);
     }
 
     /**
