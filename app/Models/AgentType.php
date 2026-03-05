@@ -22,6 +22,12 @@ class AgentType extends Model
         'description',
         'instructions',
         'tools',
+        'default_model',
+        'default_provider',
+        'default_temperature',
+        'default_max_steps',
+        'default_max_tokens',
+        'default_timeout',
     ];
 
     /**
@@ -39,6 +45,7 @@ class AgentType extends Model
     {
         return [
             'tools' => 'array',
+            'default_temperature' => 'float',
         ];
     }
 

@@ -18,6 +18,18 @@ new #[Title('New Agent Type')] #[Layout('layouts.app')] class extends Component 
 
     public string $tools = '';
 
+    public string $default_model = '';
+
+    public string $default_provider = '';
+
+    public string $default_temperature = '';
+
+    public string $default_max_steps = '';
+
+    public string $default_max_tokens = '';
+
+    public string $default_timeout = '';
+
     public function createAgentType(): void
     {
         $org = $this->organization;
@@ -36,6 +48,12 @@ new #[Title('New Agent Type')] #[Layout('layouts.app')] class extends Component 
             'description' => $validated['description'] ?: null,
             'instructions' => $validated['instructions'] ?: null,
             'tools' => $validated['tools'] ? array_map('trim', explode(',', $validated['tools'])) : [],
+            'default_model' => $validated['default_model'] ?: null,
+            'default_provider' => $validated['default_provider'] ?: null,
+            'default_temperature' => $validated['default_temperature'] !== '' ? (float) $validated['default_temperature'] : null,
+            'default_max_steps' => $validated['default_max_steps'] !== '' ? (int) $validated['default_max_steps'] : null,
+            'default_max_tokens' => $validated['default_max_tokens'] !== '' ? (int) $validated['default_max_tokens'] : null,
+            'default_timeout' => $validated['default_timeout'] !== '' ? (int) $validated['default_timeout'] : null,
         ]);
 
         $this->redirect(route('agent-types.show', $agentType), navigate: true);
@@ -89,6 +107,50 @@ new #[Title('New Agent Type')] #[Layout('layouts.app')] class extends Component 
             <flux:description>{{ __('Comma-separated list of tool IDs this type can use.') }}</flux:description>
             <flux:error name="tools" />
         </flux:field>
+
+        <flux:heading size="md" class="mt-6">{{ __('Default Config') }}</flux:heading>
+        <flux:text class="mb-4 block text-sm text-zinc-500 dark:text-zinc-400">{{ __('Optional defaults that agents of this type can inherit.') }}</flux:text>
+
+        <div class="grid gap-6 sm:grid-cols-2">
+            <flux:field>
+                <flux:label>{{ __('Default Model') }}</flux:label>
+                <flux:input wire:model="default_model" data-test="agent-type-default-model-input" placeholder="e.g. claude-sonnet-4" />
+                <flux:error name="default_model" />
+            </flux:field>
+
+            <flux:field>
+                <flux:label>{{ __('Default Provider') }}</flux:label>
+                <flux:input wire:model="default_provider" data-test="agent-type-default-provider-input" placeholder="e.g. anthropic" />
+                <flux:error name="default_provider" />
+            </flux:field>
+        </div>
+
+        <div class="grid gap-6 sm:grid-cols-3">
+            <flux:field>
+                <flux:label>{{ __('Default Temperature') }}</flux:label>
+                <flux:input wire:model="default_temperature" type="number" step="0.01" data-test="agent-type-default-temperature-input" placeholder="Provider-dependent" />
+                <flux:description>{{ __('Provider-dependent; some providers ignore this.') }}</flux:description>
+                <flux:error name="default_temperature" />
+            </flux:field>
+
+            <flux:field>
+                <flux:label>{{ __('Default Max Steps') }}</flux:label>
+                <flux:input wire:model="default_max_steps" type="number" min="1" data-test="agent-type-default-max-steps-input" placeholder="e.g. 10" />
+                <flux:error name="default_max_steps" />
+            </flux:field>
+
+            <flux:field>
+                <flux:label>{{ __('Default Max Tokens') }}</flux:label>
+                <flux:input wire:model="default_max_tokens" type="number" min="1" data-test="agent-type-default-max-tokens-input" placeholder="e.g. 4096" />
+                <flux:error name="default_max_tokens" />
+            </flux:field>
+
+            <flux:field>
+                <flux:label>{{ __('Default Timeout (seconds)') }}</flux:label>
+                <flux:input wire:model="default_timeout" type="number" min="1" data-test="agent-type-default-timeout-input" placeholder="e.g. 60" />
+                <flux:error name="default_timeout" />
+            </flux:field>
+        </div>
 
         <div class="flex items-center gap-2">
             <flux:button type="submit" variant="primary" data-test="save-agent-type-button">{{ __('Create Agent Type') }}</flux:button>

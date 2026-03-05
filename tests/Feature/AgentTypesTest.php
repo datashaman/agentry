@@ -121,6 +121,35 @@ test('create agent type form displays and creates an agent type', function () {
         ->and($agentType->tools)->toBe(['planning', 'estimation']);
 });
 
+test('create agent type with default config values', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->withOrganization($organization)->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::agent-types.create')
+        ->set('name', 'Coder')
+        ->set('slug', 'coder')
+        ->set('default_model', 'claude-sonnet-4')
+        ->set('default_provider', 'anthropic')
+        ->set('default_temperature', '0.7')
+        ->set('default_max_steps', '10')
+        ->set('default_max_tokens', '4096')
+        ->set('default_timeout', '120')
+        ->call('createAgentType')
+        ->assertRedirect();
+
+    $agentType = AgentType::where('organization_id', $organization->id)->where('slug', 'coder')->first();
+
+    expect($agentType)->not->toBeNull()
+        ->and($agentType->default_model)->toBe('claude-sonnet-4')
+        ->and($agentType->default_provider)->toBe('anthropic')
+        ->and($agentType->default_temperature)->toBe(0.7)
+        ->and($agentType->default_max_steps)->toBe(10)
+        ->and($agentType->default_max_tokens)->toBe(4096)
+        ->and($agentType->default_timeout)->toBe(120);
+});
+
 test('create agent type validates required fields', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();

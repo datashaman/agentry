@@ -93,6 +93,51 @@ new #[Title('Agent Type')] #[Layout('layouts.app')] class extends Component {
         @endif
     </div>
 
+    {{-- Default Config --}}
+    @if ($agentType->default_model || $agentType->default_provider || $agentType->default_temperature !== null || $agentType->default_max_steps || $agentType->default_max_tokens || $agentType->default_timeout)
+        <div data-test="agent-type-default-config">
+            <flux:heading size="lg">{{ __('Default Config') }}</flux:heading>
+            <div class="mt-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                @if ($agentType->default_model)
+                    <div>
+                        <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('Model') }}</flux:text>
+                        <flux:text class="block">{{ $agentType->default_model }}</flux:text>
+                    </div>
+                @endif
+                @if ($agentType->default_provider)
+                    <div>
+                        <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('Provider') }}</flux:text>
+                        <flux:text class="block">{{ $agentType->default_provider }}</flux:text>
+                    </div>
+                @endif
+                @if ($agentType->default_temperature !== null)
+                    <div>
+                        <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('Temperature') }}</flux:text>
+                        <flux:text class="block">{{ $agentType->default_temperature }}</flux:text>
+                    </div>
+                @endif
+                @if ($agentType->default_max_steps)
+                    <div>
+                        <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('Max Steps') }}</flux:text>
+                        <flux:text class="block">{{ $agentType->default_max_steps }}</flux:text>
+                    </div>
+                @endif
+                @if ($agentType->default_max_tokens)
+                    <div>
+                        <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('Max Tokens') }}</flux:text>
+                        <flux:text class="block">{{ $agentType->default_max_tokens }}</flux:text>
+                    </div>
+                @endif
+                @if ($agentType->default_timeout)
+                    <div>
+                        <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('Timeout (seconds)') }}</flux:text>
+                        <flux:text class="block">{{ $agentType->default_timeout }}</flux:text>
+                    </div>
+                @endif
+            </div>
+        </div>
+    @endif
+
     {{-- Agents --}}
     <div data-test="agent-type-agents">
         <flux:heading size="lg">{{ __('Agents') }} ({{ $agentType->agents_count }})</flux:heading>
