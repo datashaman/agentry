@@ -118,16 +118,19 @@ new #[Title('Project')] #[Layout('layouts.app')] class extends Component {
 
     @if ($this->epics->isNotEmpty())
         <div>
-            <flux:heading size="lg">{{ __('Epics') }}</flux:heading>
+            <div class="flex items-center justify-between">
+                <flux:heading size="lg">{{ __('Epics') }}</flux:heading>
+                <a href="{{ route('projects.epics.index', $project) }}" wire:navigate class="text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200">{{ __('View all') }}</a>
+            </div>
             <div class="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                 @foreach ($this->epics as $epic)
-                    <div class="rounded-xl border border-zinc-200 p-4 dark:border-zinc-700" data-test="epic-card">
+                    <a href="{{ route('projects.stories.index', ['project' => $project, 'epic' => $epic->id]) }}" wire:navigate class="rounded-xl border border-zinc-200 p-4 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50" data-test="epic-card">
                         <div class="flex items-center justify-between">
                             <flux:heading size="sm">{{ $epic->title }}</flux:heading>
                             <flux:badge size="sm" variant="pill">{{ $epic->status }}</flux:badge>
                         </div>
                         <flux:text class="mt-2 text-sm">{{ $epic->stories_count }} {{ Str::plural('story', $epic->stories_count) }}</flux:text>
-                    </div>
+                    </a>
                 @endforeach
             </div>
         </div>
