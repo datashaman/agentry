@@ -85,4 +85,12 @@ class Agent extends Model
     {
         return $this->hasMany(OpsRequest::class, 'assigned_agent_id');
     }
+
+    /**
+     * @return HasMany<PullRequest, $this>
+     */
+    public function authoredPullRequests(): HasMany
+    {
+        return $this->hasMany(PullRequest::class);
+    }
 }

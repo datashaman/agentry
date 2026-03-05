@@ -47,4 +47,12 @@ class Branch extends Model
     {
         return $this->hasMany(Worktree::class);
     }
+
+    /**
+     * @return HasMany<PullRequest, $this>
+     */
+    public function pullRequests(): HasMany
+    {
+        return $this->hasMany(PullRequest::class);
+    }
 }
