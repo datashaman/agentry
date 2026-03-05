@@ -147,7 +147,7 @@ test('project dashboard shows empty state when no epics', function () {
 
     $response = $this->get(route('projects.show', $project));
     $response->assertOk();
-    $response->assertDontSee('Epics');
+    $response->assertDontSee('data-test="epic-card"', false);
 });
 
 test('project dashboard shows epic with one story using singular form', function () {

@@ -17,4 +17,6 @@
             @endif
         </flux:breadcrumbs>
     </nav>
+
+    <x-project-sub-nav :project="$project" />
 @endif

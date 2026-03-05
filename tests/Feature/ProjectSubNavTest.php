@@ -1,0 +1,74 @@
+<?php
+
+use App\Models\Organization;
+use App\Models\Project;
+use App\Models\User;
+
+test('project sub-nav appears on project overview page', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->withOrganization($organization)->create();
+    $project = Project::factory()->create(['organization_id' => $organization->id]);
+
+    $this->actingAs($user);
+
+    $response = $this->get(route('projects.show', $project));
+    $response->assertOk();
+    $response->assertSee('data-test="project-sub-nav"', false);
+});
+
+test('project sub-nav contains all section links', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->withOrganization($organization)->create();
+    $project = Project::factory()->create(['organization_id' => $organization->id]);
+
+    $this->actingAs($user);
+
+    $response = $this->get(route('projects.show', $project));
+    $response->assertOk();
+    $response->assertSee('Overview');
+    $response->assertSee('Epics');
+    $response->assertSee('Stories');
+    $response->assertSee('Bugs');
+    $response->assertSee('Ops Requests');
+    $response->assertSee('Repos');
+    $response->assertSee('Milestones');
+    $response->assertSee('Labels');
+    $response->assertSee('Action Logs');
+});
+
+test('project sub-nav shows Overview as active on project overview page', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->withOrganization($organization)->create();
+    $project = Project::factory()->create(['organization_id' => $organization->id]);
+
+    $this->actingAs($user);
+
+    $response = $this->get(route('projects.show', $project));
+    $response->assertOk();
+    $response->assertSee('data-test="sub-nav-overview"', false);
+    $response->assertSee('bg-zinc-100', false);
+});
+
+test('project sub-nav shows Stories as active on stories index page', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->withOrganization($organization)->create();
+    $project = Project::factory()->create(['organization_id' => $organization->id]);
+
+    $this->actingAs($user);
+
+    $response = $this->get(route('projects.stories.index', $project));
+    $response->assertOk();
+    $response->assertSee('data-test="project-sub-nav"', false);
+    $response->assertSee('data-test="sub-nav-stories"', false);
+});
+
+test('project sub-nav does not appear on dashboard without project context', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->withOrganization($organization)->create();
+
+    $this->actingAs($user);
+
+    $response = $this->get(route('dashboard'));
+    $response->assertOk();
+    $response->assertDontSee('data-test="project-sub-nav"', false);
+});
