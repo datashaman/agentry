@@ -82,10 +82,10 @@ new #[Title('Repository Detail')] #[Layout('layouts.app')] class extends Compone
 
     {{-- Counts --}}
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3" data-test="repo-counts">
-        <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700" data-test="branches-count">
+        <a href="{{ route('projects.repos.branches.index', [$project, $repo]) }}" wire:navigate class="rounded-lg border border-zinc-200 p-4 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50" data-test="branches-count">
             <flux:text class="text-sm font-medium text-zinc-500 dark:text-zinc-400">{{ __('Branches') }}</flux:text>
             <flux:heading size="xl" class="mt-1">{{ $repo->branches_count }}</flux:heading>
-        </div>
+        </a>
         <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700" data-test="worktrees-count">
             <flux:text class="text-sm font-medium text-zinc-500 dark:text-zinc-400">{{ __('Worktrees') }}</flux:text>
             <flux:heading size="xl" class="mt-1">{{ $repo->worktrees_count }}</flux:heading>
