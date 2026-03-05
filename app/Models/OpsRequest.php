@@ -86,4 +86,12 @@ class OpsRequest extends Model
     {
         return $this->morphMany(Branch::class, 'work_item');
     }
+
+    /**
+     * @return MorphMany<Worktree, $this>
+     */
+    public function worktrees(): MorphMany
+    {
+        return $this->morphMany(Worktree::class, 'work_item');
+    }
 }

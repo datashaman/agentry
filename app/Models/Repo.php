@@ -58,4 +58,12 @@ class Repo extends Model
     {
         return $this->hasMany(Branch::class);
     }
+
+    /**
+     * @return HasMany<Worktree, $this>
+     */
+    public function worktrees(): HasMany
+    {
+        return $this->hasMany(Worktree::class);
+    }
 }
