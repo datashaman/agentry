@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Organization;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -55,5 +56,13 @@ class UserFactory extends Factory
             'two_factor_recovery_codes' => encrypt(json_encode(['recovery-code-1'])),
             'two_factor_confirmed_at' => now(),
         ]);
+    }
+
+    public function withOrganization(?Organization $organization = null, string $role = 'member'): static
+    {
+        return $this->afterCreating(function ($user) use ($organization, $role) {
+            $org = $organization ?? Organization::factory()->create();
+            $user->organizations()->attach($org, ['role' => $role]);
+        });
     }
 }
