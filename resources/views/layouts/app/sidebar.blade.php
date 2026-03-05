@@ -27,12 +27,17 @@
 
                                 <flux:menu>
                                     @foreach ($userOrganizations as $org)
-                                        <flux:menu.item
-                                            :href="route('dashboard')"
-                                            data-test="org-option"
-                                        >
-                                            {{ $org->name }}
-                                        </flux:menu.item>
+                                        <form method="POST" action="{{ route('switch-organization', $org) }}">
+                                            @csrf
+                                            <flux:menu.item
+                                                as="button"
+                                                type="submit"
+                                                data-test="org-option"
+                                                class="w-full {{ $currentOrg?->id === $org->id ? 'font-bold' : '' }}"
+                                            >
+                                                {{ $org->name }}
+                                            </flux:menu.item>
+                                        </form>
                                     @endforeach
                                 </flux:menu>
                             </flux:dropdown>

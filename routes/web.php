@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\SwitchOrganizationController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
@@ -17,6 +18,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('projects/{project}/ops-requests/{opsRequest}', 'pages::projects.ops-requests.show')->name('projects.ops-requests.show');
     Route::livewire('escalations', 'pages::escalations.index')->name('escalations.index');
     Route::livewire('teams', 'pages::teams.index')->name('teams.index');
+    Route::post('switch-organization/{organization}', SwitchOrganizationController::class)->name('switch-organization');
 });
 
 require __DIR__.'/settings.php';
