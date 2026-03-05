@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Exceptions\InvalidStatusTransitionException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,6 +14,22 @@ class OpsRequest extends Model
 {
     /** @use HasFactory<\Database\Factories\OpsRequestFactory> */
     use HasFactory;
+
+    /**
+     * Allowed status transitions.
+     *
+     * @var array<string, list<string>>
+     */
+    public const TRANSITIONS = [
+        'new' => ['triaged', 'closed_invalid'],
+        'triaged' => ['planning'],
+        'planning' => ['executing'],
+        'executing' => ['verifying'],
+        'verifying' => ['closed_done', 'closed_rejected'],
+        'closed_done' => [],
+        'closed_invalid' => [],
+        'closed_rejected' => [],
+    ];
 
     /**
      * @var list<string>
@@ -126,6 +143,30 @@ class OpsRequest extends Model
     public function runbooks(): HasMany
     {
         return $this->hasMany(Runbook::class);
+    }
+
+    /**
+     * Transition the ops request to a new status, enforcing the state machine rules and invariants.
+     */
+    public function transitionTo(string $newStatus): self
+    {
+        $currentStatus = $this->status;
+        $allowed = self::TRANSITIONS[$currentStatus] ?? [];
+
+        if (! in_array($newStatus, $allowed)) {
+            throw new InvalidStatusTransitionException($currentStatus, $newStatus);
+        }
+
+        if ($newStatus === 'executing' && in_array($this->risk_level, ['high', 'critical'])) {
+            if ($this->hasUnresolvedEscalation()) {
+                throw new InvalidStatusTransitionException($currentStatus, $newStatus, 'High/critical risk ops requests require HITL approval before executing.');
+            }
+        }
+
+        $this->status = $newStatus;
+        $this->save();
+
+        return $this;
     }
 
     public function hasUnresolvedEscalation(): bool
