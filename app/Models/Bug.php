@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Exceptions\InvalidStatusTransitionException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,6 +14,24 @@ class Bug extends Model
 {
     /** @use HasFactory<\Database\Factories\BugFactory> */
     use HasFactory;
+
+    /**
+     * Allowed status transitions.
+     *
+     * @var array<string, list<string>>
+     */
+    public const TRANSITIONS = [
+        'new' => ['triaged', 'closed_duplicate', 'closed_cant_reproduce'],
+        'triaged' => ['in_progress'],
+        'in_progress' => ['in_review', 'blocked'],
+        'in_review' => ['verified', 'in_progress'],
+        'verified' => ['released'],
+        'released' => ['closed_fixed'],
+        'blocked' => ['in_progress'],
+        'closed_fixed' => [],
+        'closed_duplicate' => [],
+        'closed_cant_reproduce' => [],
+    ];
 
     /**
      * @var list<string>
@@ -61,6 +80,34 @@ class Bug extends Model
     public function assignedAgent(): BelongsTo
     {
         return $this->belongsTo(Agent::class, 'assigned_agent_id');
+    }
+
+    /**
+     * Transition the bug to a new status, enforcing the state machine rules and invariants.
+     */
+    public function transitionTo(string $newStatus): self
+    {
+        $currentStatus = $this->status;
+        $allowed = self::TRANSITIONS[$currentStatus] ?? [];
+
+        if (! in_array($newStatus, $allowed)) {
+            throw new InvalidStatusTransitionException($currentStatus, $newStatus);
+        }
+
+        if ($newStatus === 'in_progress') {
+            if ($this->hasUnresolvedBlockers()) {
+                throw new InvalidStatusTransitionException($currentStatus, $newStatus, 'Unresolved dependencies exist.');
+            }
+
+            if ($this->hasUnresolvedEscalation()) {
+                throw new InvalidStatusTransitionException($currentStatus, $newStatus, 'Unresolved HITL escalation exists.');
+            }
+        }
+
+        $this->status = $newStatus;
+        $this->save();
+
+        return $this;
     }
 
     /**
@@ -156,6 +203,19 @@ class Bug extends Model
     public function actionLogs(): MorphMany
     {
         return $this->morphMany(ActionLog::class, 'work_item');
+    }
+
+    public function hasUnresolvedBlockers(): bool
+    {
+        return $this->blockedByDependencies()
+            ->where(function ($query) {
+                $query->whereHasMorph('blocker', [Story::class], function ($q) {
+                    $q->whereNotIn('status', ['closed_done', 'closed_wont_do']);
+                })->orWhereHasMorph('blocker', [self::class], function ($q) {
+                    $q->whereNotIn('status', ['closed_fixed', 'closed_duplicate', 'closed_cant_reproduce']);
+                });
+            })
+            ->exists();
     }
 
     public function hasBlockingCritique(): bool
