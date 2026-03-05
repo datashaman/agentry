@@ -69,6 +69,25 @@ test('resolveTools includes custom tool even when provider tool filtered', funct
         ->and($resolved)->not->toContain('web_fetch');
 });
 
+test('resolveTools includes bash text_editor code_execution for anthropic only', function () {
+    $organization = Organization::factory()->create();
+    $agentType = AgentType::factory()
+        ->forOrganization($organization)
+        ->create(['tools' => ['bash', 'text_editor', 'code_execution', 'web_search']]);
+
+    $anthropicResolved = $this->registry->resolveTools($agentType, 'anthropic');
+    $openaiResolved = $this->registry->resolveTools($agentType, 'openai');
+
+    expect($anthropicResolved)->toContain('bash')
+        ->and($anthropicResolved)->toContain('text_editor')
+        ->and($anthropicResolved)->toContain('code_execution')
+        ->and($anthropicResolved)->toContain('web_search')
+        ->and($openaiResolved)->not->toContain('bash')
+        ->and($openaiResolved)->not->toContain('text_editor')
+        ->and($openaiResolved)->not->toContain('code_execution')
+        ->and($openaiResolved)->toContain('web_search');
+});
+
 test('resolveTools skips unknown tool ids', function () {
     $organization = Organization::factory()->create();
     $agentType = AgentType::factory()
@@ -118,7 +137,13 @@ test('resolveTools is case insensitive for provider', function () {
 test('getProviderTools returns provider tool metadata', function () {
     $tools = ToolRegistry::getProviderTools();
 
-    expect($tools)->toHaveKey('web_search')
+    expect($tools)->toHaveKey('bash')
+        ->and($tools['bash'])->toBe(['anthropic'])
+        ->and($tools)->toHaveKey('text_editor')
+        ->and($tools['text_editor'])->toBe(['anthropic'])
+        ->and($tools)->toHaveKey('code_execution')
+        ->and($tools['code_execution'])->toBe(['anthropic'])
+        ->and($tools)->toHaveKey('web_search')
         ->and($tools['web_search'])->toBe(['anthropic', 'openai', 'gemini'])
         ->and($tools)->toHaveKey('web_fetch')
         ->and($tools['web_fetch'])->toBe(['anthropic', 'gemini'])
@@ -127,7 +152,10 @@ test('getProviderTools returns provider tool metadata', function () {
 });
 
 test('isProviderTool returns true for known provider tools', function () {
-    expect(ToolRegistry::isProviderTool('web_search'))->toBeTrue()
+    expect(ToolRegistry::isProviderTool('bash'))->toBeTrue()
+        ->and(ToolRegistry::isProviderTool('text_editor'))->toBeTrue()
+        ->and(ToolRegistry::isProviderTool('code_execution'))->toBeTrue()
+        ->and(ToolRegistry::isProviderTool('web_search'))->toBeTrue()
         ->and(ToolRegistry::isProviderTool('web_fetch'))->toBeTrue()
         ->and(ToolRegistry::isProviderTool('file_search'))->toBeTrue();
 });

@@ -8,11 +8,16 @@ class ToolRegistry
 {
     /**
      * Provider tools: ID => supported providers.
-     * Laravel AI SDK: WebSearch, WebFetch, FileSearch.
+     * Aligned with Claude Code capabilities: bash, text_editor, code_execution, web_search, web_fetch, file_search.
+     * - bash, text_editor: Anthropic-native (Claude Code style)
+     * - web_search, web_fetch, file_search: Laravel AI SDK provider tools
      *
      * @var array<string, list<string>>
      */
     protected static array $providerTools = [
+        'bash' => ['anthropic'],
+        'text_editor' => ['anthropic'],
+        'code_execution' => ['anthropic'],
         'web_search' => ['anthropic', 'openai', 'gemini'],
         'web_fetch' => ['anthropic', 'gemini'],
         'file_search' => ['openai', 'gemini'],
