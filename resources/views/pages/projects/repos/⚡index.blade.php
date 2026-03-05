@@ -27,9 +27,14 @@ new #[Title('Repositories')] #[Layout('layouts.app')] class extends Component {
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <x-breadcrumbs :organization="$this->organization" :project="$project" />
 
-    <div>
-        <flux:heading size="xl">{{ __('Repositories') }}</flux:heading>
-        <flux:text class="mt-1">{{ __('Browse repositories for :project.', ['project' => $project->name]) }}</flux:text>
+    <div class="flex items-center justify-between">
+        <div>
+            <flux:heading size="xl">{{ __('Repositories') }}</flux:heading>
+            <flux:text class="mt-1">{{ __('Browse repositories for :project.', ['project' => $project->name]) }}</flux:text>
+        </div>
+        <a href="{{ route('projects.repos.create', $project) }}" wire:navigate data-test="create-repo-button">
+            <flux:button variant="primary">{{ __('New Repository') }}</flux:button>
+        </a>
     </div>
 
     @if ($this->repos->isEmpty())
@@ -48,24 +53,38 @@ new #[Title('Repositories')] #[Layout('layouts.app')] class extends Component {
                         <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('URL') }}</th>
                         <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Language') }}</th>
                         <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Default Branch') }}</th>
+                        <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Tags') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($this->repos as $repo)
-                        <tr class="border-b border-zinc-200 dark:border-zinc-700" data-test="repo-row" wire:key="repo-{{ $repo->id }}">
-                            <td class="px-4 py-3">
-                                <flux:text class="font-medium text-zinc-900 dark:text-zinc-100">{{ $repo->name }}</flux:text>
-                            </td>
-                            <td class="px-4 py-3">
-                                <flux:text class="text-sm">{{ $repo->url }}</flux:text>
-                            </td>
-                            <td class="px-4 py-3">
-                                <flux:text>{{ $repo->primary_language ?? '-' }}</flux:text>
-                            </td>
-                            <td class="px-4 py-3">
-                                <flux:text>{{ $repo->default_branch ?? 'main' }}</flux:text>
-                            </td>
-                        </tr>
+                        <a href="{{ route('projects.repos.show', [$project, $repo]) }}" wire:navigate class="contents" data-test="repo-link">
+                            <tr class="border-b border-zinc-200 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50" data-test="repo-row" wire:key="repo-{{ $repo->id }}">
+                                <td class="px-4 py-3">
+                                    <flux:text class="font-medium text-zinc-900 dark:text-zinc-100">{{ $repo->name }}</flux:text>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <flux:text class="text-sm">{{ $repo->url }}</flux:text>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <flux:text>{{ $repo->primary_language ?? '-' }}</flux:text>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <flux:text>{{ $repo->default_branch ?? 'main' }}</flux:text>
+                                </td>
+                                <td class="px-4 py-3">
+                                    @if ($repo->tags && count($repo->tags) > 0)
+                                        <div class="flex flex-wrap gap-1">
+                                            @foreach ($repo->tags as $tag)
+                                                <flux:badge size="sm" variant="pill">{{ $tag }}</flux:badge>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <flux:text>-</flux:text>
+                                    @endif
+                                </td>
+                            </tr>
+                        </a>
                     @endforeach
                 </tbody>
             </table>
