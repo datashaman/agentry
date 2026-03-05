@@ -42,7 +42,6 @@ class UpdateAgentRequest extends FormRequest
             'confidence_threshold.required' => __('The confidence threshold is required.'),
             'confidence_threshold.min' => __('The confidence threshold must be between 0 and 1.'),
             'confidence_threshold.max' => __('The confidence threshold must be between 0 and 1.'),
-            'status.in' => __('The status must be idle, active, error, or busy.'),
         ];
     }
 }

@@ -31,7 +31,6 @@ test('agent create form displays and creates an agent', function () {
         ->set('model', 'claude-opus-4-6')
         ->set('provider', 'anthropic')
         ->set('confidence_threshold', '0.85')
-        ->set('status', 'idle')
         ->call('createAgent')
         ->assertRedirect();
 
@@ -63,9 +62,8 @@ test('agent create validates required fields', function () {
         ->set('model', '')
         ->set('provider', '')
         ->set('confidence_threshold', '')
-        ->set('status', '')
         ->call('createAgent')
-        ->assertHasErrors(['name', 'agent_type_id', 'team_id', 'model', 'provider', 'confidence_threshold', 'status']);
+        ->assertHasErrors(['name', 'agent_type_id', 'team_id', 'model', 'provider', 'confidence_threshold']);
 });
 
 test('agent create pre-fills agent type when passed as query param', function () {
@@ -142,7 +140,6 @@ test('agent edit form displays pre-populated values and updates', function () {
         ->assertSet('name', 'Old Name')
         ->assertSet('model', 'claude-sonnet-4-6')
         ->assertSet('confidence_threshold', '0.75')
-        ->assertSet('status', 'idle')
         ->set('name', 'New Name')
         ->set('model', 'claude-opus-4-6')
         ->set('confidence_threshold', '0.9')
@@ -155,7 +152,8 @@ test('agent edit form displays pre-populated values and updates', function () {
         'model' => 'claude-opus-4-6',
     ]);
 
-    expect($agent->fresh()->confidence_threshold)->toBe(0.9);
+    expect($agent->fresh()->confidence_threshold)->toBe(0.9)
+        ->and($agent->fresh()->status)->toBe('idle');
 });
 
 test('agent delete removes agent and redirects to teams', function () {

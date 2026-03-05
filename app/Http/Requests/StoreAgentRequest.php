@@ -51,7 +51,6 @@ class StoreAgentRequest extends FormRequest
             'max_steps' => ['nullable', 'integer', 'min:1'],
             'max_tokens' => ['nullable', 'integer', 'min:1'],
             'timeout' => ['nullable', 'integer', 'min:1'],
-            'status' => ['required', 'string', 'in:idle,active,error,busy'],
         ];
     }
 
@@ -73,7 +72,6 @@ class StoreAgentRequest extends FormRequest
             'confidence_threshold.required' => __('The confidence threshold is required.'),
             'confidence_threshold.min' => __('The confidence threshold must be between 0 and 1.'),
             'confidence_threshold.max' => __('The confidence threshold must be between 0 and 1.'),
-            'status.in' => __('The status must be idle, active, error, or busy.'),
         ];
     }
 }

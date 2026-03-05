@@ -30,8 +30,6 @@ new #[Title('New Agent')] #[Layout('layouts.app')] class extends Component {
 
     public string $timeout = '';
 
-    public string $status = 'idle';
-
     public function mount(): void
     {
         $agentTypeId = request()->query('agent_type');
@@ -63,7 +61,7 @@ new #[Title('New Agent')] #[Layout('layouts.app')] class extends Component {
             'max_steps' => $validated['max_steps'] !== '' ? (int) $validated['max_steps'] : null,
             'max_tokens' => $validated['max_tokens'] !== '' ? (int) $validated['max_tokens'] : null,
             'timeout' => $validated['timeout'] !== '' ? (int) $validated['timeout'] : null,
-            'status' => $validated['status'],
+            'status' => 'idle',
         ]);
 
         $this->redirect(route('agents.show', $agent), navigate: true);
@@ -181,17 +179,6 @@ new #[Title('New Agent')] #[Layout('layouts.app')] class extends Component {
                 <flux:error name="timeout" />
             </flux:field>
         </div>
-
-        <flux:field>
-            <flux:label>{{ __('Status') }}</flux:label>
-            <flux:select wire:model="status" data-test="agent-status-input">
-                <flux:select.option value="idle">{{ __('Idle') }}</flux:select.option>
-                <flux:select.option value="active">{{ __('Active') }}</flux:select.option>
-                <flux:select.option value="error">{{ __('Error') }}</flux:select.option>
-                <flux:select.option value="busy">{{ __('Busy') }}</flux:select.option>
-            </flux:select>
-            <flux:error name="status" />
-        </flux:field>
 
         <div class="flex items-center gap-2">
             <flux:button type="submit" variant="primary" data-test="save-agent-button">{{ __('Create Agent') }}</flux:button>

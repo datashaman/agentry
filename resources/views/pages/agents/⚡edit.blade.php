@@ -34,8 +34,6 @@ new #[Title('Edit Agent')] #[Layout('layouts.app')] class extends Component {
 
     public string $timeout = '';
 
-    public string $status = '';
-
     public function mount(): void
     {
         $this->name = $this->agent->name;
@@ -48,7 +46,6 @@ new #[Title('Edit Agent')] #[Layout('layouts.app')] class extends Component {
         $this->max_steps = $this->agent->max_steps !== null ? (string) $this->agent->max_steps : '';
         $this->max_tokens = $this->agent->max_tokens !== null ? (string) $this->agent->max_tokens : '';
         $this->timeout = $this->agent->timeout !== null ? (string) $this->agent->timeout : '';
-        $this->status = $this->agent->status ?? 'idle';
     }
 
     public function updateAgent(): void
@@ -70,7 +67,6 @@ new #[Title('Edit Agent')] #[Layout('layouts.app')] class extends Component {
             'max_steps' => $validated['max_steps'] !== '' ? (int) $validated['max_steps'] : null,
             'max_tokens' => $validated['max_tokens'] !== '' ? (int) $validated['max_tokens'] : null,
             'timeout' => $validated['timeout'] !== '' ? (int) $validated['timeout'] : null,
-            'status' => $validated['status'],
         ]);
 
         $this->redirect(route('agents.show', $this->agent), navigate: true);
@@ -188,17 +184,6 @@ new #[Title('Edit Agent')] #[Layout('layouts.app')] class extends Component {
                 <flux:error name="timeout" />
             </flux:field>
         </div>
-
-        <flux:field>
-            <flux:label>{{ __('Status') }}</flux:label>
-            <flux:select wire:model="status" data-test="agent-status-input">
-                <flux:select.option value="idle">{{ __('Idle') }}</flux:select.option>
-                <flux:select.option value="active">{{ __('Active') }}</flux:select.option>
-                <flux:select.option value="error">{{ __('Error') }}</flux:select.option>
-                <flux:select.option value="busy">{{ __('Busy') }}</flux:select.option>
-            </flux:select>
-            <flux:error name="status" />
-        </flux:field>
 
         <div class="flex items-center gap-2">
             <flux:button type="submit" variant="primary" data-test="save-agent-button">{{ __('Update Agent') }}</flux:button>
