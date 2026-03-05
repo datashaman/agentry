@@ -35,6 +35,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('agent-types/create', 'pages::agent-types.create')->name('agent-types.create');
     Route::livewire('agent-types/{agentType}', 'pages::agent-types.show')->name('agent-types.show');
     Route::livewire('agent-types/{agentType}/edit', 'pages::agent-types.edit')->name('agent-types.edit');
+    Route::livewire('skills', 'pages::skills.index')->name('skills.index');
+    Route::livewire('skills/create', 'pages::skills.create')->name('skills.create');
+    Route::livewire('skills/{skill}', 'pages::skills.show')->name('skills.show');
+    Route::livewire('skills/{skill}/edit', 'pages::skills.edit')->name('skills.edit');
     Route::livewire('agents/create', 'pages::agents.create')->name('agents.create');
     Route::livewire('agents/{agent}', 'pages::agents.show')->name('agents.show');
     Route::livewire('agents/{agent}/edit', 'pages::agents.edit')->name('agents.edit');

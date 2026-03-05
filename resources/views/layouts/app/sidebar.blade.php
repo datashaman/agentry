@@ -68,6 +68,9 @@
                     <flux:sidebar.item icon="cpu-chip" :href="route('agent-types.index')" :current="request()->routeIs('agent-types.*')" wire:navigate>
                         {{ __('Agent Types') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="academic-cap" :href="route('skills.index')" :current="request()->routeIs('skills.*')" wire:navigate data-test="skills-nav">
+                        {{ __('Skills') }}
+                    </flux:sidebar.item>
                     <flux:sidebar.item icon="document-text" :href="route('action-logs.index')" :current="request()->routeIs('action-logs.*')" wire:navigate data-test="action-logs-nav">
                         {{ __('Action Logs') }}
                     </flux:sidebar.item>
