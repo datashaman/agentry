@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Critique;
 use App\Models\HitlEscalation;
 use App\Models\Project;
 use App\Models\Story;
@@ -30,6 +31,13 @@ new #[Title('Story')] #[Layout('layouts.app')] class extends Component {
             'changeSets.pullRequests',
             'blockedByDependencies.blocker',
         ]);
+    }
+
+    public function updateCritiqueDisposition(int $critiqueId, string $disposition): void
+    {
+        $critique = Critique::findOrFail($critiqueId);
+        $critique->update(['disposition' => $disposition]);
+        $this->story->load('critiques.agent');
     }
 
     public function startResolving(int $escalationId): void
@@ -134,12 +142,24 @@ new #[Title('Story')] #[Layout('layouts.app')] class extends Component {
             <flux:heading size="lg">{{ __('Critiques') }}</flux:heading>
             <div class="mt-2 space-y-3">
                 @foreach ($story->critiques as $critique)
-                    <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700" data-test="critique-item">
+                    @php
+                        $isBlockingPending = $critique->severity === 'blocking' && $critique->disposition === 'pending';
+                    @endphp
+                    <div class="{{ $isBlockingPending ? 'rounded-lg border-2 border-red-400 bg-red-50 p-4 dark:border-red-600 dark:bg-red-900/20' : 'rounded-lg border border-zinc-200 p-4 dark:border-zinc-700' }}" data-test="critique-item">
                         <div class="flex flex-wrap items-center gap-2">
                             <flux:badge size="sm" variant="pill">{{ $critique->critic_type }}</flux:badge>
-                            <flux:badge size="sm" variant="pill">{{ $critique->severity }}</flux:badge>
-                            <flux:badge size="sm" variant="pill">{{ $critique->disposition }}</flux:badge>
+                            @php
+                                $severityColors = ['blocking' => 'red', 'major' => 'amber', 'minor' => 'blue', 'suggestion' => 'zinc'];
+                            @endphp
+                            <flux:badge size="sm" variant="pill" :color="$severityColors[$critique->severity] ?? 'zinc'">{{ $critique->severity }}</flux:badge>
+                            @php
+                                $dispositionColors = ['pending' => 'amber', 'accepted' => 'green', 'rejected' => 'red', 'deferred' => 'zinc'];
+                            @endphp
+                            <flux:badge size="sm" variant="pill" :color="$dispositionColors[$critique->disposition] ?? 'zinc'" data-test="critique-disposition">{{ $critique->disposition }}</flux:badge>
                             <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('Rev :rev', ['rev' => $critique->revision]) }}</flux:text>
+                            @if ($critique->agent)
+                                <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('by :agent', ['agent' => $critique->agent->name]) }}</flux:text>
+                            @endif
                         </div>
                         @if ($critique->issues && count($critique->issues) > 0)
                             <div class="mt-2">
@@ -171,6 +191,18 @@ new #[Title('Story')] #[Layout('layouts.app')] class extends Component {
                                 </ul>
                             </div>
                         @endif
+                        {{-- Disposition Actions --}}
+                        <div class="mt-3 flex items-center gap-2" data-test="critique-actions">
+                            @if ($critique->disposition !== 'accepted')
+                                <flux:button size="sm" variant="primary" wire:click="updateCritiqueDisposition({{ $critique->id }}, 'accepted')" data-test="accept-critique-button">{{ __('Accept') }}</flux:button>
+                            @endif
+                            @if ($critique->disposition !== 'rejected')
+                                <flux:button size="sm" wire:click="updateCritiqueDisposition({{ $critique->id }}, 'rejected')" data-test="reject-critique-button">{{ __('Reject') }}</flux:button>
+                            @endif
+                            @if ($critique->disposition !== 'deferred')
+                                <flux:button size="sm" wire:click="updateCritiqueDisposition({{ $critique->id }}, 'deferred')" data-test="defer-critique-button">{{ __('Defer') }}</flux:button>
+                            @endif
+                        </div>
                     </div>
                 @endforeach
             </div>
