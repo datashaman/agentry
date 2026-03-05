@@ -114,6 +114,11 @@ new #[Title('Project')] #[Layout('layouts.app')] class extends Component {
                 {{ $this->reposCount }}
             </div>
         </a>
+
+        <a href="{{ route('projects.action-logs.index', $project) }}" wire:navigate class="rounded-xl border border-zinc-200 p-6 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50" data-test="action-logs-link">
+            <flux:text class="text-sm font-medium">{{ __('Action Logs') }}</flux:text>
+            <flux:text class="mt-2 block text-3xl font-bold text-zinc-900 dark:text-zinc-100">{{ __('View') }}</flux:text>
+        </a>
     </div>
 
     @if ($this->epics->isNotEmpty())
