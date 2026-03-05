@@ -41,7 +41,10 @@ new #[Title('Bug Detail')] #[Layout('layouts.app')] class extends Component {
             'labels',
             'critiques.agent',
             'hitlEscalations.raisedByAgent',
-            'changeSets.pullRequests',
+            'changeSets.pullRequests.branch',
+            'changeSets.pullRequests.repo',
+            'changeSets.pullRequests.agent',
+            'changeSets.pullRequests.reviews.agent',
             'blockedByDependencies.blocker',
             'attachments',
         ]);
@@ -439,30 +442,9 @@ new #[Title('Bug Detail')] #[Layout('layouts.app')] class extends Component {
     @endif
 
     {{-- Change Sets & PRs --}}
-    @if ($bug->changeSets->isNotEmpty())
-        <div data-test="bug-changesets">
-            <flux:heading size="lg">{{ __('Change Sets') }}</flux:heading>
-            <div class="mt-2 space-y-3">
-                @foreach ($bug->changeSets as $changeSet)
-                    <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700" data-test="changeset-item">
-                        <div class="flex items-center gap-2">
-                            <flux:text class="font-medium">{{ $changeSet->summary }}</flux:text>
-                            <flux:badge size="sm" variant="pill">{{ $changeSet->status }}</flux:badge>
-                        </div>
-                        @if ($changeSet->pullRequests->isNotEmpty())
-                            <ul class="ml-4 mt-2 space-y-1">
-                                @foreach ($changeSet->pullRequests as $pr)
-                                    <li class="text-sm" data-test="pr-item">
-                                        <flux:text>{{ $pr->title ?? __('PR #:number', ['number' => $pr->provider_pr_number ?? $pr->id]) }}</flux:text>
-                                    </li>
-                                @endforeach
-                            </ul>
-                        @endif
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    @endif
+    <div data-test="bug-changesets">
+        <x-changeset-detail :changeSets="$bug->changeSets" />
+    </div>
 
     {{-- Dependencies --}}
     <div data-test="bug-dependencies">

@@ -26,6 +26,10 @@ new #[Title('Ops Request Detail')] #[Layout('layouts.app')] class extends Compon
             'bugs',
             'runbooks.steps',
             'hitlEscalations.raisedByAgent',
+            'changeSets.pullRequests.branch',
+            'changeSets.pullRequests.repo',
+            'changeSets.pullRequests.agent',
+            'changeSets.pullRequests.reviews.agent',
         ]);
     }
 
@@ -140,6 +144,11 @@ new #[Title('Ops Request Detail')] #[Layout('layouts.app')] class extends Compon
             </ul>
         </div>
     @endif
+
+    {{-- Change Sets & PRs --}}
+    <div data-test="ops-request-changesets">
+        <x-changeset-detail :changeSets="$opsRequest->changeSets" />
+    </div>
 
     {{-- Runbooks --}}
     @if ($opsRequest->runbooks->isNotEmpty())
