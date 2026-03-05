@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Requests\UpdateAgentTypeRequest;
 use App\Models\AgentType;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
@@ -28,12 +29,7 @@ new #[Title('Edit Agent Type')] #[Layout('layouts.app')] class extends Component
 
     public function updateAgentType(): void
     {
-        $validated = $this->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', 'unique:agent_types,slug,' . $this->agentType->id],
-            'description' => ['nullable', 'string', 'max:5000'],
-            'default_capabilities' => ['nullable', 'string'],
-        ]);
+        $validated = $this->validate(UpdateAgentTypeRequest::getRules($this->agentType->id));
 
         $this->agentType->update([
             'name' => $validated['name'],

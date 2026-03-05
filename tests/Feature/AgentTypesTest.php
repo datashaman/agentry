@@ -113,6 +113,20 @@ test('create agent type validates required fields', function () {
         ->assertHasErrors(['name', 'slug']);
 });
 
+test('create agent type validates slug uniqueness', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->withOrganization($organization)->create();
+    AgentType::factory()->create(['slug' => 'existing-slug']);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::agent-types.create')
+        ->set('name', 'New Type')
+        ->set('slug', 'existing-slug')
+        ->call('createAgentType')
+        ->assertHasErrors(['slug']);
+});
+
 test('edit agent type form displays pre-populated values and updates', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();

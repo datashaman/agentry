@@ -1,7 +1,7 @@
 <?php
 
+use App\Http\Requests\StoreAgentTypeRequest;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -18,12 +18,7 @@ new #[Title('New Agent Type')] #[Layout('layouts.app')] class extends Component 
 
     public function createAgentType(): void
     {
-        $validated = $this->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', 'unique:agent_types,slug'],
-            'description' => ['nullable', 'string', 'max:5000'],
-            'default_capabilities' => ['nullable', 'string'],
-        ]);
+        $validated = $this->validate(StoreAgentTypeRequest::getRules());
 
         $agentType = \App\Models\AgentType::create([
             'name' => $validated['name'],
