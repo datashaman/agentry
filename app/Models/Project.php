@@ -46,6 +46,22 @@ class Project extends Model
         return $this->hasMany(Epic::class);
     }
 
+    /**
+     * @return HasMany<Label, $this>
+     */
+    public function labels(): HasMany
+    {
+        return $this->hasMany(Label::class);
+    }
+
+    /**
+     * @return HasMany<Milestone, $this>
+     */
+    public function milestones(): HasMany
+    {
+        return $this->hasMany(Milestone::class);
+    }
+
     public function hasTeam(Team $team): bool
     {
         return $this->teams()->where('teams.id', $team->id)->exists();
