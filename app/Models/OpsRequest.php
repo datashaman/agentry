@@ -69,4 +69,12 @@ class OpsRequest extends Model
     {
         return $this->belongsToMany(Bug::class)->withTimestamps();
     }
+
+    /**
+     * @return BelongsToMany<Repo, $this>
+     */
+    public function repos(): BelongsToMany
+    {
+        return $this->belongsToMany(Repo::class)->withTimestamps();
+    }
 }

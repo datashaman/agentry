@@ -78,6 +78,14 @@ class Project extends Model
         return $this->hasMany(OpsRequest::class);
     }
 
+    /**
+     * @return HasMany<Repo, $this>
+     */
+    public function repos(): HasMany
+    {
+        return $this->hasMany(Repo::class);
+    }
+
     public function hasTeam(Team $team): bool
     {
         return $this->teams()->where('teams.id', $team->id)->exists();
