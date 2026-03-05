@@ -110,4 +110,12 @@ class Bug extends Model
     {
         return $this->morphMany(Worktree::class, 'work_item');
     }
+
+    /**
+     * @return MorphMany<ChangeSet, $this>
+     */
+    public function changeSets(): MorphMany
+    {
+        return $this->morphMany(ChangeSet::class, 'work_item');
+    }
 }
