@@ -3,6 +3,7 @@
 use App\Models\Bug;
 use App\Models\Critique;
 use App\Models\HitlEscalation;
+use App\Models\Label;
 use App\Models\Project;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
@@ -19,15 +20,50 @@ new #[Title('Bug Detail')] #[Layout('layouts.app')] class extends Component {
 
     public string $resolutionNotes = '';
 
+    public string $selectedLabelId = '';
+
     public function mount(): void
     {
         $this->bug->load([
             'linkedStory',
             'assignedAgent',
+            'labels',
             'critiques.agent',
             'hitlEscalations.raisedByAgent',
             'changeSets.pullRequests',
         ]);
+    }
+
+    #[Computed]
+    public function availableLabels(): \Illuminate\Database\Eloquent\Collection
+    {
+        $attachedIds = $this->bug->labels->pluck('id')->toArray();
+
+        return Label::query()
+            ->where('project_id', $this->project->id)
+            ->whereNotIn('id', $attachedIds)
+            ->orderBy('name')
+            ->get();
+    }
+
+    public function attachLabel(): void
+    {
+        $this->validate([
+            'selectedLabelId' => 'required|exists:labels,id',
+        ]);
+
+        $label = Label::where('project_id', $this->project->id)->findOrFail($this->selectedLabelId);
+        $this->bug->labels()->syncWithoutDetaching([$label->id]);
+        $this->selectedLabelId = '';
+        $this->bug->load('labels');
+        unset($this->availableLabels);
+    }
+
+    public function detachLabel(int $labelId): void
+    {
+        $this->bug->labels()->detach($labelId);
+        $this->bug->load('labels');
+        unset($this->availableLabels);
     }
 
     public function updateCritiqueDisposition(int $critiqueId, string $disposition): void
@@ -133,6 +169,31 @@ new #[Title('Bug Detail')] #[Layout('layouts.app')] class extends Component {
             </a>
         </div>
     @endif
+
+    {{-- Labels --}}
+    <div data-test="bug-labels">
+        <flux:heading size="lg">{{ __('Labels') }}</flux:heading>
+        <div class="mt-2 flex flex-wrap gap-2">
+            @forelse ($bug->labels as $label)
+                <span class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium text-white" style="background-color: {{ $label->color }}" data-test="attached-label">
+                    {{ $label->name }}
+                    <button wire:click="detachLabel({{ $label->id }})" class="ml-1 hover:opacity-75" data-test="detach-label-button" title="{{ __('Remove label') }}">&times;</button>
+                </span>
+            @empty
+                <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('No labels attached.') }}</flux:text>
+            @endforelse
+        </div>
+        @if ($this->availableLabels->isNotEmpty())
+            <form wire:submit="attachLabel" class="mt-3 flex items-end gap-2" data-test="attach-label-form">
+                <flux:select wire:model="selectedLabelId" :placeholder="__('Select a label...')" data-test="label-select">
+                    @foreach ($this->availableLabels as $label)
+                        <flux:select.option :value="$label->id">{{ $label->name }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+                <flux:button type="submit" size="sm" variant="primary" data-test="attach-label-button">{{ __('Attach') }}</flux:button>
+            </form>
+        @endif
+    </div>
 
     {{-- Critiques --}}
     @if ($bug->critiques->isNotEmpty())
