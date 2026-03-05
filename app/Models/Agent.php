@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Agent extends Model
 {
@@ -51,5 +52,13 @@ class Agent extends Model
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);
+    }
+
+    /**
+     * @return HasMany<Story, $this>
+     */
+    public function assignedStories(): HasMany
+    {
+        return $this->hasMany(Story::class, 'assigned_agent_id');
     }
 }
