@@ -77,4 +77,12 @@ class Agent extends Model
     {
         return $this->hasMany(Bug::class, 'assigned_agent_id');
     }
+
+    /**
+     * @return HasMany<OpsRequest, $this>
+     */
+    public function assignedOpsRequests(): HasMany
+    {
+        return $this->hasMany(OpsRequest::class, 'assigned_agent_id');
+    }
 }

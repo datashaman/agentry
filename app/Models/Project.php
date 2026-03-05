@@ -70,6 +70,14 @@ class Project extends Model
         return $this->hasMany(Bug::class);
     }
 
+    /**
+     * @return HasMany<OpsRequest, $this>
+     */
+    public function opsRequests(): HasMany
+    {
+        return $this->hasMany(OpsRequest::class);
+    }
+
     public function hasTeam(Team $team): bool
     {
         return $this->teams()->where('teams.id', $team->id)->exists();

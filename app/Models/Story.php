@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -108,6 +109,14 @@ class Story extends Model
     public function bugs(): HasMany
     {
         return $this->hasMany(Bug::class, 'linked_story_id');
+    }
+
+    /**
+     * @return BelongsToMany<OpsRequest, $this>
+     */
+    public function opsRequests(): BelongsToMany
+    {
+        return $this->belongsToMany(OpsRequest::class)->withTimestamps();
     }
 
     public function hasUnresolvedBlockers(): bool
