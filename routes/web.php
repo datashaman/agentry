@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DownloadAttachmentController;
 use App\Http\Controllers\SwitchOrganizationController;
 use Illuminate\Support\Facades\Route;
 
@@ -38,6 +39,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('teams/{team}', 'pages::teams.show')->name('teams.show');
     Route::livewire('teams/{team}/edit', 'pages::teams.edit')->name('teams.edit');
     Route::post('switch-organization/{organization}', SwitchOrganizationController::class)->name('switch-organization');
+    Route::get('attachments/{attachment}/download', DownloadAttachmentController::class)->name('attachments.download');
 });
 
 require __DIR__.'/settings.php';

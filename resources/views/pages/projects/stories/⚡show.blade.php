@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Attachment;
 use App\Models\Bug;
 use App\Models\Critique;
 use App\Models\Dependency;
@@ -10,13 +11,17 @@ use App\Models\Story;
 use App\Models\Subtask;
 use App\Models\Task;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 new #[Title('Story')] #[Layout('layouts.app')] class extends Component {
+    use WithFileUploads;
     public Project $project;
 
     public Story $story;
@@ -28,6 +33,8 @@ new #[Title('Story')] #[Layout('layouts.app')] class extends Component {
     public string $selectedLabelId = '';
 
     public string $selectedDependencyId = '';
+
+    public $upload = null;
 
     public function mount(): void
     {
@@ -41,7 +48,44 @@ new #[Title('Story')] #[Layout('layouts.app')] class extends Component {
             'hitlEscalations.raisedByAgent',
             'changeSets.pullRequests',
             'blockedByDependencies.blocker',
+            'attachments',
         ]);
+    }
+
+    public function uploadAttachment(): void
+    {
+        $this->validate([
+            'upload' => 'required|file|max:10240',
+        ], [
+            'upload.required' => __('Please select a file to upload.'),
+            'upload.max' => __('The file must not be greater than 10 MB.'),
+        ]);
+
+        $file = $this->upload;
+        $dir = 'attachments/stories/' . $this->story->id;
+        $name = Str::uuid() . '_' . basename($file->getClientOriginalName());
+        $stored = $file->storeAs($dir, $name, 'local');
+
+        Attachment::create([
+            'work_item_type' => Story::class,
+            'work_item_id' => $this->story->id,
+            'filename' => $file->getClientOriginalName(),
+            'path' => $stored,
+            'mime_type' => $file->getMimeType(),
+            'size' => $file->getSize(),
+        ]);
+        $this->upload = null;
+        $this->story->load('attachments');
+    }
+
+    public function deleteAttachment(int $attachmentId): void
+    {
+        $attachment = Attachment::where('work_item_type', Story::class)
+            ->where('work_item_id', $this->story->id)
+            ->findOrFail($attachmentId);
+        Storage::disk('local')->delete($attachment->path);
+        $attachment->delete();
+        $this->story->load('attachments');
     }
 
     #[Computed]
@@ -598,5 +642,50 @@ new #[Title('Story')] #[Layout('layouts.app')] class extends Component {
                 <flux:button type="submit" size="sm" variant="primary" data-test="attach-dependency-button">{{ __('Add') }}</flux:button>
             </form>
         @endif
+    </div>
+
+    {{-- Attachments --}}
+    <div data-test="story-attachments">
+        <flux:heading size="lg">{{ __('Attachments') }}</flux:heading>
+        <div class="mt-2 space-y-2">
+            @forelse ($story->attachments as $attachment)
+                <div class="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-200 p-3 text-sm dark:border-zinc-700" data-test="attachment-item">
+                    <flux:text class="font-medium">{{ $attachment->filename }}</flux:text>
+                    @if ($attachment->mime_type)
+                        <flux:badge size="sm" variant="pill">{{ $attachment->mime_type }}</flux:badge>
+                    @endif
+                    @if ($attachment->size)
+                        <flux:text class="text-zinc-500 dark:text-zinc-400">{{ number_format($attachment->size / 1024, 1) }} KB</flux:text>
+                    @endif
+                    <flux:text class="text-zinc-500 dark:text-zinc-400">{{ $attachment->created_at->format('M j, Y') }}</flux:text>
+                    <a href="{{ route('attachments.download', $attachment) }}" class="text-primary-600 hover:underline dark:text-primary-400" data-test="attachment-download-link">{{ __('Download') }}</a>
+                    <flux:modal.trigger name="confirm-attachment-deletion-{{ $attachment->id }}">
+                        <flux:button size="xs" variant="ghost" class="text-red-600 dark:text-red-400" data-test="delete-attachment-button">{{ __('Delete') }}</flux:button>
+                    </flux:modal.trigger>
+                </div>
+                <flux:modal name="confirm-attachment-deletion-{{ $attachment->id }}" variant="danger">
+                    <form wire:submit="deleteAttachment({{ $attachment->id }})">
+                        <flux:heading size="lg">{{ __('Delete Attachment') }}</flux:heading>
+                        <flux:text class="mt-2">{{ __('Are you sure you want to delete :filename?', ['filename' => $attachment->filename]) }}</flux:text>
+                        <div class="mt-4 flex justify-end gap-2">
+                            <flux:modal.close>
+                                <flux:button type="button" variant="ghost">{{ __('Cancel') }}</flux:button>
+                            </flux:modal.close>
+                            <flux:button type="submit" variant="danger" data-test="confirm-delete-attachment-button">{{ __('Delete') }}</flux:button>
+                        </div>
+                    </form>
+                </flux:modal>
+            @empty
+                <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('No attachments.') }}</flux:text>
+            @endforelse
+        </div>
+        <form wire:submit="uploadAttachment" class="mt-3 flex items-end gap-2" data-test="upload-attachment-form">
+            <flux:field>
+                <flux:label>{{ __('File') }}</flux:label>
+                <flux:input type="file" wire:model="upload" data-test="attachment-file-input" />
+                <flux:error name="upload" />
+            </flux:field>
+            <flux:button type="submit" size="sm" variant="primary" data-test="upload-attachment-button" wire:loading.attr="disabled">{{ __('Upload') }}</flux:button>
+        </form>
     </div>
 </div>
