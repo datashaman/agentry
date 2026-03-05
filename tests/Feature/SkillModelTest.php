@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\AgentType;
 use App\Models\Organization;
 use App\Models\Skill;
 
@@ -51,4 +52,23 @@ test('same slug in same organization fails with unique constraint', function () 
         'organization_id' => $organization->id,
         'slug' => 'laravel',
     ]))->toThrow(\Illuminate\Database\UniqueConstraintViolationException::class);
+});
+
+test('agent type can attach and detach skills with ordering', function () {
+    $organization = Organization::factory()->create();
+    $agentType = AgentType::factory()->create(['organization_id' => $organization->id]);
+    $skillA = Skill::factory()->create(['organization_id' => $organization->id, 'name' => 'A']);
+    $skillB = Skill::factory()->create(['organization_id' => $organization->id, 'name' => 'B']);
+    $skillC = Skill::factory()->create(['organization_id' => $organization->id, 'name' => 'C']);
+
+    $agentType->skills()->attach($skillA->id, ['position' => 0]);
+    $agentType->skills()->attach($skillB->id, ['position' => 1]);
+    $agentType->skills()->attach($skillC->id, ['position' => 2]);
+
+    $ordered = $agentType->skills()->orderByPivot('position')->pluck('name')->toArray();
+    expect($ordered)->toBe(['A', 'B', 'C']);
+
+    $agentType->skills()->detach($skillB->id);
+    $remaining = $agentType->skills()->orderByPivot('position')->pluck('name')->toArray();
+    expect($remaining)->toBe(['A', 'C']);
 });

@@ -37,6 +37,14 @@ class Organization extends Model
     }
 
     /**
+     * @return HasMany<Skill, $this>
+     */
+    public function skills(): HasMany
+    {
+        return $this->hasMany(Skill::class);
+    }
+
+    /**
      * @return HasMany<Project, $this>
      */
     public function projects(): HasMany

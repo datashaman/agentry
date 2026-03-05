@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AgentType extends Model
@@ -55,5 +56,16 @@ class AgentType extends Model
     public function agents(): HasMany
     {
         return $this->hasMany(Agent::class);
+    }
+
+    /**
+     * @return BelongsToMany<Skill, $this>
+     */
+    public function skills(): BelongsToMany
+    {
+        return $this->belongsToMany(Skill::class, 'agent_type_skill')
+            ->withPivot('position')
+            ->withTimestamps()
+            ->orderByPivot('position');
     }
 }
