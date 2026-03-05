@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\Organization;
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -13,11 +13,27 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
+        $user = User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
+
+        $this->call([
+            OrganizationSeeder::class,
+            TeamSeeder::class,
+            ProjectSeeder::class,
+            AgentTypeSeeder::class,
+            AgentSeeder::class,
+            EpicSeeder::class,
+            LabelSeeder::class,
+            MilestoneSeeder::class,
+            StorySeeder::class,
+            BugSeeder::class,
+            OpsRequestSeeder::class,
+            RepoSeeder::class,
+        ]);
+
+        $organization = Organization::where('slug', 'pinky-hq')->firstOrFail();
+        $user->organizations()->attach($organization, ['role' => 'owner']);
     }
 }
