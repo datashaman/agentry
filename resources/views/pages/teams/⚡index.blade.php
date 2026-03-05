@@ -32,9 +32,14 @@ new #[Title('Teams & Agents')] #[Layout('layouts.app')] class extends Component 
         <x-breadcrumbs :organization="$this->organization" />
     @endif
 
-    <div>
-        <flux:heading size="xl">{{ __('Teams & Agents') }}</flux:heading>
-        <flux:text class="mt-1">{{ __('Agent teams and their members in your organization.') }}</flux:text>
+    <div class="flex items-center justify-between">
+        <div>
+            <flux:heading size="xl">{{ __('Teams & Agents') }}</flux:heading>
+            <flux:text class="mt-1">{{ __('Agent teams and their members in your organization.') }}</flux:text>
+        </div>
+        <a href="{{ route('agents.create') }}" wire:navigate data-test="create-agent-button">
+            <flux:button variant="primary">{{ __('New Agent') }}</flux:button>
+        </a>
     </div>
 
     @if ($this->teams->isEmpty())

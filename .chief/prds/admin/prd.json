@@ -124,7 +124,8 @@
         "Feature test: attach and detach labels on stories and bugs"
       ],
       "priority": 8,
-      "passes": false
+      "passes": true,
+      "inProgress": false
     },
     {
       "id": "US-009",
@@ -139,7 +140,8 @@
         "Feature test: milestone detail displays all sections"
       ],
       "priority": 9,
-      "passes": false
+      "passes": true,
+      "inProgress": false
     },
     {
       "id": "US-010",
@@ -154,7 +156,8 @@
         "Feature test: list, detail, create, edit agent types"
       ],
       "priority": 10,
-      "passes": false
+      "passes": true,
+      "inProgress": false
     },
     {
       "id": "US-011",
@@ -185,7 +188,7 @@
         "Feature test: create, edit, delete agents"
       ],
       "priority": 12,
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-013",

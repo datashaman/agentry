@@ -52,6 +52,9 @@ new #[Title('Agent Type')] #[Layout('layouts.app')] class extends Component {
             @endif
         </div>
         <div class="flex items-center gap-2">
+            <a href="{{ route('agents.create', ['agent_type' => $agentType->id]) }}" wire:navigate data-test="create-agent-button">
+                <flux:button variant="primary">{{ __('New Agent') }}</flux:button>
+            </a>
             <a href="{{ route('agent-types.edit', $agentType) }}" wire:navigate data-test="edit-agent-type-button">
                 <flux:button>{{ __('Edit') }}</flux:button>
             </a>

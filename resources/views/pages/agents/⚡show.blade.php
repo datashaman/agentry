@@ -52,6 +52,13 @@ new #[Title('Agent')] #[Layout('layouts.app')] class extends Component {
     {
         return route('projects.ops-requests.show', [$opsRequest->project, $opsRequest]);
     }
+
+    public function deleteAgent(): void
+    {
+        $this->agent->delete();
+
+        $this->redirect(route('teams.index'), navigate: true);
+    }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
@@ -60,16 +67,44 @@ new #[Title('Agent')] #[Layout('layouts.app')] class extends Component {
     @endif
 
     {{-- Header --}}
-    <div data-test="agent-header">
-        <flux:heading size="xl">{{ $agent->name }}</flux:heading>
-        <div class="mt-2 flex flex-wrap items-center gap-3">
-            <flux:badge size="sm" variant="pill">{{ $agent->agentType?->name ?? '-' }}</flux:badge>
-            <flux:text class="text-sm">{{ $agent->team?->name ?? __('No team') }}</flux:text>
-            <flux:text class="text-sm">{{ $agent->model }}</flux:text>
-            <flux:badge size="sm" variant="pill" :color="match($agent->status) { 'active' => 'green', 'idle' => 'zinc', 'error' => 'red', default => 'amber' }">{{ ucfirst($agent->status) }}</flux:badge>
-            <flux:text class="text-sm">{{ __('Confidence: :threshold', ['threshold' => round(($agent->confidence_threshold ?? 0) * 100).'%']) }}</flux:text>
+    <div class="flex items-center justify-between" data-test="agent-header">
+        <div>
+            <flux:heading size="xl">{{ $agent->name }}</flux:heading>
+            <div class="mt-2 flex flex-wrap items-center gap-3">
+                <flux:badge size="sm" variant="pill">{{ $agent->agentType?->name ?? '-' }}</flux:badge>
+                <flux:text class="text-sm">{{ $agent->team?->name ?? __('No team') }}</flux:text>
+                <flux:text class="text-sm">{{ $agent->model }}</flux:text>
+                <flux:badge size="sm" variant="pill" :color="match($agent->status) { 'active' => 'green', 'idle' => 'zinc', 'error' => 'red', default => 'amber' }">{{ ucfirst($agent->status) }}</flux:badge>
+                <flux:text class="text-sm">{{ __('Confidence: :threshold', ['threshold' => round(($agent->confidence_threshold ?? 0) * 100).'%']) }}</flux:text>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="{{ route('agents.edit', $agent) }}" wire:navigate data-test="edit-agent-button">
+                <flux:button>{{ __('Edit') }}</flux:button>
+            </a>
+            <flux:modal.trigger name="confirm-agent-deletion">
+                <flux:button variant="danger" data-test="delete-agent-button">{{ __('Delete') }}</flux:button>
+            </flux:modal.trigger>
         </div>
     </div>
+
+    {{-- Delete Confirmation Modal --}}
+    <flux:modal name="confirm-agent-deletion" focusable class="max-w-lg">
+        <div class="space-y-6">
+            <div>
+                <flux:heading size="lg">{{ __('Are you sure you want to delete this agent?') }}</flux:heading>
+                <flux:text class="mt-2">{{ __('This action cannot be undone. The agent ":name" will be permanently deleted.', ['name' => $agent->name]) }}</flux:text>
+            </div>
+            <div class="flex justify-end space-x-2 rtl:space-x-reverse">
+                <flux:modal.close>
+                    <flux:button variant="filled">{{ __('Cancel') }}</flux:button>
+                </flux:modal.close>
+                <flux:button variant="danger" wire:click="deleteAgent" data-test="confirm-delete-agent-button">
+                    {{ __('Delete Agent') }}
+                </flux:button>
+            </div>
+        </div>
+    </flux:modal>
 
     {{-- Capabilities --}}
     <div data-test="agent-capabilities">

@@ -29,7 +29,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('agent-types/create', 'pages::agent-types.create')->name('agent-types.create');
     Route::livewire('agent-types/{agentType}', 'pages::agent-types.show')->name('agent-types.show');
     Route::livewire('agent-types/{agentType}/edit', 'pages::agent-types.edit')->name('agent-types.edit');
+    Route::livewire('agents/create', 'pages::agents.create')->name('agents.create');
     Route::livewire('agents/{agent}', 'pages::agents.show')->name('agents.show');
+    Route::livewire('agents/{agent}/edit', 'pages::agents.edit')->name('agents.edit');
     Route::livewire('escalations', 'pages::escalations.index')->name('escalations.index');
     Route::livewire('teams', 'pages::teams.index')->name('teams.index');
     Route::post('switch-organization/{organization}', SwitchOrganizationController::class)->name('switch-organization');
