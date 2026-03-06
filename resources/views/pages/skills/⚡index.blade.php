@@ -38,9 +38,14 @@ new #[Title('Skills')] #[Layout('layouts.app')] class extends Component {
             <flux:heading size="xl">{{ __('Skills') }}</flux:heading>
             <flux:text class="mt-1">{{ __('Domain-specific capability packages that extend agent instructions.') }}</flux:text>
         </div>
-        <a href="{{ route('skills.create') }}" wire:navigate data-test="create-skill-button">
-            <flux:button variant="primary">{{ __('New Skill') }}</flux:button>
-        </a>
+        <div class="flex items-center gap-2">
+            <a href="{{ route('skills.import') }}" wire:navigate data-test="import-skills-button">
+                <flux:button>{{ __('Import from Repo') }}</flux:button>
+            </a>
+            <a href="{{ route('skills.create') }}" wire:navigate data-test="create-skill-button">
+                <flux:button variant="primary">{{ __('New Skill') }}</flux:button>
+            </a>
+        </div>
     </div>
 
     @if ($this->skills->isEmpty())

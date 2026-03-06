@@ -160,10 +160,13 @@ test('resolver merges agent role instructions with assigned skill content', func
     $config = $this->resolver->resolve($agent);
 
     expect($config['instructions'])->toContain('You are a coding agent.')
-        ->and($config['instructions'])->toContain('## Skill: Laravel')
-        ->and($config['instructions'])->toContain('Use Laravel conventions and Eloquent.')
-        ->and($config['instructions'])->toContain('## Skill: Flux UI')
-        ->and($config['instructions'])->toContain('Use Flux UI components for forms.');
+        ->and($config['instructions'])->toContain('<available_skills>')
+        ->and($config['instructions'])->toContain("<name>{$skillLaravel->slug}</name>")
+        ->and($config['instructions'])->toContain("<id>{$skillLaravel->id}</id>")
+        ->and($config['instructions'])->toContain("<name>{$skillFlux->slug}</name>")
+        ->and($config['instructions'])->toContain("<id>{$skillFlux->id}</id>")
+        ->and($config['instructions'])->toContain('activate_skill')
+        ->and($config['tools'])->toContain('activate_skill');
 });
 
 test('resolver includes project instructions when work item is an ops request', function () {
@@ -254,8 +257,10 @@ test('resolver skips skills with empty or null content', function () {
 
     $config = $this->resolver->resolve($agent);
 
-    expect($config['instructions'])->toContain('## Skill: With Content')
-        ->and($config['instructions'])->toContain('Has content.')
-        ->and($config['instructions'])->not->toContain('## Skill: Empty')
-        ->and($config['instructions'])->not->toContain('## Skill: Null');
+    expect($config['instructions'])->toContain('<available_skills>')
+        ->and($config['instructions'])->toContain("<name>{$skillWithContent->slug}</name>")
+        ->and($config['instructions'])->toContain("<name>{$skillEmpty->slug}</name>")
+        ->and($config['instructions'])->toContain("<name>{$skillNull->slug}</name>")
+        ->and($config['instructions'])->not->toContain('Has content.')
+        ->and($config['tools'])->toContain('activate_skill');
 });
