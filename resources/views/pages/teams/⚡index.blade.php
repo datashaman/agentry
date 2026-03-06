@@ -63,7 +63,20 @@ new #[Title('Teams & Agents')] #[Layout('layouts.app')] class extends Component 
                             <a href="{{ route('teams.show', $team) }}" wire:navigate class="hover:underline">
                                 <flux:heading size="lg">{{ $team->name }}</flux:heading>
                             </a>
-                            <flux:text class="mt-0.5">{{ $team->agents_count }} {{ Str::plural('agent', $team->agents_count) }}</flux:text>
+                            <div class="mt-0.5 flex items-center gap-2">
+                                <flux:text>{{ $team->agents_count }} {{ Str::plural('agent', $team->agents_count) }}</flux:text>
+                                <flux:badge size="sm" variant="pill" :color="in_array($team->workflow_type, ['none', null]) ? 'zinc' : 'blue'">
+                                    {{ match($team->workflow_type) {
+                                        'none', null => __('No Workflow'),
+                                        'chain' => __('Chain'),
+                                        'parallel' => __('Parallel'),
+                                        'router' => __('Router'),
+                                        'orchestrator' => __('Orchestrator'),
+                                        'evaluator_optimizer' => __('Evaluator-Optimizer'),
+                                        default => ucfirst($team->workflow_type),
+                                    } }}
+                                </flux:badge>
+                            </div>
                         </div>
                     </div>
 

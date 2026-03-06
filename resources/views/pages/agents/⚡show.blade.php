@@ -72,7 +72,7 @@ new #[Title('Agent')] #[Layout('layouts.app')] class extends Component {
             <flux:heading size="xl">{{ $agent->name }}</flux:heading>
             <div class="mt-2 flex flex-wrap items-center gap-3">
                 <flux:badge size="sm" variant="pill">{{ $agent->agentRole?->name ?? '-' }}</flux:badge>
-                <flux:text class="text-sm">{{ $agent->team?->name ?? __('No team') }}</flux:text>
+                <a href="{{ $agent->team ? route('teams.show', $agent->team) : '#' }}" wire:navigate class="text-sm hover:underline">{{ $agent->team?->name ?? __('No team') }}</a>
                 <flux:text class="text-sm">{{ $agent->model }}</flux:text>
                 <flux:text class="text-sm">{{ $agent->provider }}</flux:text>
                 <flux:badge size="sm" variant="pill" :color="match($agent->status) { 'active' => 'green', 'idle' => 'zinc', 'error' => 'red', default => 'amber' }">{{ ucfirst($agent->status) }}</flux:badge>
