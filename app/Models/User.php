@@ -104,6 +104,29 @@ class User extends Authenticatable
         }
     }
 
+    public function createPersonalOrganization(): Organization
+    {
+        $name = $this->name."'s Organization";
+        $slug = Str::slug($this->name);
+
+        $baseSlug = $slug;
+        $counter = 1;
+        while (Organization::query()->where('slug', $slug)->exists()) {
+            $slug = $baseSlug.'-'.$counter;
+            $counter++;
+        }
+
+        $organization = Organization::create([
+            'name' => $name,
+            'slug' => $slug,
+        ]);
+
+        $this->organizations()->attach($organization, ['role' => 'owner']);
+        $this->update(['current_organization_id' => $organization->id]);
+
+        return $organization;
+    }
+
     public function hasGitHub(): bool
     {
         return $this->github_id !== null;
