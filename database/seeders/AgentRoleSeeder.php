@@ -79,7 +79,10 @@ class AgentRoleSeeder extends Seeder
         ];
 
         foreach ($agentRoles as $agentRole) {
-            AgentRole::factory()->create(array_merge($agentRole, ['organization_id' => $organization->id]));
+            AgentRole::updateOrCreate(
+                ['organization_id' => $organization->id, 'slug' => $agentRole['slug']],
+                array_merge($agentRole, ['organization_id' => $organization->id]),
+            );
         }
     }
 }

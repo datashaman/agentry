@@ -79,6 +79,52 @@ test('user factory withOrganization state accepts custom organization and role',
     expect($user->organizations->first()->pivot->role)->toBe('admin');
 });
 
+test('creating an organization automatically creates default agent roles', function () {
+    $organization = Organization::factory()->create();
+
+    expect($organization->agentRoles)->toHaveCount(2);
+
+    $roles = $organization->agentRoles->pluck('slug')->sort()->values()->all();
+    expect($roles)->toBe(['coding', 'review']);
+});
+
+test('creating an organization automatically creates a default development team with agents', function () {
+    $organization = Organization::factory()->create();
+
+    expect($organization->teams)->toHaveCount(1);
+
+    $team = $organization->teams->first();
+    expect($team->name)->toBe('Development');
+    expect($team->slug)->toBe('development');
+    expect($team->workflow_type)->toBe('evaluator_optimizer');
+
+    $team->load('agents.agentRole');
+    expect($team->agents)->toHaveCount(2);
+
+    $coder = $team->agents->firstWhere('name', 'Coder');
+    $reviewer = $team->agents->firstWhere('name', 'Reviewer');
+
+    expect($coder->agentRole->slug)->toBe('coding');
+    expect($reviewer->agentRole->slug)->toBe('review');
+
+    expect($team->workflow_config)->toBe([
+        'generator_agent_id' => $coder->id,
+        'evaluator_agent_id' => $reviewer->id,
+        'max_refinements' => 3,
+        'min_rating' => 'good',
+    ]);
+});
+
+test('createPersonalOrganization creates organization with default team and agents', function () {
+    $user = User::factory()->create();
+
+    $organization = $user->createPersonalOrganization();
+
+    expect($organization->teams)->toHaveCount(1);
+    expect($organization->teams->first()->name)->toBe('Development');
+    expect($organization->teams->first()->agents)->toHaveCount(2);
+});
+
 test('pivot table has timestamps', function () {
     $user = User::factory()->create();
     $organization = Organization::factory()->create();

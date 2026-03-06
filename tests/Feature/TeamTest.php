@@ -30,7 +30,8 @@ test('organization has many teams', function () {
     $organization = Organization::factory()->create();
     Team::factory()->count(3)->create(['organization_id' => $organization->id]);
 
-    expect($organization->teams)->toHaveCount(3)
+    // 1 default team + 3 factory-created
+    expect($organization->fresh()->teams)->toHaveCount(4)
         ->each->toBeInstanceOf(Team::class);
 });
 

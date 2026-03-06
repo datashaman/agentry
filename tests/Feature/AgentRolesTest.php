@@ -49,7 +49,7 @@ test('agent roles list shows only agent roles from current organization', functi
     $response->assertDontSee('Org B Type');
 });
 
-test('agent roles list page shows empty state when no agent roles exist', function () {
+test('agent roles list page shows default roles for new organization', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
 
@@ -57,7 +57,8 @@ test('agent roles list page shows empty state when no agent roles exist', functi
 
     $response = $this->get(route('agent-roles.index'));
     $response->assertOk();
-    $response->assertSee('No Agent Roles');
+    $response->assertSee('Coding');
+    $response->assertSee('Review');
 });
 
 test('agent role detail page shows description, instructions, tools, and agents', function () {
