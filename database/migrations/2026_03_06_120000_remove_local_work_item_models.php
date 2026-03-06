@@ -30,6 +30,15 @@ return new class extends Migration
         Schema::dropIfExists('tasks');
         Schema::dropIfExists('ops_request_story');
         Schema::dropIfExists('bug_ops_request');
+
+        if (Schema::hasTable('bugs')) {
+            Schema::table('bugs', function (Blueprint $table) {
+                if (Schema::hasColumn('bugs', 'linked_story_id')) {
+                    $table->dropForeign(['linked_story_id']);
+                }
+            });
+        }
+
         Schema::dropIfExists('bugs');
         Schema::dropIfExists('stories');
         Schema::dropIfExists('epics');
