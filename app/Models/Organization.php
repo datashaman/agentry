@@ -43,16 +43,7 @@ class Organization extends Model
             'close_ops_requests',
             'execute_runbooks',
         ],
-        'Milestones' => [
-            'create_milestones',
-            'update_milestones',
-            'delete_milestones',
-        ],
-        'Labels' => [
-            'create_labels',
-            'update_labels',
-            'delete_labels',
-        ],
+
         'Deployments' => [
             'trigger_deployments',
         ],

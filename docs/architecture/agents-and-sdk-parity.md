@@ -94,8 +94,7 @@ Agent permissions are configured at the **organization level** (not per-agent or
 - **Code** — read, write
 - **Work Items** — create, update, close, assign, comment
 - **Ops Requests** — create, execute, approve
-- **Milestones** — create, update, close
-- **Labels** — create, update, delete
+
 - **Deployments** — trigger, rollback
 
 Checked via `Organization::agentCan(string $permission)`.

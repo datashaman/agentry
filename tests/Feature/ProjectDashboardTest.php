@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Milestone;
 use App\Models\Organization;
 use App\Models\Project;
 use App\Models\User;
@@ -32,26 +31,6 @@ test('project dashboard displays project name', function () {
     $response = $this->get(route('projects.show', $project));
     $response->assertOk();
     $response->assertSee('My Dashboard Project');
-});
-
-test('project dashboard displays milestones with due dates', function () {
-    $organization = Organization::factory()->create();
-    $user = User::factory()->withOrganization($organization)->create();
-    $project = Project::factory()->create(['organization_id' => $organization->id]);
-    Milestone::factory()->create([
-        'project_id' => $project->id,
-        'title' => 'Sprint 1 Milestone',
-        'status' => 'open',
-        'due_date' => '2026-04-15',
-    ]);
-
-    $this->actingAs($user);
-
-    $response = $this->get(route('projects.show', $project));
-    $response->assertOk();
-    $response->assertSee('Milestones');
-    $response->assertSee('Sprint 1 Milestone');
-    $response->assertSee('Apr 15, 2026');
 });
 
 test('project dashboard displays breadcrumbs', function () {

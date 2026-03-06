@@ -29,8 +29,7 @@ test('project sub-nav contains all section links', function () {
     $response->assertSee('Work Items');
     $response->assertSee('Ops Requests');
     $response->assertSee('Repos');
-    $response->assertSee('Milestones');
-    $response->assertSee('Labels');
+
     $response->assertSee('Action Logs');
 });
 

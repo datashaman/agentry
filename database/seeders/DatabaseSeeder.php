@@ -26,8 +26,6 @@ class DatabaseSeeder extends Seeder
             SkillSeeder::class,
             AgentSeeder::class,
             EventResponderSeeder::class,
-            LabelSeeder::class,
-            MilestoneSeeder::class,
             OpsRequestSeeder::class,
             RepoSeeder::class,
         ]);
