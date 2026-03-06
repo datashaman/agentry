@@ -73,6 +73,14 @@ class Project extends Model
         return $this->hasMany(Repo::class);
     }
 
+    /**
+     * @return HasMany<WorkItem, $this>
+     */
+    public function workItems(): HasMany
+    {
+        return $this->hasMany(WorkItem::class);
+    }
+
     public function hasTeam(Team $team): bool
     {
         return $this->teams()->where('teams.id', $team->id)->exists();
