@@ -13,6 +13,11 @@ class AgentRole extends Model
     /** @use HasFactory<\Database\Factories\AgentRoleFactory> */
     use HasFactory;
 
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
     /**
      * @var list<string>
      */

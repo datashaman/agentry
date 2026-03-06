@@ -66,7 +66,7 @@ new #[Title('New Skill')] #[Layout('layouts.app')] class extends Component {
     <form wire:submit="createSkill" class="max-w-xl space-y-6" data-test="create-skill-form">
         <flux:field>
             <flux:label>{{ __('Name') }}</flux:label>
-            <flux:input wire:model="name" data-test="skill-name-input" required />
+            <flux:input wire:model.live="name" data-test="skill-name-input" required />
             <flux:error name="name" />
         </flux:field>
 

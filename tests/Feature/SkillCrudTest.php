@@ -84,7 +84,7 @@ test('edit skill form updates a skill', function () {
         ->set('slug', 'new-name')
         ->set('content', 'New content.')
         ->call('updateSkill')
-        ->assertRedirect(route('skills.show', $skill));
+        ->assertRedirect(route('skills.show', ['skill' => 'new-name']));
 
     $skill->refresh();
     expect($skill->name)->toBe('New Name')

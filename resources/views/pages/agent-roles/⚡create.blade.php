@@ -2,6 +2,7 @@
 
 use App\Http\Requests\StoreAgentRoleRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -30,6 +31,13 @@ new #[Title('New Agent Role')] #[Layout('layouts.app')] class extends Component 
     public string $default_max_tokens = '';
 
     public string $default_timeout = '';
+
+    public function updatedName(string $value): void
+    {
+        if ($this->slug === '' || $this->slug === Str::slug($this->name)) {
+            $this->slug = Str::slug($value);
+        }
+    }
 
     public function createAgentRole(): void
     {
@@ -108,7 +116,7 @@ new #[Title('New Agent Role')] #[Layout('layouts.app')] class extends Component 
     <form wire:submit="createAgentRole" class="max-w-xl space-y-6" data-test="create-agent-role-form">
         <flux:field>
             <flux:label>{{ __('Name') }}</flux:label>
-            <flux:input wire:model="name" data-test="agent-role-name-input" required />
+            <flux:input wire:model.live="name" data-test="agent-role-name-input" required />
             <flux:error name="name" />
         </flux:field>
 
