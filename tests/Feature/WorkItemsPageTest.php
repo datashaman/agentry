@@ -70,9 +70,9 @@ test('work items page shows error when project key is missing', function () {
         ->assertSet('error', 'No project key configured. Edit the project to set a project key (e.g. owner/repo for GitHub).');
 });
 
-test('work items page shows error when github app not installed', function () {
+test('work items page shows helpful message when no results returned', function () {
     $organization = Organization::factory()->create(['github_installation_id' => null]);
-    $user = User::factory()->withOrganization($organization)->create();
+    $user = User::factory()->withOrganization($organization)->create(['github_token' => null]);
     $project = Project::factory()->create([
         'organization_id' => $organization->id,
         'work_item_provider' => 'github',
@@ -83,7 +83,7 @@ test('work items page shows error when github app not installed', function () {
 
     Livewire::test('pages::projects.work-items.index', ['project' => $project])
         ->call('loadWorkItems')
-        ->assertSet('error', 'No GitHub App installed for this organization. Install the GitHub App first.');
+        ->assertSee('No work items returned');
 });
 
 test('project edit page shows work item provider fields', function () {

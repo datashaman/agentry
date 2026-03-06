@@ -4,12 +4,29 @@ namespace App\Services;
 
 use App\Contracts\WorkItemProvider;
 use App\Models\Organization;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class GitHubIssuesService implements WorkItemProvider
 {
     public function __construct(protected GitHubAppService $gitHub) {}
+
+    /**
+     * Get a GitHub token: prefer App installation token, fall back to user OAuth token.
+     */
+    protected function getToken(Organization $org): ?string
+    {
+        $token = $this->gitHub->getInstallationToken($org);
+
+        if ($token) {
+            return $token;
+        }
+
+        $user = Auth::user();
+
+        return $user?->github_token;
+    }
 
     public function name(): string
     {
@@ -18,7 +35,7 @@ class GitHubIssuesService implements WorkItemProvider
 
     public function listProjects(Organization $org): array
     {
-        $token = $this->gitHub->getInstallationToken($org);
+        $token = $this->getToken($org);
 
         if (! $token) {
             return [];
@@ -39,12 +56,11 @@ class GitHubIssuesService implements WorkItemProvider
 
     public function listIssues(Organization $org, string $projectKey, array $filters = []): array
     {
-        $token = $this->gitHub->getInstallationToken($org);
+        $token = $this->getToken($org);
 
         if (! $token) {
-            Log::warning('GitHub Issues: no installation token available', [
+            Log::warning('GitHub Issues: no token available (no app installation and no user OAuth token)', [
                 'organization_id' => $org->id,
-                'github_installation_id' => $org->github_installation_id,
             ]);
 
             return [];
@@ -84,7 +100,7 @@ class GitHubIssuesService implements WorkItemProvider
 
     public function getIssue(Organization $org, string $issueKey): ?array
     {
-        $token = $this->gitHub->getInstallationToken($org);
+        $token = $this->getToken($org);
 
         if (! $token) {
             return null;
@@ -103,7 +119,7 @@ class GitHubIssuesService implements WorkItemProvider
 
     public function listIssueTypes(Organization $org, string $projectKey): array
     {
-        $token = $this->gitHub->getInstallationToken($org);
+        $token = $this->getToken($org);
 
         if (! $token) {
             return [];
@@ -128,7 +144,7 @@ class GitHubIssuesService implements WorkItemProvider
 
     public function searchIssues(Organization $org, string $query): array
     {
-        $token = $this->gitHub->getInstallationToken($org);
+        $token = $this->getToken($org);
 
         if (! $token) {
             return [];
