@@ -8,6 +8,7 @@ use App\Models\Organization;
  * @phpstan-type WorkItem array{
  *     key: string,
  *     title: string,
+ *     description: string|null,
  *     type: string,
  *     status: string,
  *     priority: string|null,

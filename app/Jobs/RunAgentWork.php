@@ -9,6 +9,7 @@ use App\Models\EventResponder;
 use App\Models\OpsRequest;
 use App\Models\Team;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 
@@ -19,7 +20,7 @@ class RunAgentWork implements ShouldQueue
     public function __construct(
         public Agent $agent,
         public ?Team $team,
-        public OpsRequest $workItem,
+        public Model $workItem,
         public EventResponder $responder,
     ) {}
 
@@ -35,18 +36,20 @@ class RunAgentWork implements ShouldQueue
             return '';
         };
 
+        $opsRequest = $this->workItem instanceof OpsRequest ? $this->workItem : null;
+
         if ($this->team && $this->team->workflow_type !== 'none') {
             $workflowRunner->run(
                 $this->team,
                 $this->responder->instructions,
                 $llmGateway,
-                $this->workItem,
+                $opsRequest,
             );
 
             return;
         }
 
-        $config = $agentResolver->resolve($this->agent, $this->workItem);
+        $config = $agentResolver->resolve($this->agent, $opsRequest);
 
         $instructions = $config['instructions'] ?? '';
         $instructions = trim($instructions."\n\n".$this->responder->instructions);

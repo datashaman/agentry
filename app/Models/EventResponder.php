@@ -13,10 +13,12 @@ class EventResponder extends Model
 
     public const WORK_ITEM_TYPES = [
         'ops_request' => OpsRequest::class,
+        'work_item' => WorkItem::class,
     ];
 
     public const AVAILABLE_STATUSES = [
         'ops_request' => ['triaged', 'planning', 'executing', 'verifying', 'new', 'closed_done', 'closed_invalid', 'closed_rejected'],
+        'work_item' => ['tracked'],
     ];
 
     /**
