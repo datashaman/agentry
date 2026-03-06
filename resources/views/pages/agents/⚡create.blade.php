@@ -16,11 +16,11 @@ new #[Title('New Agent')] #[Layout('layouts.app')] class extends Component {
 
     public ?string $team_id = null;
 
+    public string $provider = '';
+
     public string $model = '';
 
     public string $confidence_threshold = '0.8';
-
-    public string $provider = '';
 
     public string $temperature = '';
 
@@ -71,6 +71,35 @@ new #[Title('New Agent')] #[Layout('layouts.app')] class extends Component {
     public function organization(): ?\App\Models\Organization
     {
         return Auth::user()->currentOrganization();
+    }
+
+    public function updatedProvider(): void
+    {
+        $this->model = '';
+    }
+
+    /**
+     * @return array<string, array{label: string, models?: array<string, string>}>
+     */
+    #[Computed]
+    public function providers(): array
+    {
+        return collect(config('ai.providers'))
+            ->filter(fn ($p) => ! empty($p['key']))
+            ->all();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    #[Computed]
+    public function models(): array
+    {
+        if (! $this->provider) {
+            return [];
+        }
+
+        return config("ai.providers.{$this->provider}.models", []);
     }
 
     #[Computed]
@@ -132,16 +161,27 @@ new #[Title('New Agent')] #[Layout('layouts.app')] class extends Component {
         </flux:field>
 
         <flux:field>
-            <flux:label>{{ __('Model') }}</flux:label>
-            <flux:input wire:model="model" data-test="agent-model-input" placeholder="e.g. claude-opus-4-6" required />
-            <flux:error name="model" />
+            <flux:label>{{ __('Provider') }}</flux:label>
+            <flux:select wire:model.live="provider" :placeholder="__('Select provider...')" data-test="agent-provider-input" required>
+                @foreach ($this->providers as $key => $p)
+                    <flux:select.option :value="$key">{{ $p['label'] }}</flux:select.option>
+                @endforeach
+            </flux:select>
+            <flux:error name="provider" />
         </flux:field>
 
         <flux:field>
-            <flux:label>{{ __('Provider') }}</flux:label>
-            <flux:input wire:model="provider" data-test="agent-provider-input" placeholder="e.g. anthropic, openai" required />
-            <flux:description>{{ __('AI provider (e.g. anthropic, openai, google).') }}</flux:description>
-            <flux:error name="provider" />
+            <flux:label>{{ __('Model') }}</flux:label>
+            @if (count($this->models) > 0)
+                <flux:select wire:model="model" :placeholder="__('Select model...')" data-test="agent-model-input" required>
+                    @foreach ($this->models as $id => $label)
+                        <flux:select.option :value="$id">{{ $label }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+            @else
+                <flux:input wire:model="model" data-test="agent-model-input" placeholder="{{ $this->provider ? __('Enter model ID...') : __('Select a provider first') }}" required :disabled="! $this->provider" />
+            @endif
+            <flux:error name="model" />
         </flux:field>
 
         <flux:field>
