@@ -106,7 +106,7 @@ test('create agent role form displays and creates an agent role', function () {
         ->set('slug', 'planner')
         ->set('description', 'Plans sprints')
         ->set('instructions', 'You plan sprints.')
-        ->set('tools', 'planning, estimation')
+        ->set('tools', ['planning', 'estimation'])
         ->call('createAgentRole')
         ->assertRedirect();
 
@@ -201,7 +201,7 @@ test('edit agent role form displays pre-populated values and updates', function 
         ->assertSet('slug', 'old-name')
         ->assertSet('description', 'Old description')
         ->assertSet('instructions', 'Old instructions')
-        ->assertSet('tools', 'cap1, cap2')
+        ->assertSet('tools', ['cap1', 'cap2'])
         ->set('name', 'New Name')
         ->set('slug', 'new-name')
         ->call('updateAgentRole')

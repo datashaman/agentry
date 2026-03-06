@@ -16,7 +16,8 @@ new #[Title('New Agent Role')] #[Layout('layouts.app')] class extends Component 
 
     public string $instructions = '';
 
-    public string $tools = '';
+    /** @var list<string> */
+    public array $tools = [];
 
     public string $default_provider = '';
 
@@ -47,7 +48,7 @@ new #[Title('New Agent Role')] #[Layout('layouts.app')] class extends Component 
             'slug' => $validated['slug'],
             'description' => $validated['description'] ?: null,
             'instructions' => $validated['instructions'] ?: null,
-            'tools' => $validated['tools'] ? array_map('trim', explode(',', $validated['tools'])) : [],
+            'tools' => $validated['tools'] ?? [],
             'default_model' => $validated['default_model'] ?: null,
             'default_provider' => $validated['default_provider'] ?: null,
             'default_temperature' => $validated['default_temperature'] !== '' ? (float) $validated['default_temperature'] : null,
@@ -132,8 +133,12 @@ new #[Title('New Agent Role')] #[Layout('layouts.app')] class extends Component 
 
         <flux:field>
             <flux:label>{{ __('Tools') }}</flux:label>
-            <flux:input wire:model="tools" data-test="agent-role-tools-input" placeholder="tool1, tool2, ..." />
-            <flux:description>{{ __('Comma-separated list of tool IDs this type can use.') }}</flux:description>
+            <div class="mt-1 space-y-2" data-test="agent-role-tools-input">
+                @foreach (\App\Agents\ToolRegistry::getProviderTools() as $toolId => $meta)
+                    <flux:checkbox wire:model="tools" :value="$toolId" :label="$toolId" :description="$meta['description']" wire:key="tool-{{ $toolId }}" />
+                @endforeach
+            </div>
+            <flux:description>{{ __('Select tools this agent role can use.') }}</flux:description>
             <flux:error name="tools" />
         </flux:field>
 

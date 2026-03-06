@@ -138,17 +138,18 @@ test('getProviderTools returns provider tool metadata', function () {
     $tools = ToolRegistry::getProviderTools();
 
     expect($tools)->toHaveKey('bash')
-        ->and($tools['bash'])->toBe(['anthropic'])
+        ->and($tools['bash']['providers'])->toBe(['anthropic'])
+        ->and($tools['bash']['description'])->toBeString()
         ->and($tools)->toHaveKey('text_editor')
-        ->and($tools['text_editor'])->toBe(['anthropic'])
+        ->and($tools['text_editor']['providers'])->toBe(['anthropic'])
         ->and($tools)->toHaveKey('code_execution')
-        ->and($tools['code_execution'])->toBe(['anthropic'])
+        ->and($tools['code_execution']['providers'])->toBe(['anthropic'])
         ->and($tools)->toHaveKey('web_search')
-        ->and($tools['web_search'])->toBe(['anthropic', 'openai', 'gemini'])
+        ->and($tools['web_search']['providers'])->toBe(['anthropic', 'openai', 'gemini'])
         ->and($tools)->toHaveKey('web_fetch')
-        ->and($tools['web_fetch'])->toBe(['anthropic', 'gemini'])
+        ->and($tools['web_fetch']['providers'])->toBe(['anthropic', 'gemini'])
         ->and($tools)->toHaveKey('file_search')
-        ->and($tools['file_search'])->toBe(['openai', 'gemini']);
+        ->and($tools['file_search']['providers'])->toBe(['openai', 'gemini']);
 });
 
 test('isProviderTool returns true for known provider tools', function () {

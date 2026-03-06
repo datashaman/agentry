@@ -21,7 +21,8 @@ new #[Title('Edit Agent Role')] #[Layout('layouts.app')] class extends Component
 
     public string $instructions = '';
 
-    public string $tools = '';
+    /** @var list<string> */
+    public array $tools = [];
 
     public string $default_provider = '';
 
@@ -56,7 +57,7 @@ new #[Title('Edit Agent Role')] #[Layout('layouts.app')] class extends Component
         $this->slug = $this->agentRole->slug;
         $this->description = $this->agentRole->description ?? '';
         $this->instructions = $this->agentRole->instructions ?? '';
-        $this->tools = implode(', ', $this->agentRole->tools ?? []);
+        $this->tools = $this->agentRole->tools ?? [];
         $this->default_model = $this->agentRole->default_model ?? '';
         $this->default_provider = $this->agentRole->default_provider ?? '';
         $this->default_temperature = $this->agentRole->default_temperature !== null ? (string) $this->agentRole->default_temperature : '';
@@ -79,7 +80,7 @@ new #[Title('Edit Agent Role')] #[Layout('layouts.app')] class extends Component
             'slug' => $validated['slug'],
             'description' => $validated['description'] ?: null,
             'instructions' => $validated['instructions'] ?: null,
-            'tools' => $validated['tools'] ? array_map('trim', explode(',', $validated['tools'])) : [],
+            'tools' => $validated['tools'] ?? [],
             'default_model' => $validated['default_model'] ?: null,
             'default_provider' => $validated['default_provider'] ?: null,
             'default_temperature' => $validated['default_temperature'] !== '' ? (float) $validated['default_temperature'] : null,
@@ -270,8 +271,12 @@ new #[Title('Edit Agent Role')] #[Layout('layouts.app')] class extends Component
 
         <flux:field>
             <flux:label>{{ __('Tools') }}</flux:label>
-            <flux:input wire:model="tools" data-test="agent-role-tools-input" placeholder="tool1, tool2, ..." />
-            <flux:description>{{ __('Comma-separated list of tool IDs this type can use.') }}</flux:description>
+            <div class="mt-1 space-y-2" data-test="agent-role-tools-input">
+                @foreach (\App\Agents\ToolRegistry::getProviderTools() as $toolId => $meta)
+                    <flux:checkbox wire:model="tools" :value="$toolId" :label="$toolId" :description="$meta['description']" wire:key="tool-{{ $toolId }}" />
+                @endforeach
+            </div>
+            <flux:description>{{ __('Select tools this agent role can use.') }}</flux:description>
             <flux:error name="tools" />
         </flux:field>
 
@@ -330,12 +335,6 @@ new #[Title('Edit Agent Role')] #[Layout('layouts.app')] class extends Component
             </flux:field>
         </div>
 
-        <div class="flex items-center gap-2">
-            <flux:button type="submit" variant="primary" data-test="save-agent-role-button">{{ __('Update Agent Role') }}</flux:button>
-            <a href="{{ route('agent-roles.show', $agentRole) }}" wire:navigate>
-                <flux:button>{{ __('Cancel') }}</flux:button>
-            </a>
-        </div>
     </form>
 
     {{-- Assigned Skills --}}
@@ -425,5 +424,12 @@ new #[Title('Edit Agent Role')] #[Layout('layouts.app')] class extends Component
                 </table>
             </div>
         @endif
+    </div>
+
+    <div class="flex max-w-xl items-center gap-2">
+        <flux:button variant="primary" wire:click="updateAgentRole" data-test="save-agent-role-button">{{ __('Update Agent Role') }}</flux:button>
+        <a href="{{ route('agent-roles.show', $agentRole) }}" wire:navigate>
+            <flux:button>{{ __('Cancel') }}</flux:button>
+        </a>
     </div>
 </div>

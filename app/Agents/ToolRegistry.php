@@ -7,20 +7,38 @@ use App\Models\AgentRole;
 class ToolRegistry
 {
     /**
-     * Provider tools: ID => supported providers.
+     * Provider tools: ID => [providers, description].
      * Aligned with Claude Code capabilities: bash, text_editor, code_execution, web_search, web_fetch, file_search.
      * - bash, text_editor: Anthropic-native (Claude Code style)
      * - web_search, web_fetch, file_search: Laravel AI SDK provider tools
      *
-     * @var array<string, list<string>>
+     * @var array<string, array{providers: list<string>, description: string}>
      */
     protected static array $providerTools = [
-        'bash' => ['anthropic'],
-        'text_editor' => ['anthropic'],
-        'code_execution' => ['anthropic'],
-        'web_search' => ['anthropic', 'openai', 'gemini'],
-        'web_fetch' => ['anthropic', 'gemini'],
-        'file_search' => ['openai', 'gemini'],
+        'bash' => [
+            'providers' => ['anthropic'],
+            'description' => 'Execute shell commands in a sandboxed environment.',
+        ],
+        'text_editor' => [
+            'providers' => ['anthropic'],
+            'description' => 'Read, create, and edit files.',
+        ],
+        'code_execution' => [
+            'providers' => ['anthropic'],
+            'description' => 'Run code snippets and return output.',
+        ],
+        'web_search' => [
+            'providers' => ['anthropic', 'openai', 'gemini'],
+            'description' => 'Search the web for information.',
+        ],
+        'web_fetch' => [
+            'providers' => ['anthropic', 'gemini'],
+            'description' => 'Fetch content from a URL.',
+        ],
+        'file_search' => [
+            'providers' => ['openai', 'gemini'],
+            'description' => 'Search uploaded files and documents.',
+        ],
     ];
 
     /**
@@ -58,7 +76,7 @@ class ToolRegistry
             }
 
             if (isset(static::$providerTools[$id])) {
-                $supported = array_map('strtolower', static::$providerTools[$id]);
+                $supported = array_map('strtolower', static::$providerTools[$id]['providers']);
                 if (in_array($provider, $supported, true)) {
                     $resolved[] = $id;
                 }
@@ -79,9 +97,9 @@ class ToolRegistry
     }
 
     /**
-     * Get provider tool metadata (id => supported providers).
+     * Get provider tool metadata.
      *
-     * @return array<string, list<string>>
+     * @return array<string, array{providers: list<string>, description: string}>
      */
     public static function getProviderTools(): array
     {
