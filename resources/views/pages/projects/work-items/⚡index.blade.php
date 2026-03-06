@@ -16,6 +16,8 @@ new #[Title('Work Items')] #[Layout('layouts.app')] class extends Component {
 
     public bool $loading = true;
 
+    public ?string $error = null;
+
     #[Computed]
     public function organization(): ?\App\Models\Organization
     {
@@ -41,10 +43,13 @@ new #[Title('Work Items')] #[Layout('layouts.app')] class extends Component {
 
     public function loadWorkItems(): void
     {
+        $this->error = null;
+
         $manager = app(WorkItemProviderManager::class);
         $provider = $manager->resolve($this->project);
 
         if (! $provider) {
+            $this->error = __('Could not resolve work item provider ":provider".', ['provider' => $this->project->work_item_provider]);
             $this->loading = false;
 
             return;
@@ -54,6 +59,14 @@ new #[Title('Work Items')] #[Layout('layouts.app')] class extends Component {
         $projectKey = $config['project_key'] ?? null;
 
         if (! $projectKey) {
+            $this->error = __('No project key configured. Edit the project to set a project key (e.g. owner/repo for GitHub).');
+            $this->loading = false;
+
+            return;
+        }
+
+        if (! $this->project->organization?->github_installation_id && $this->project->work_item_provider === 'github') {
+            $this->error = __('No GitHub App installed for this organization. Install the GitHub App first.');
             $this->loading = false;
 
             return;
@@ -106,6 +119,10 @@ new #[Title('Work Items')] #[Layout('layouts.app')] class extends Component {
                     </flux:button>
                 </div>
             </div>
+        </div>
+    @elseif ($error)
+        <div class="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20" data-test="work-items-error">
+            <flux:text class="text-red-800 dark:text-red-200">{{ $error }}</flux:text>
         </div>
     @elseif ($loading)
         <div class="flex flex-1 items-center justify-center">

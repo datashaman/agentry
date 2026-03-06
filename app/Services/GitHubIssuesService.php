@@ -42,6 +42,11 @@ class GitHubIssuesService implements WorkItemProvider
         $token = $this->gitHub->getInstallationToken($org);
 
         if (! $token) {
+            Log::warning('GitHub Issues: no installation token available', [
+                'organization_id' => $org->id,
+                'github_installation_id' => $org->github_installation_id,
+            ]);
+
             return [];
         }
 
@@ -61,7 +66,11 @@ class GitHubIssuesService implements WorkItemProvider
             ->get("https://api.github.com/repos/{$projectKey}/issues", $query);
 
         if (! $response->successful()) {
-            Log::warning('GitHub Issues: failed to list issues', ['status' => $response->status()]);
+            Log::warning('GitHub Issues: failed to list issues', [
+                'status' => $response->status(),
+                'project_key' => $projectKey,
+                'body' => $response->json(),
+            ]);
 
             return [];
         }
