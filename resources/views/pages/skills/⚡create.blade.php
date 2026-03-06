@@ -18,8 +18,6 @@ new #[Title('New Skill')] #[Layout('layouts.app')] class extends Component {
 
     public string $content = '';
 
-    public string $context_triggers = '';
-
     public function updatedName(string $value): void
     {
         if ($this->slug === '' || $this->slug === Str::slug($this->name)) {
@@ -38,19 +36,12 @@ new #[Title('New Skill')] #[Layout('layouts.app')] class extends Component {
 
         $validated = $this->validate(StoreSkillRequest::getRules($org->id));
 
-        $contextTriggers = null;
-        if (! empty(trim($validated['context_triggers'] ?? ''))) {
-            $decoded = json_decode(trim($validated['context_triggers']), true);
-            $contextTriggers = is_array($decoded) ? $decoded : null;
-        }
-
         Skill::create([
             'organization_id' => $org->id,
             'name' => $validated['name'],
             'slug' => $validated['slug'],
             'description' => $validated['description'] ?: null,
             'content' => $validated['content'] ?: null,
-            'context_triggers' => $contextTriggers,
         ]);
 
         $this->redirect(route('skills.index'), navigate: true);
@@ -97,13 +88,6 @@ new #[Title('New Skill')] #[Layout('layouts.app')] class extends Component {
             <flux:textarea wire:model="content" data-test="skill-content-input" rows="10" placeholder="{{ __('Main instructions merged into agent context when this skill is assigned.') }}" />
             <flux:description>{{ __('Markdown-supported instructions that extend agent behavior.') }}</flux:description>
             <flux:error name="content" />
-        </flux:field>
-
-        <flux:field>
-            <flux:label>{{ __('Context Triggers (optional JSON)') }}</flux:label>
-            <flux:textarea wire:model="context_triggers" data-test="skill-context-triggers-input" rows="4" placeholder='{"repo.primary_language": ["php"], "repo.tags": ["laravel"]}' />
-            <flux:description>{{ __('Optional. Load this skill when work item context matches. Leave empty to only load when explicitly assigned.') }}</flux:description>
-            <flux:error name="context_triggers" />
         </flux:field>
 
         <div class="flex items-center gap-2">

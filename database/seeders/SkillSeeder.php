@@ -22,7 +22,6 @@ class SkillSeeder extends Seeder
                 'slug' => 'laravel',
                 'description' => 'Laravel conventions, Eloquent, and framework patterns',
                 'content' => 'Follow Laravel conventions. Use Eloquent for database access. Prefer relationship methods over raw queries. Use Form Requests for validation. Use named routes with route().',
-                'context_triggers' => ['repo.primary_language' => ['php', 'PHP']],
             ],
             [
                 'name' => 'Flux UI',

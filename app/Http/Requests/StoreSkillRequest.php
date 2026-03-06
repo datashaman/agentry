@@ -44,7 +44,6 @@ class StoreSkillRequest extends FormRequest
             'slug' => $slugRule,
             'description' => ['nullable', 'string', 'max:5000'],
             'content' => ['nullable', 'string', 'max:65535'],
-            'context_triggers' => ['nullable', 'string', 'max:5000', 'json'],
         ];
     }
 }

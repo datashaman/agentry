@@ -21,7 +21,6 @@ class Skill extends Model
         'slug',
         'description',
         'content',
-        'context_triggers',
     ];
 
     /**
@@ -41,15 +40,5 @@ class Skill extends Model
             ->withPivot('position')
             ->withTimestamps()
             ->orderByPivot('position');
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'context_triggers' => 'array',
-        ];
     }
 }

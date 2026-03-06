@@ -121,14 +121,6 @@ new #[Title('Skill')] #[Layout('layouts.app')] class extends Component {
         </div>
     </div>
 
-    {{-- Context Triggers --}}
-    @if ($skill->context_triggers && count($skill->context_triggers) > 0)
-        <div data-test="skill-context-triggers">
-            <flux:heading size="lg">{{ __('Context Triggers') }}</flux:heading>
-            <flux:text class="mt-2 font-mono text-sm">{{ json_encode($skill->context_triggers, JSON_PRETTY_PRINT) }}</flux:text>
-        </div>
-    @endif
-
     {{-- Content --}}
     <div data-test="skill-content">
         <flux:heading size="lg">{{ __('Content (Instructions)') }}</flux:heading>

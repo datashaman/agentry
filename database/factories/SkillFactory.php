@@ -25,7 +25,6 @@ class SkillFactory extends Factory
             'slug' => str_replace(' ', '-', strtolower($name)),
             'description' => fake()->sentence(),
             'content' => fake()->paragraphs(2, true),
-            'context_triggers' => null,
         ];
     }
 

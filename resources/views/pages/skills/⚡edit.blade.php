@@ -20,8 +20,6 @@ new #[Title('Edit Skill')] #[Layout('layouts.app')] class extends Component {
 
     public string $content = '';
 
-    public string $context_triggers = '';
-
     public function mount(): void
     {
         $org = Auth::user()->currentOrganization();
@@ -33,7 +31,6 @@ new #[Title('Edit Skill')] #[Layout('layouts.app')] class extends Component {
         $this->slug = $this->skill->slug;
         $this->description = $this->skill->description ?? '';
         $this->content = $this->skill->content ?? '';
-        $this->context_triggers = $this->skill->context_triggers !== null ? json_encode($this->skill->context_triggers, JSON_PRETTY_PRINT) : '';
     }
 
     public function updatedName(string $value): void
@@ -52,18 +49,11 @@ new #[Title('Edit Skill')] #[Layout('layouts.app')] class extends Component {
 
         $validated = $this->validate(UpdateSkillRequest::getRules($this->skill->id, $org->id));
 
-        $contextTriggers = null;
-        if (! empty(trim($validated['context_triggers'] ?? ''))) {
-            $decoded = json_decode(trim($validated['context_triggers']), true);
-            $contextTriggers = is_array($decoded) ? $decoded : null;
-        }
-
         $this->skill->update([
             'name' => $validated['name'],
             'slug' => $validated['slug'],
             'description' => $validated['description'] ?: null,
             'content' => $validated['content'] ?: null,
-            'context_triggers' => $contextTriggers,
         ]);
 
         $this->redirect(route('skills.show', $this->skill), navigate: true);
@@ -109,12 +99,6 @@ new #[Title('Edit Skill')] #[Layout('layouts.app')] class extends Component {
             <flux:label>{{ __('Content (Instructions)') }}</flux:label>
             <flux:textarea wire:model="content" data-test="skill-content-input" rows="10" />
             <flux:error name="content" />
-        </flux:field>
-
-        <flux:field>
-            <flux:label>{{ __('Context Triggers (optional JSON)') }}</flux:label>
-            <flux:textarea wire:model="context_triggers" data-test="skill-context-triggers-input" rows="4" placeholder='{"repo.primary_language": ["php"], "repo.tags": ["laravel"]}' />
-            <flux:error name="context_triggers" />
         </flux:field>
 
         <div class="flex items-center gap-2">
