@@ -1,15 +1,12 @@
 <?php
 
 use App\Models\Agent;
-use App\Models\Bug;
-use App\Models\Epic;
 use App\Models\HitlEscalation;
 use App\Models\OpsRequest;
 use App\Models\Organization;
 use App\Models\Project;
 use App\Models\Runbook;
 use App\Models\RunbookStep;
-use App\Models\Story;
 use App\Models\Team;
 use App\Models\User;
 
@@ -72,39 +69,6 @@ test('ops request detail page displays description', function () {
     $response = $this->get(route('projects.ops-requests.show', [$project, $opsRequest]));
     $response->assertOk();
     $response->assertSee('Rolling deployment of version 2.5 with zero-downtime strategy.');
-});
-
-test('ops request detail page displays linked stories', function () {
-    $organization = Organization::factory()->create();
-    $user = User::factory()->withOrganization($organization)->create();
-    $project = Project::factory()->create(['organization_id' => $organization->id]);
-    $epic = Epic::factory()->create(['project_id' => $project->id]);
-    $story = Story::factory()->create(['epic_id' => $epic->id, 'title' => 'Add caching layer']);
-    $opsRequest = OpsRequest::factory()->create(['project_id' => $project->id]);
-    $opsRequest->stories()->attach($story);
-
-    $this->actingAs($user);
-
-    $response = $this->get(route('projects.ops-requests.show', [$project, $opsRequest]));
-    $response->assertOk();
-    $response->assertSee('Linked Stories');
-    $response->assertSee('Add caching layer');
-});
-
-test('ops request detail page displays linked bugs', function () {
-    $organization = Organization::factory()->create();
-    $user = User::factory()->withOrganization($organization)->create();
-    $project = Project::factory()->create(['organization_id' => $organization->id]);
-    $bug = Bug::factory()->create(['project_id' => $project->id, 'title' => 'Memory leak in worker']);
-    $opsRequest = OpsRequest::factory()->create(['project_id' => $project->id]);
-    $opsRequest->bugs()->attach($bug);
-
-    $this->actingAs($user);
-
-    $response = $this->get(route('projects.ops-requests.show', [$project, $opsRequest]));
-    $response->assertOk();
-    $response->assertSee('Linked Bugs');
-    $response->assertSee('Memory leak in worker');
 });
 
 test('ops request detail page displays runbook with steps', function () {

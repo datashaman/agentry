@@ -14,8 +14,6 @@ new #[Title('Agent')] #[Layout('layouts.app')] class extends Component {
     {
         $this->agent->load(['agentRole', 'team']);
         $this->agent->load([
-            'assignedStories.epic.project',
-            'assignedBugs.project',
             'assignedOpsRequests.project',
         ]);
         $this->agent->setRelation(
@@ -32,20 +30,6 @@ new #[Title('Agent')] #[Layout('layouts.app')] class extends Component {
     public function organization(): ?\App\Models\Organization
     {
         return Auth::user()->currentOrganization();
-    }
-
-    public function storyUrl(\App\Models\Story $story): string
-    {
-        $project = $story->epic?->project;
-
-        return $project
-            ? route('projects.stories.show', [$project, $story])
-            : '#';
-    }
-
-    public function bugUrl(\App\Models\Bug $bug): string
-    {
-        return route('projects.bugs.show', [$bug->project, $bug]);
     }
 
     public function opsRequestUrl(\App\Models\OpsRequest $opsRequest): string
@@ -167,37 +151,7 @@ new #[Title('Agent')] #[Layout('layouts.app')] class extends Component {
     {{-- Currently Assigned Work --}}
     <div data-test="agent-assignments">
         <flux:heading size="lg">{{ __('Currently Assigned') }}</flux:heading>
-        <div class="mt-2 grid gap-4 sm:grid-cols-3">
-            <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-                <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('Stories') }}</flux:text>
-                @if ($agent->assignedStories->isEmpty())
-                    <flux:text class="mt-1">{{ __('None') }}</flux:text>
-                @else
-                    <ul class="mt-1 space-y-1">
-                        @foreach ($agent->assignedStories as $story)
-                            <li>
-                                <a href="{{ $this->storyUrl($story) }}" wire:navigate class="text-sm font-medium text-zinc-900 hover:underline dark:text-zinc-100">{{ $story->title }}</a>
-                                <flux:badge size="sm" variant="pill" class="ml-1">{{ $story->status }}</flux:badge>
-                            </li>
-                        @endforeach
-                    </ul>
-                @endif
-            </div>
-            <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-                <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('Bugs') }}</flux:text>
-                @if ($agent->assignedBugs->isEmpty())
-                    <flux:text class="mt-1">{{ __('None') }}</flux:text>
-                @else
-                    <ul class="mt-1 space-y-1">
-                        @foreach ($agent->assignedBugs as $bug)
-                            <li>
-                                <a href="{{ $this->bugUrl($bug) }}" wire:navigate class="text-sm font-medium text-zinc-900 hover:underline dark:text-zinc-100">{{ $bug->title }}</a>
-                                <flux:badge size="sm" variant="pill" class="ml-1">{{ $bug->status }}</flux:badge>
-                            </li>
-                        @endforeach
-                    </ul>
-                @endif
-            </div>
+        <div class="mt-2 grid gap-4">
             <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
                 <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('Ops Requests') }}</flux:text>
                 @if ($agent->assignedOpsRequests->isEmpty())
@@ -248,8 +202,6 @@ new #[Title('Agent')] #[Layout('layouts.app')] class extends Component {
                                             $type = class_basename($workItem);
                                             $title = $workItem->title ?? $workItem->id ?? '-';
                                             $url = match ($type) {
-                                                'Story' => $workItem->epic?->project ? route('projects.stories.show', [$workItem->epic->project, $workItem]) : null,
-                                                'Bug' => route('projects.bugs.show', [$workItem->project, $workItem]),
                                                 'OpsRequest' => route('projects.ops-requests.show', [$workItem->project, $workItem]),
                                                 default => null,
                                             };

@@ -26,9 +26,7 @@ test('project sub-nav contains all section links', function () {
     $response = $this->get(route('projects.show', $project));
     $response->assertOk();
     $response->assertSee('Overview');
-    $response->assertSee('Epics');
-    $response->assertSee('Stories');
-    $response->assertSee('Bugs');
+    $response->assertSee('Work Items');
     $response->assertSee('Ops Requests');
     $response->assertSee('Repos');
     $response->assertSee('Milestones');
@@ -47,19 +45,6 @@ test('project sub-nav shows Overview as active on project overview page', functi
     $response->assertOk();
     $response->assertSee('data-test="sub-nav-overview"', false);
     $response->assertSee('bg-zinc-100', false);
-});
-
-test('project sub-nav shows Stories as active on stories index page', function () {
-    $organization = Organization::factory()->create();
-    $user = User::factory()->withOrganization($organization)->create();
-    $project = Project::factory()->create(['organization_id' => $organization->id]);
-
-    $this->actingAs($user);
-
-    $response = $this->get(route('projects.stories.index', $project));
-    $response->assertOk();
-    $response->assertSee('data-test="project-sub-nav"', false);
-    $response->assertSee('data-test="sub-nav-stories"', false);
 });
 
 test('project sub-nav does not appear on dashboard without project context', function () {

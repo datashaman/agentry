@@ -3,12 +3,9 @@
 use App\Models\ActionLog;
 use App\Models\Agent;
 use App\Models\AgentRole;
-use App\Models\Bug;
-use App\Models\Epic;
 use App\Models\OpsRequest;
 use App\Models\Organization;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Team;
 use App\Models\User;
 
@@ -48,8 +45,6 @@ test('agent detail displays all sections', function () {
     $response->assertSee('90%');
 
     $response->assertSee('Currently Assigned');
-    $response->assertSee('Stories');
-    $response->assertSee('Bugs');
     $response->assertSee('Ops Requests');
 
     $response->assertSee('Recent Activity');
@@ -82,24 +77,13 @@ test('agent detail shows overrides when set', function () {
     $response->assertSee('120');
 });
 
-test('agent detail shows assigned stories, bugs, and ops requests with links', function () {
+test('agent detail shows assigned ops requests with links', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $project = Project::factory()->create(['organization_id' => $organization->id]);
     $team = Team::factory()->create(['organization_id' => $organization->id]);
     $agent = Agent::factory()->create(['team_id' => $team->id]);
-    $epic = Epic::factory()->create(['project_id' => $project->id]);
 
-    $story = Story::factory()->create([
-        'epic_id' => $epic->id,
-        'assigned_agent_id' => $agent->id,
-        'title' => 'Auth feature story',
-    ]);
-    $bug = Bug::factory()->create([
-        'project_id' => $project->id,
-        'assigned_agent_id' => $agent->id,
-        'title' => 'Login button bug',
-    ]);
     $opsRequest = OpsRequest::factory()->create([
         'project_id' => $project->id,
         'assigned_agent_id' => $agent->id,
@@ -111,12 +95,7 @@ test('agent detail shows assigned stories, bugs, and ops requests with links', f
     $response = $this->get(route('agents.show', $agent));
     $response->assertOk();
 
-    $response->assertSee('Auth feature story');
-    $response->assertSee('Login button bug');
     $response->assertSee('Deploy to staging');
-
-    $response->assertSee(route('projects.stories.show', [$project, $story]));
-    $response->assertSee(route('projects.bugs.show', [$project, $bug]));
     $response->assertSee(route('projects.ops-requests.show', [$project, $opsRequest]));
 });
 

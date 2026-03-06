@@ -1,11 +1,8 @@
 <?php
 
-use App\Models\Bug;
-use App\Models\Epic;
 use App\Models\Milestone;
 use App\Models\Organization;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\User;
 
 test('milestones list displays project milestones with all columns', function () {
@@ -18,9 +15,6 @@ test('milestones list displays project milestones with all columns', function ()
         'status' => 'active',
         'due_date' => '2026-04-15',
     ]);
-    $epic = Epic::factory()->create(['project_id' => $project->id]);
-    Story::factory()->count(3)->create(['epic_id' => $epic->id, 'milestone_id' => $milestone->id]);
-    Bug::factory()->count(2)->create(['project_id' => $project->id, 'milestone_id' => $milestone->id]);
 
     $this->actingAs($user);
 
@@ -29,8 +23,6 @@ test('milestones list displays project milestones with all columns', function ()
     $response->assertSee('Sprint 1 Release');
     $response->assertSee('active');
     $response->assertSee('Apr 15, 2026');
-    $response->assertSee('3'); // stories count
-    $response->assertSee('2'); // bugs count
 });
 
 test('milestones list shows empty state when no milestones exist', function () {

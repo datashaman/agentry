@@ -3,8 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attachment;
-use App\Models\Bug;
-use App\Models\Story;
+use App\Models\OpsRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -41,9 +40,7 @@ class DownloadAttachmentController extends Controller
             abort(404);
         }
 
-        $project = $workItem instanceof Story
-            ? $workItem->epic?->project
-            : ($workItem instanceof Bug ? $workItem->project : null);
+        $project = $workItem instanceof OpsRequest ? $workItem->project : null;
         if (! $project) {
             abort(404);
         }

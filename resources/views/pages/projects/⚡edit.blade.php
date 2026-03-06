@@ -15,11 +15,17 @@ new #[Title('Edit Project')] #[Layout('layouts.app')] class extends Component {
 
     public string $instructions = '';
 
+    public ?string $workItemProvider = null;
+
+    public ?string $workItemProjectKey = null;
+
     public function mount(): void
     {
         $this->name = $this->project->name;
         $this->description = $this->project->description ?? '';
         $this->instructions = $this->project->instructions ?? '';
+        $this->workItemProvider = $this->project->work_item_provider;
+        $this->workItemProjectKey = $this->project->work_item_provider_config['project_key'] ?? null;
     }
 
     public function updateProject(): void
@@ -28,12 +34,21 @@ new #[Title('Edit Project')] #[Layout('layouts.app')] class extends Component {
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
             'instructions' => ['nullable', 'string', 'max:5000'],
+            'workItemProvider' => ['nullable', 'string', 'in:jira,github'],
+            'workItemProjectKey' => ['nullable', 'string', 'max:255'],
         ]);
+
+        $config = null;
+        if ($validated['workItemProjectKey']) {
+            $config = ['project_key' => $validated['workItemProjectKey']];
+        }
 
         $this->project->update([
             'name' => $validated['name'],
             'description' => $validated['description'] ?: null,
             'instructions' => $validated['instructions'] ?: null,
+            'work_item_provider' => $validated['workItemProvider'] ?: null,
+            'work_item_provider_config' => $config,
         ]);
 
         $this->redirect(route('projects.show', $this->project), navigate: true);
@@ -73,6 +88,28 @@ new #[Title('Edit Project')] #[Layout('layouts.app')] class extends Component {
             <flux:textarea wire:model="instructions" data-test="project-instructions-input" rows="6" />
             <flux:description>{{ __('Instructions included at the start of agent conversations for this project.') }}</flux:description>
             <flux:error name="instructions" />
+        </flux:field>
+
+        <flux:separator class="my-2" />
+
+        <flux:heading size="lg">{{ __('Work Item Provider') }}</flux:heading>
+
+        <flux:field>
+            <flux:label>{{ __('Provider') }}</flux:label>
+            <flux:select wire:model="workItemProvider" data-test="work-item-provider-select" placeholder="{{ __('None') }}">
+                <flux:select.option value="">{{ __('None') }}</flux:select.option>
+                <flux:select.option value="jira">{{ __('Jira') }}</flux:select.option>
+                <flux:select.option value="github">{{ __('GitHub Issues') }}</flux:select.option>
+            </flux:select>
+            <flux:description>{{ __('Select where work items are tracked for this project.') }}</flux:description>
+            <flux:error name="workItemProvider" />
+        </flux:field>
+
+        <flux:field>
+            <flux:label>{{ __('Project Key') }}</flux:label>
+            <flux:input wire:model="workItemProjectKey" data-test="work-item-project-key-input" placeholder="{{ __('e.g. PROJ or owner/repo') }}" />
+            <flux:description>{{ __('Jira project key or GitHub owner/repo.') }}</flux:description>
+            <flux:error name="workItemProjectKey" />
         </flux:field>
 
         <div class="flex items-center gap-2">

@@ -1,9 +1,8 @@
 <?php
 
 use App\Models\Agent;
-use App\Models\Bug;
 use App\Models\Critique;
-use App\Models\Story;
+use App\Models\OpsRequest;
 
 test('can create a critique', function () {
     $critique = Critique::factory()->create();
@@ -12,26 +11,15 @@ test('can create a critique', function () {
         ->and($critique->critic_type)->not->toBeEmpty();
 });
 
-test('critique polymorphically belongs to story', function () {
-    $story = Story::factory()->create();
+test('critique polymorphically belongs to ops request', function () {
+    $opsRequest = OpsRequest::factory()->create();
     $critique = Critique::factory()->create([
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
+        'work_item_id' => $opsRequest->id,
+        'work_item_type' => OpsRequest::class,
     ]);
 
-    expect($critique->workItem)->toBeInstanceOf(Story::class)
-        ->and($critique->workItem->id)->toBe($story->id);
-});
-
-test('critique polymorphically belongs to bug', function () {
-    $bug = Bug::factory()->create();
-    $critique = Critique::factory()->create([
-        'work_item_id' => $bug->id,
-        'work_item_type' => Bug::class,
-    ]);
-
-    expect($critique->workItem)->toBeInstanceOf(Bug::class)
-        ->and($critique->workItem->id)->toBe($bug->id);
+    expect($critique->workItem)->toBeInstanceOf(OpsRequest::class)
+        ->and($critique->workItem->id)->toBe($opsRequest->id);
 });
 
 test('critique belongs to agent', function () {
@@ -42,24 +30,15 @@ test('critique belongs to agent', function () {
         ->and($critique->agent->id)->toBe($agent->id);
 });
 
-test('story has many critiques', function () {
-    $story = Story::factory()->create();
+test('ops request has many critiques via morph', function () {
+    $opsRequest = OpsRequest::factory()->create();
     Critique::factory()->count(3)->create([
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
+        'work_item_id' => $opsRequest->id,
+        'work_item_type' => OpsRequest::class,
     ]);
 
-    expect($story->critiques)->toHaveCount(3);
-});
-
-test('bug has many critiques', function () {
-    $bug = Bug::factory()->create();
-    Critique::factory()->count(2)->create([
-        'work_item_id' => $bug->id,
-        'work_item_type' => Bug::class,
-    ]);
-
-    expect($bug->critiques)->toHaveCount(2);
+    expect(Critique::where('work_item_id', $opsRequest->id)
+        ->where('work_item_type', OpsRequest::class)->count())->toBe(3);
 });
 
 test('agent has many critiques', function () {
@@ -121,10 +100,10 @@ test('critique json fields are nullable', function () {
 });
 
 test('critique severity defaults to suggestion', function () {
-    $story = Story::factory()->create();
+    $opsRequest = OpsRequest::factory()->create();
     $critique = Critique::create([
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
+        'work_item_id' => $opsRequest->id,
+        'work_item_type' => OpsRequest::class,
         'critic_type' => 'spec',
     ]);
     $critique->refresh();
@@ -133,10 +112,10 @@ test('critique severity defaults to suggestion', function () {
 });
 
 test('critique disposition defaults to pending', function () {
-    $story = Story::factory()->create();
+    $opsRequest = OpsRequest::factory()->create();
     $critique = Critique::create([
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
+        'work_item_id' => $opsRequest->id,
+        'work_item_type' => OpsRequest::class,
         'critic_type' => 'spec',
     ]);
     $critique->refresh();
@@ -145,10 +124,10 @@ test('critique disposition defaults to pending', function () {
 });
 
 test('critique revision defaults to 1', function () {
-    $story = Story::factory()->create();
+    $opsRequest = OpsRequest::factory()->create();
     $critique = Critique::create([
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
+        'work_item_id' => $opsRequest->id,
+        'work_item_type' => OpsRequest::class,
         'critic_type' => 'spec',
     ]);
     $critique->refresh();
@@ -200,58 +179,8 @@ test('superseded critiques are immutable', function () {
 
     expect($original->isSuperseded())->toBeTrue();
 
-    // Superseded critique should not be modifiable
-    // This invariant is enforced at application level
     $original->disposition = 'accepted';
     expect($original->isSuperseded())->toBeTrue();
-});
-
-test('blocking critique with pending disposition prevents story completion', function () {
-    $story = Story::factory()->create(['status' => 'in_review']);
-    Critique::factory()->create([
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
-        'severity' => 'blocking',
-        'disposition' => 'pending',
-    ]);
-
-    expect($story->hasBlockingCritique())->toBeTrue();
-});
-
-test('blocking critique with accepted disposition does not prevent completion', function () {
-    $story = Story::factory()->create(['status' => 'in_review']);
-    Critique::factory()->create([
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
-        'severity' => 'blocking',
-        'disposition' => 'accepted',
-    ]);
-
-    expect($story->hasBlockingCritique())->toBeFalse();
-});
-
-test('non-blocking critique does not prevent completion', function () {
-    $story = Story::factory()->create(['status' => 'in_review']);
-    Critique::factory()->create([
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
-        'severity' => 'major',
-        'disposition' => 'pending',
-    ]);
-
-    expect($story->hasBlockingCritique())->toBeFalse();
-});
-
-test('blocking critique with pending disposition prevents bug completion', function () {
-    $bug = Bug::factory()->create(['status' => 'in_review']);
-    Critique::factory()->create([
-        'work_item_id' => $bug->id,
-        'work_item_type' => Bug::class,
-        'severity' => 'blocking',
-        'disposition' => 'pending',
-    ]);
-
-    expect($bug->hasBlockingCritique())->toBeTrue();
 });
 
 test('can update a critique', function () {

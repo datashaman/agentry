@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Project;
-use App\Models\Story;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -17,18 +16,6 @@ new #[Title('Project')] #[Layout('layouts.app')] class extends Component {
     }
 
     #[Computed]
-    public function storiesCount(): int
-    {
-        return $this->project->stories()->count();
-    }
-
-    #[Computed]
-    public function bugsCount(): int
-    {
-        return $this->project->bugs()->count();
-    }
-
-    #[Computed]
     public function reposCount(): int
     {
         return $this->project->repos()->count();
@@ -41,27 +28,9 @@ new #[Title('Project')] #[Layout('layouts.app')] class extends Component {
     }
 
     #[Computed]
-    public function epics(): \Illuminate\Database\Eloquent\Collection
+    public function workItemProvider(): ?string
     {
-        return $this->project->epics()
-            ->withCount('stories')
-            ->orderBy('priority')
-            ->get();
-    }
-
-    #[Computed]
-    public function activeStoriesByStatus(): array
-    {
-        $activeStatuses = ['backlog', 'spec_critique', 'refined', 'sprint_planned', 'design_critique', 'in_development', 'in_review', 'staging', 'blocked'];
-
-        return Story::query()
-            ->whereHas('epic', fn ($q) => $q->where('project_id', $this->project->id))
-            ->whereIn('status', $activeStatuses)
-            ->with('epic')
-            ->orderBy('priority')
-            ->get()
-            ->groupBy('status')
-            ->all();
+        return $this->project->work_item_provider;
     }
 
     #[Computed]
@@ -92,20 +61,6 @@ new #[Title('Project')] #[Layout('layouts.app')] class extends Component {
     </div>
 
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4" data-test="summary-stats">
-        <a href="{{ route('projects.stories.index', $project) }}" wire:navigate class="rounded-xl border border-zinc-200 p-6 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50">
-            <flux:text class="text-sm font-medium">{{ __('Stories') }}</flux:text>
-            <div class="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-100" data-test="stories-count">
-                {{ $this->storiesCount }}
-            </div>
-        </a>
-
-        <a href="{{ route('projects.bugs.index', $project) }}" wire:navigate class="rounded-xl border border-zinc-200 p-6 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50">
-            <flux:text class="text-sm font-medium">{{ __('Bugs') }}</flux:text>
-            <div class="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-100" data-test="bugs-count">
-                {{ $this->bugsCount }}
-            </div>
-        </a>
-
         <a href="{{ route('projects.ops-requests.index', $project) }}" wire:navigate class="rounded-xl border border-zinc-200 p-6 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50">
             <flux:text class="text-sm font-medium">{{ __('Ops Requests') }}</flux:text>
             <div class="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-100" data-test="ops-requests-count">
@@ -124,56 +79,12 @@ new #[Title('Project')] #[Layout('layouts.app')] class extends Component {
             <flux:text class="text-sm font-medium">{{ __('Action Logs') }}</flux:text>
             <flux:text class="mt-2 block text-3xl font-bold text-zinc-900 dark:text-zinc-100">{{ __('View') }}</flux:text>
         </a>
+
+        <a href="{{ route('projects.work-items.index', $project) }}" wire:navigate class="rounded-xl border border-zinc-200 p-6 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50" data-test="work-items-link">
+            <flux:text class="text-sm font-medium">{{ __('Work Items') }}</flux:text>
+            <flux:text class="mt-2 block text-3xl font-bold text-zinc-900 dark:text-zinc-100">{{ __('View') }}</flux:text>
+        </a>
     </div>
-
-    @if ($this->epics->isNotEmpty())
-        <div>
-            <div class="flex items-center justify-between">
-                <flux:heading size="lg">{{ __('Epics') }}</flux:heading>
-                <a href="{{ route('projects.epics.index', $project) }}" wire:navigate class="text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200">{{ __('View all') }}</a>
-            </div>
-            <div class="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                @foreach ($this->epics as $epic)
-                    <a href="{{ route('projects.stories.index', ['project' => $project, 'epic' => $epic->id]) }}" wire:navigate class="rounded-xl border border-zinc-200 p-4 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50" data-test="epic-card">
-                        <div class="flex items-center justify-between">
-                            <flux:heading size="sm">{{ $epic->title }}</flux:heading>
-                            <flux:badge size="sm" variant="pill">{{ $epic->status }}</flux:badge>
-                        </div>
-                        <flux:text class="mt-2 text-sm">{{ $epic->stories_count }} {{ Str::plural('story', $epic->stories_count) }}</flux:text>
-                    </a>
-                @endforeach
-            </div>
-        </div>
-    @endif
-
-    @if (count($this->activeStoriesByStatus) > 0)
-        <div>
-            <flux:heading size="lg">{{ __('Active Stories') }}</flux:heading>
-            <div class="mt-3 space-y-4">
-                @foreach ($this->activeStoriesByStatus as $status => $stories)
-                    <div data-test="status-group">
-                        <flux:heading size="sm" class="mb-2">{{ str_replace('_', ' ', ucfirst($status)) }} ({{ count($stories) }})</flux:heading>
-                        <div class="space-y-2">
-                            @foreach ($stories as $story)
-                                <a href="{{ route('projects.stories.show', ['project' => $project, 'story' => $story]) }}" wire:navigate class="flex items-center justify-between rounded-lg border border-zinc-200 p-3 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50" data-test="story-row">
-                                    <div>
-                                        <flux:text class="font-medium">{{ $story->title }}</flux:text>
-                                        <flux:text class="text-xs text-zinc-500">{{ $story->epic?->title }}</flux:text>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        @if ($story->story_points)
-                                            <flux:badge size="sm" variant="pill">{{ $story->story_points }} pts</flux:badge>
-                                        @endif
-                                        <flux:badge size="sm" variant="pill">P{{ $story->priority }}</flux:badge>
-                                    </div>
-                                </a>
-                            @endforeach
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    @endif
 
     @if ($this->milestones->isNotEmpty())
         <div>

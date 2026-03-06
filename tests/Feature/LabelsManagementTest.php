@@ -1,25 +1,17 @@
 <?php
 
-use App\Models\Bug;
-use App\Models\Epic;
 use App\Models\Label;
 use App\Models\Organization;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\User;
 use Livewire\Livewire;
 
-test('labels page displays project labels with story and bug counts', function () {
+test('labels page displays project labels', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $project = Project::factory()->create(['organization_id' => $organization->id]);
 
-    $label = Label::factory()->create(['project_id' => $project->id, 'name' => 'Feature', 'color' => '#ff0000']);
-    $epic = Epic::factory()->create(['project_id' => $project->id]);
-    $story = Story::factory()->create(['epic_id' => $epic->id]);
-    $bug = Bug::factory()->create(['project_id' => $project->id]);
-    $label->stories()->attach($story);
-    $label->bugs()->attach($bug);
+    Label::factory()->create(['project_id' => $project->id, 'name' => 'Feature', 'color' => '#ff0000']);
 
     $this->actingAs($user);
 

@@ -21,7 +21,6 @@ new #[Title('Milestones')] #[Layout('layouts.app')] class extends Component {
     public function milestones(): \Illuminate\Database\Eloquent\Collection
     {
         $query = $this->project->milestones()
-            ->withCount(['stories', 'bugs'])
             ->orderBy('due_date');
 
         if ($this->statusFilter) {
@@ -67,8 +66,6 @@ new #[Title('Milestones')] #[Layout('layouts.app')] class extends Component {
                         <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Title') }}</th>
                         <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Status') }}</th>
                         <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Due Date') }}</th>
-                        <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Stories') }}</th>
-                        <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Bugs') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -83,12 +80,6 @@ new #[Title('Milestones')] #[Layout('layouts.app')] class extends Component {
                                 </td>
                                 <td class="px-4 py-3">
                                     <flux:text>{{ $milestone->due_date?->format('M j, Y') ?? '-' }}</flux:text>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <flux:text>{{ $milestone->stories_count }}</flux:text>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <flux:text>{{ $milestone->bugs_count }}</flux:text>
                                 </td>
                             </tr>
                         </a>

@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Agent;
-use App\Models\Story;
+use App\Models\OpsRequest;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,11 +18,11 @@ class CritiqueFactory extends Factory
      */
     public function definition(): array
     {
-        $story = Story::factory()->create();
+        $opsRequest = OpsRequest::factory()->create();
 
         return [
-            'work_item_id' => $story->id,
-            'work_item_type' => Story::class,
+            'work_item_id' => $opsRequest->id,
+            'work_item_type' => OpsRequest::class,
             'agent_id' => Agent::factory(),
             'critic_type' => fake()->randomElement(['spec', 'code', 'test', 'design']),
             'revision' => fake()->numberBetween(1, 5),
@@ -34,13 +34,13 @@ class CritiqueFactory extends Factory
         ];
     }
 
-    public function forStory(?Story $story = null): static
+    public function forOpsRequest(?OpsRequest $opsRequest = null): static
     {
-        $story ??= Story::factory()->create();
+        $opsRequest ??= OpsRequest::factory()->create();
 
         return $this->state(fn () => [
-            'work_item_id' => $story->id,
-            'work_item_type' => Story::class,
+            'work_item_id' => $opsRequest->id,
+            'work_item_type' => OpsRequest::class,
         ]);
     }
 }

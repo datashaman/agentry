@@ -74,7 +74,7 @@ test('save permissions persists to database', function () {
 
 test('permissions page loads with existing saved permissions', function () {
     $organization = Organization::factory()->create([
-        'agent_permissions' => ['create_pull_requests' => true, 'create_bugs' => true],
+        'agent_permissions' => ['create_pull_requests' => true, 'create_work_items' => true],
     ]);
     $user = User::factory()->withOrganization($organization)->create();
 
@@ -82,7 +82,7 @@ test('permissions page loads with existing saved permissions', function () {
 
     Livewire::test('pages::agent-permissions.index')
         ->assertSet('permissions.create_pull_requests', true)
-        ->assertSet('permissions.create_bugs', true)
+        ->assertSet('permissions.create_work_items', true)
         ->assertSet('permissions.merge_pull_requests', false);
 });
 
@@ -92,8 +92,7 @@ test('allAgentPermissionKeys returns flat list of all permission keys', function
     expect($keys)->toContain('create_branches')
         ->toContain('push_code')
         ->toContain('merge_pull_requests')
-        ->toContain('create_epics')
-        ->toContain('trigger_deployments')
+        ->toContain('create_work_items')
         ->toContain('execute_runbooks');
 
     $totalExpected = 0;

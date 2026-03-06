@@ -1,13 +1,10 @@
 <?php
 
 use App\Models\Agent;
-use App\Models\Bug;
-use App\Models\Epic;
 use App\Models\HitlEscalation;
 use App\Models\OpsRequest;
 use App\Models\Organization;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\Team;
 use App\Models\User;
 
@@ -29,21 +26,20 @@ test('escalations page displays unresolved escalations for the user organization
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $project = Project::factory()->create(['organization_id' => $organization->id]);
-    $epic = Epic::factory()->create(['project_id' => $project->id]);
-    $story = Story::factory()->create(['epic_id' => $epic->id]);
+    $opsRequest = OpsRequest::factory()->create(['project_id' => $project->id]);
 
     HitlEscalation::factory()->create([
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
+        'work_item_id' => $opsRequest->id,
+        'work_item_type' => OpsRequest::class,
         'trigger_type' => 'confidence',
-        'reason' => 'Low confidence on design',
+        'reason' => 'Low confidence on plan',
     ]);
 
     $this->actingAs($user);
 
     $response = $this->get(route('escalations.index'));
     $response->assertOk();
-    $response->assertSee('Low confidence on design');
+    $response->assertSee('Low confidence on plan');
     $response->assertSee('Confidence');
 });
 
@@ -51,12 +47,11 @@ test('escalations page does not display resolved escalations', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $project = Project::factory()->create(['organization_id' => $organization->id]);
-    $epic = Epic::factory()->create(['project_id' => $project->id]);
-    $story = Story::factory()->create(['epic_id' => $epic->id]);
+    $opsRequest = OpsRequest::factory()->create(['project_id' => $project->id]);
 
     HitlEscalation::factory()->resolved()->create([
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
+        'work_item_id' => $opsRequest->id,
+        'work_item_type' => OpsRequest::class,
         'reason' => 'Already resolved issue',
     ]);
 
@@ -72,12 +67,11 @@ test('escalations page does not display escalations from other organizations', f
     $otherOrganization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $otherProject = Project::factory()->create(['organization_id' => $otherOrganization->id]);
-    $otherEpic = Epic::factory()->create(['project_id' => $otherProject->id]);
-    $otherStory = Story::factory()->create(['epic_id' => $otherEpic->id]);
+    $otherOpsRequest = OpsRequest::factory()->create(['project_id' => $otherProject->id]);
 
     HitlEscalation::factory()->create([
-        'work_item_id' => $otherStory->id,
-        'work_item_type' => Story::class,
+        'work_item_id' => $otherOpsRequest->id,
+        'work_item_type' => OpsRequest::class,
         'reason' => 'Secret escalation',
     ]);
 
@@ -86,27 +80,6 @@ test('escalations page does not display escalations from other organizations', f
     $response = $this->get(route('escalations.index'));
     $response->assertOk();
     $response->assertDontSee('Secret escalation');
-});
-
-test('escalations page shows escalations for bugs', function () {
-    $organization = Organization::factory()->create();
-    $user = User::factory()->withOrganization($organization)->create();
-    $project = Project::factory()->create(['organization_id' => $organization->id]);
-    $bug = Bug::factory()->create(['project_id' => $project->id]);
-
-    HitlEscalation::factory()->create([
-        'work_item_id' => $bug->id,
-        'work_item_type' => Bug::class,
-        'trigger_type' => 'risk',
-        'reason' => 'High risk bug fix',
-    ]);
-
-    $this->actingAs($user);
-
-    $response = $this->get(route('escalations.index'));
-    $response->assertOk();
-    $response->assertSee('High risk bug fix');
-    $response->assertSee('Bug');
 });
 
 test('escalations page shows escalations for ops requests', function () {
@@ -134,19 +107,18 @@ test('escalations page can filter by trigger type', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $project = Project::factory()->create(['organization_id' => $organization->id]);
-    $epic = Epic::factory()->create(['project_id' => $project->id]);
-    $story = Story::factory()->create(['epic_id' => $epic->id]);
+    $opsRequest = OpsRequest::factory()->create(['project_id' => $project->id]);
 
     HitlEscalation::factory()->create([
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
+        'work_item_id' => $opsRequest->id,
+        'work_item_type' => OpsRequest::class,
         'trigger_type' => 'confidence',
         'reason' => 'Confidence issue here',
     ]);
 
     HitlEscalation::factory()->create([
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
+        'work_item_id' => $opsRequest->id,
+        'work_item_type' => OpsRequest::class,
         'trigger_type' => 'risk',
         'reason' => 'Risk issue here',
     ]);
@@ -159,46 +131,17 @@ test('escalations page can filter by trigger type', function () {
     $response->assertDontSee('Risk issue here');
 });
 
-test('escalations page can filter by work item type', function () {
-    $organization = Organization::factory()->create();
-    $user = User::factory()->withOrganization($organization)->create();
-    $project = Project::factory()->create(['organization_id' => $organization->id]);
-    $epic = Epic::factory()->create(['project_id' => $project->id]);
-    $story = Story::factory()->create(['epic_id' => $epic->id]);
-    $bug = Bug::factory()->create(['project_id' => $project->id]);
-
-    HitlEscalation::factory()->create([
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
-        'reason' => 'Story escalation',
-    ]);
-
-    HitlEscalation::factory()->create([
-        'work_item_id' => $bug->id,
-        'work_item_type' => Bug::class,
-        'reason' => 'Bug escalation',
-    ]);
-
-    $this->actingAs($user);
-
-    $response = $this->get(route('escalations.index', ['workItemType' => 'bug']));
-    $response->assertOk();
-    $response->assertSee('Bug escalation');
-    $response->assertDontSee('Story escalation');
-});
-
 test('escalations page displays agent name', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $team = Team::factory()->create(['organization_id' => $organization->id]);
     $agent = Agent::factory()->create(['team_id' => $team->id, 'name' => 'Reviewer Bot']);
     $project = Project::factory()->create(['organization_id' => $organization->id]);
-    $epic = Epic::factory()->create(['project_id' => $project->id]);
-    $story = Story::factory()->create(['epic_id' => $epic->id]);
+    $opsRequest = OpsRequest::factory()->create(['project_id' => $project->id]);
 
     HitlEscalation::factory()->create([
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
+        'work_item_id' => $opsRequest->id,
+        'work_item_type' => OpsRequest::class,
         'raised_by_agent_id' => $agent->id,
         'reason' => 'Agent raised this',
     ]);
@@ -214,12 +157,11 @@ test('escalations page shows work item links', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $project = Project::factory()->create(['organization_id' => $organization->id]);
-    $epic = Epic::factory()->create(['project_id' => $project->id]);
-    $story = Story::factory()->create(['epic_id' => $epic->id, 'title' => 'Linked Story Title']);
+    $opsRequest = OpsRequest::factory()->create(['project_id' => $project->id, 'title' => 'Linked Ops Request Title']);
 
     HitlEscalation::factory()->create([
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
+        'work_item_id' => $opsRequest->id,
+        'work_item_type' => OpsRequest::class,
         'reason' => 'Needs review',
     ]);
 
@@ -227,8 +169,8 @@ test('escalations page shows work item links', function () {
 
     $response = $this->get(route('escalations.index'));
     $response->assertOk();
-    $response->assertSee('Linked Story Title');
-    $response->assertSee(route('projects.stories.show', [$project, $story]));
+    $response->assertSee('Linked Ops Request Title');
+    $response->assertSee(route('projects.ops-requests.show', [$project, $opsRequest]));
 });
 
 test('escalations page shows empty state when no escalations', function () {

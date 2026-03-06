@@ -32,20 +32,10 @@ class Organization extends Model
         'Code' => [
             'push_code',
         ],
-        'Epics' => [
-            'create_epics',
-            'update_epics',
-            'delete_epics',
-        ],
-        'Stories' => [
-            'create_stories',
-            'update_stories',
-            'delete_stories',
-        ],
-        'Bugs' => [
-            'create_bugs',
-            'update_bugs',
-            'close_bugs',
+        'Work Items' => [
+            'create_work_items',
+            'update_work_items',
+            'close_work_items',
         ],
         'Ops Requests' => [
             'create_ops_requests',

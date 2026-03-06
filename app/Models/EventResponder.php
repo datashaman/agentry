@@ -12,14 +12,10 @@ class EventResponder extends Model
     use HasFactory;
 
     public const WORK_ITEM_TYPES = [
-        'story' => Story::class,
-        'bug' => Bug::class,
         'ops_request' => OpsRequest::class,
     ];
 
     public const AVAILABLE_STATUSES = [
-        'story' => ['spec_critique', 'design_critique', 'in_development', 'in_review', 'backlog', 'refined', 'sprint_planned', 'staging', 'merged', 'deployed', 'blocked', 'closed_done', 'closed_wont_do'],
-        'bug' => ['triaged', 'in_progress', 'in_review', 'new', 'verified', 'released', 'blocked', 'closed_fixed', 'closed_duplicate', 'closed_cant_reproduce'],
         'ops_request' => ['triaged', 'planning', 'executing', 'verifying', 'new', 'closed_done', 'closed_invalid', 'closed_rejected'],
     ];
 

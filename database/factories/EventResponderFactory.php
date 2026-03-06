@@ -18,7 +18,7 @@ class EventResponderFactory extends Factory
      */
     public function definition(): array
     {
-        $workItemType = fake()->randomElement(['story', 'bug', 'ops_request']);
+        $workItemType = 'ops_request';
         $statuses = EventResponder::AVAILABLE_STATUSES[$workItemType];
 
         return [

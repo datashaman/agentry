@@ -24,8 +24,6 @@ new #[Title('Ops Request Detail')] #[Layout('layouts.app')] class extends Compon
     {
         $this->opsRequest->load([
             'assignedAgent',
-            'stories',
-            'bugs',
             'runbooks.steps',
             'hitlEscalations.raisedByAgent',
         ]);
@@ -126,38 +124,6 @@ new #[Title('Ops Request Detail')] #[Layout('layouts.app')] class extends Compon
         <div data-test="ops-request-description">
             <flux:heading size="lg">{{ __('Description') }}</flux:heading>
             <flux:text class="mt-2 whitespace-pre-wrap">{{ $opsRequest->description }}</flux:text>
-        </div>
-    @endif
-
-    {{-- Linked Stories --}}
-    @if ($opsRequest->stories->isNotEmpty())
-        <div data-test="ops-request-stories">
-            <flux:heading size="lg">{{ __('Linked Stories') }}</flux:heading>
-            <ul class="mt-2 space-y-1">
-                @foreach ($opsRequest->stories as $story)
-                    <li>
-                        <a href="{{ route('projects.stories.show', [$project, $story]) }}" class="text-sm hover:underline" wire:navigate>
-                            {{ $story->title }}
-                        </a>
-                    </li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
-    {{-- Linked Bugs --}}
-    @if ($opsRequest->bugs->isNotEmpty())
-        <div data-test="ops-request-bugs">
-            <flux:heading size="lg">{{ __('Linked Bugs') }}</flux:heading>
-            <ul class="mt-2 space-y-1">
-                @foreach ($opsRequest->bugs as $bug)
-                    <li>
-                        <a href="{{ route('projects.bugs.show', [$project, $bug]) }}" class="text-sm hover:underline" wire:navigate>
-                            {{ $bug->title }}
-                        </a>
-                    </li>
-                @endforeach
-            </ul>
         </div>
     @endif
 

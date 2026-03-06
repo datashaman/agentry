@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Agent;
-use App\Models\Story;
+use App\Models\OpsRequest;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,11 +18,11 @@ class HitlEscalationFactory extends Factory
      */
     public function definition(): array
     {
-        $story = Story::factory()->create();
+        $opsRequest = OpsRequest::factory()->create();
 
         return [
-            'work_item_id' => $story->id,
-            'work_item_type' => Story::class,
+            'work_item_id' => $opsRequest->id,
+            'work_item_type' => OpsRequest::class,
             'raised_by_agent_id' => Agent::factory(),
             'trigger_type' => fake()->randomElement(['confidence', 'risk', 'policy', 'ambiguity']),
             'trigger_class' => fake()->optional()->word(),
@@ -31,13 +31,13 @@ class HitlEscalationFactory extends Factory
         ];
     }
 
-    public function forStory(?Story $story = null): static
+    public function forOpsRequest(?OpsRequest $opsRequest = null): static
     {
-        $story ??= Story::factory()->create();
+        $opsRequest ??= OpsRequest::factory()->create();
 
         return $this->state(fn () => [
-            'work_item_id' => $story->id,
-            'work_item_type' => Story::class,
+            'work_item_id' => $opsRequest->id,
+            'work_item_type' => OpsRequest::class,
         ]);
     }
 

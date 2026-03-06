@@ -15,40 +15,16 @@
             {{ __('Overview') }}
         </a>
         <a
-            href="{{ route('projects.epics.index', $project) }}"
+            href="{{ route('projects.work-items.index', $project) }}"
             wire:navigate
             @class([
                 'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                'bg-zinc-100 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100' => request()->routeIs('projects.epics.*'),
-                'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100' => ! request()->routeIs('projects.epics.*'),
+                'bg-zinc-100 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100' => request()->routeIs('projects.work-items.*'),
+                'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100' => ! request()->routeIs('projects.work-items.*'),
             ])
-            data-test="sub-nav-epics"
+            data-test="sub-nav-work-items"
         >
-            {{ __('Epics') }}
-        </a>
-        <a
-            href="{{ route('projects.stories.index', $project) }}"
-            wire:navigate
-            @class([
-                'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                'bg-zinc-100 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100' => request()->routeIs('projects.stories.*'),
-                'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100' => ! request()->routeIs('projects.stories.*'),
-            ])
-            data-test="sub-nav-stories"
-        >
-            {{ __('Stories') }}
-        </a>
-        <a
-            href="{{ route('projects.bugs.index', $project) }}"
-            wire:navigate
-            @class([
-                'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                'bg-zinc-100 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100' => request()->routeIs('projects.bugs.*'),
-                'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100' => ! request()->routeIs('projects.bugs.*'),
-            ])
-            data-test="sub-nav-bugs"
-        >
-            {{ __('Bugs') }}
+            {{ __('Work Items') }}
         </a>
         <a
             href="{{ route('projects.ops-requests.index', $project) }}"

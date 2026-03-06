@@ -5,10 +5,8 @@ namespace App\Jobs;
 use App\Agents\AgentResolver;
 use App\Agents\Workflows\WorkflowRunner;
 use App\Models\Agent;
-use App\Models\Bug;
 use App\Models\EventResponder;
 use App\Models\OpsRequest;
-use App\Models\Story;
 use App\Models\Team;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -21,7 +19,7 @@ class RunAgentWork implements ShouldQueue
     public function __construct(
         public Agent $agent,
         public ?Team $team,
-        public Story|Bug|OpsRequest $workItem,
+        public OpsRequest $workItem,
         public EventResponder $responder,
     ) {}
 

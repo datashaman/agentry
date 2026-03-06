@@ -11,8 +11,8 @@ test('agent role show page displays event responders section', function () {
     $user = User::factory()->withOrganization($organization)->create(['current_organization_id' => $organization->id]);
     $agentRole = AgentRole::factory()->create(['organization_id' => $organization->id]);
     EventResponder::factory()->forAgentRole($agentRole)->create([
-        'work_item_type' => 'story',
-        'status' => 'spec_critique',
+        'work_item_type' => 'ops_request',
+        'status' => 'planning',
         'instructions' => 'Critique this spec',
     ]);
 
@@ -22,7 +22,7 @@ test('agent role show page displays event responders section', function () {
     $response->assertOk();
     $response->assertSee('Event Responders');
     $response->assertSee('Critique this spec');
-    $response->assertSee('spec critique');
+    $response->assertSee('planning');
 });
 
 test('add event responder creates a responder on the agent role', function () {
@@ -33,16 +33,16 @@ test('add event responder creates a responder on the agent role', function () {
     $this->actingAs($user);
 
     Livewire::test('pages::agent-roles.edit', ['agentRole' => $agentRole])
-        ->set('responderWorkItemType', 'story')
-        ->set('responderStatus', 'in_development')
+        ->set('responderWorkItemType', 'ops_request')
+        ->set('responderStatus', 'in_progress')
         ->set('responderInstructions', 'Implement the feature')
         ->call('addEventResponder')
         ->assertHasNoErrors();
 
     $this->assertDatabaseHas('event_responders', [
         'agent_role_id' => $agentRole->id,
-        'work_item_type' => 'story',
-        'status' => 'in_development',
+        'work_item_type' => 'ops_request',
+        'status' => 'in_progress',
         'instructions' => 'Implement the feature',
     ]);
 });
@@ -67,15 +67,15 @@ test('add event responder prevents duplicate work_item_type and status', functio
     $user = User::factory()->withOrganization($organization)->create(['current_organization_id' => $organization->id]);
     $agentRole = AgentRole::factory()->create(['organization_id' => $organization->id]);
     EventResponder::factory()->forAgentRole($agentRole)->create([
-        'work_item_type' => 'bug',
-        'status' => 'triaged',
+        'work_item_type' => 'ops_request',
+        'status' => 'planning',
     ]);
 
     $this->actingAs($user);
 
     Livewire::test('pages::agent-roles.edit', ['agentRole' => $agentRole])
-        ->set('responderWorkItemType', 'bug')
-        ->set('responderStatus', 'triaged')
+        ->set('responderWorkItemType', 'ops_request')
+        ->set('responderStatus', 'planning')
         ->set('responderInstructions', 'Duplicate attempt')
         ->call('addEventResponder')
         ->assertHasErrors('responderStatus');
@@ -105,8 +105,8 @@ test('changing work item type resets status selection', function () {
     $this->actingAs($user);
 
     Livewire::test('pages::agent-roles.edit', ['agentRole' => $agentRole])
-        ->set('responderWorkItemType', 'story')
-        ->set('responderStatus', 'spec_critique')
-        ->set('responderWorkItemType', 'bug')
+        ->set('responderWorkItemType', 'ops_request')
+        ->set('responderStatus', 'planning')
+        ->set('responderWorkItemType', '')
         ->assertSet('responderStatus', '');
 });
