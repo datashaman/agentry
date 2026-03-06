@@ -168,6 +168,85 @@ test('edit repo form displays pre-populated values and updates a repo', function
     expect($repo->tags)->toBe(['frontend', 'ui']);
 });
 
+test('link repo creates a local repo from github data', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->withOrganization($organization)->create([
+        'github_id' => '12345',
+        'github_token' => 'fake-token',
+        'github_nickname' => 'testuser',
+    ]);
+    $project = Project::factory()->create(['organization_id' => $organization->id]);
+
+    Http::fake([
+        'api.github.com/user/repos*' => Http::response([
+            [
+                'id' => 42,
+                'name' => 'linkable-repo',
+                'full_name' => 'testuser/linkable-repo',
+                'html_url' => 'https://github.com/testuser/linkable-repo',
+                'description' => 'A repo to link',
+                'language' => 'PHP',
+                'default_branch' => 'main',
+                'private' => false,
+            ],
+        ]),
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::projects.repos.index', ['project' => $project])
+        ->call('linkRepo', 42);
+
+    $this->assertDatabaseHas('repos', [
+        'project_id' => $project->id,
+        'name' => 'linkable-repo',
+        'url' => 'https://github.com/testuser/linkable-repo',
+        'primary_language' => 'PHP',
+        'default_branch' => 'main',
+    ]);
+});
+
+test('unlink repo removes the local repo', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->withOrganization($organization)->create([
+        'github_id' => '12345',
+        'github_token' => 'fake-token',
+        'github_nickname' => 'testuser',
+    ]);
+    $project = Project::factory()->create(['organization_id' => $organization->id]);
+
+    Repo::factory()->create([
+        'project_id' => $project->id,
+        'name' => 'linked-repo',
+        'url' => 'https://github.com/testuser/linked-repo',
+    ]);
+
+    Http::fake([
+        'api.github.com/user/repos*' => Http::response([
+            [
+                'id' => 99,
+                'name' => 'linked-repo',
+                'full_name' => 'testuser/linked-repo',
+                'html_url' => 'https://github.com/testuser/linked-repo',
+                'description' => null,
+                'language' => 'PHP',
+                'default_branch' => 'main',
+                'private' => false,
+            ],
+        ]),
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::projects.repos.index', ['project' => $project])
+        ->call('unlinkRepo', 99);
+
+    $this->assertDatabaseMissing('repos', [
+        'project_id' => $project->id,
+        'url' => 'https://github.com/testuser/linked-repo',
+    ]);
+});
+
 test('delete repo removes the repo and redirects to index', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
