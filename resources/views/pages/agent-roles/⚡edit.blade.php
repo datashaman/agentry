@@ -21,9 +21,9 @@ new #[Title('Edit Agent Role')] #[Layout('layouts.app')] class extends Component
 
     public string $tools = '';
 
-    public string $default_model = '';
-
     public string $default_provider = '';
+
+    public string $default_model = '';
 
     public string $default_temperature = '';
 
@@ -77,6 +77,35 @@ new #[Title('Edit Agent Role')] #[Layout('layouts.app')] class extends Component
         ]);
 
         $this->redirect(route('agent-roles.show', $this->agentRole), navigate: true);
+    }
+
+    public function updatedDefaultProvider(): void
+    {
+        $this->default_model = '';
+    }
+
+    /**
+     * @return array<string, array{label: string, models?: array<string, string>}>
+     */
+    #[Computed]
+    public function providers(): array
+    {
+        return collect(config('ai.providers'))
+            ->filter(fn ($p) => ! empty($p['key']))
+            ->all();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    #[Computed]
+    public function models(): array
+    {
+        if (! $this->default_provider) {
+            return [];
+        }
+
+        return config("ai.providers.{$this->default_provider}.models", []);
     }
 
     #[Computed]
@@ -134,23 +163,34 @@ new #[Title('Edit Agent Role')] #[Layout('layouts.app')] class extends Component
 
         <div class="grid gap-6 sm:grid-cols-2">
             <flux:field>
-                <flux:label>{{ __('Default Model') }}</flux:label>
-                <flux:input wire:model="default_model" data-test="agent-role-default-model-input" placeholder="e.g. claude-sonnet-4" />
-                <flux:error name="default_model" />
+                <flux:label>{{ __('Default Provider') }}</flux:label>
+                <flux:select wire:model.live="default_provider" :placeholder="__('Select provider...')" data-test="agent-role-default-provider-input">
+                    @foreach ($this->providers as $key => $p)
+                        <flux:select.option :value="$key">{{ $p['label'] }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+                <flux:error name="default_provider" />
             </flux:field>
 
             <flux:field>
-                <flux:label>{{ __('Default Provider') }}</flux:label>
-                <flux:input wire:model="default_provider" data-test="agent-role-default-provider-input" placeholder="e.g. anthropic" />
-                <flux:error name="default_provider" />
+                <flux:label>{{ __('Default Model') }}</flux:label>
+                @if (count($this->models) > 0)
+                    <flux:select wire:model="default_model" :placeholder="__('Select model...')" data-test="agent-role-default-model-input">
+                        @foreach ($this->models as $id => $label)
+                            <flux:select.option :value="$id">{{ $label }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
+                @else
+                    <flux:input wire:model="default_model" data-test="agent-role-default-model-input" placeholder="{{ $this->default_provider ? __('Enter model ID...') : __('Select a provider first') }}" :disabled="! $this->default_provider" />
+                @endif
+                <flux:error name="default_model" />
             </flux:field>
         </div>
 
         <div class="grid gap-6 sm:grid-cols-3">
             <flux:field>
                 <flux:label>{{ __('Default Temperature') }}</flux:label>
-                <flux:input wire:model="default_temperature" type="number" step="0.01" data-test="agent-role-default-temperature-input" placeholder="Provider-dependent" />
-                <flux:description>{{ __('Provider-dependent; some providers ignore this.') }}</flux:description>
+                <flux:input wire:model="default_temperature" type="number" step="0.01" data-test="agent-role-default-temperature-input" placeholder="e.g. 0.7" />
                 <flux:error name="default_temperature" />
             </flux:field>
 
