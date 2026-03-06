@@ -36,9 +36,14 @@ new #[Title('Projects')] #[Layout('layouts.app')] class extends Component {
     @if ($this->organization)
         <x-breadcrumbs :organization="$this->organization" />
 
-        <div>
-            <flux:heading size="xl">{{ __('Projects') }}</flux:heading>
-            <flux:text class="mt-1">{{ __('Browse projects in your organization.') }}</flux:text>
+        <div class="flex items-center justify-between">
+            <div>
+                <flux:heading size="xl">{{ __('Projects') }}</flux:heading>
+                <flux:text class="mt-1">{{ __('Browse projects in your organization.') }}</flux:text>
+            </div>
+            <a href="{{ route('projects.create') }}" wire:navigate>
+                <flux:button variant="primary" icon="plus" data-test="new-project-button">{{ __('New Project') }}</flux:button>
+            </a>
         </div>
 
         @if ($this->projects->isEmpty())
