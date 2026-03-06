@@ -15,7 +15,7 @@ An AI-powered software engineering platform where autonomous agents collaborate 
 
 ## Tech Stack
 
-- **Backend:** Laravel 12, PHP 8.2+, Livewire 4
+- **Backend:** Laravel 12, PHP 8.4+, Livewire 4
 - **Frontend:** Flux UI, Tailwind CSS 4, Alpine.js
 - **Auth:** Laravel Fortify (2FA support)
 - **Testing:** Pest 4

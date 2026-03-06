@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- PHP 8.2+
+- PHP 8.4+
 - Composer
 - Node.js & npm
 - SQLite (default) or another supported database
