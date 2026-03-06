@@ -1,6 +1,8 @@
 # Agentry - Agents & SDK Parity
 
-This PRD implements the agent system migration to align with the Laravel AI SDK. AgentType becomes the specification (instructions, tools, default config), org-scoped; Agent becomes the runtime instance (model, provider, optional overrides). See [agents-and-sdk-parity.md](../architecture/agents-and-sdk-parity.md).
+This PRD implements the agent system migration to align with the Laravel AI SDK. AgentRole (formerly AgentType) is the specification (instructions, tools, default config), org-scoped; Agent is the runtime instance (model, provider, optional overrides). See [agents-and-sdk-parity.md](../architecture/agents-and-sdk-parity.md).
+
+**Status: Complete** — All user stories below have been implemented.
 
 ---
 
