@@ -3,9 +3,7 @@
 namespace App\Agents\Workflows;
 
 use App\Agents\AgentResolver;
-use App\Models\Bug;
 use App\Models\OpsRequest;
-use App\Models\Story;
 use App\Models\Team;
 use Closure;
 
@@ -20,7 +18,7 @@ class WorkflowRunner
      *
      * @param  Closure(array, string): string  $llmGateway  Receives resolved agent config + prompt, returns response string.
      */
-    public function run(Team $team, string $request, Closure $llmGateway, Story|Bug|OpsRequest|null $workItem = null): WorkflowResult
+    public function run(Team $team, string $request, Closure $llmGateway, ?OpsRequest $workItem = null): WorkflowResult
     {
         $team->loadMissing('agents');
 

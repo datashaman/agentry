@@ -2,7 +2,6 @@
 
 use App\Models\Label;
 use App\Models\Project;
-use Illuminate\Support\Facades\Schema;
 
 test('can create a label', function () {
     $label = Label::factory()->create();
@@ -85,64 +84,6 @@ test('cascade deletes labels when project deleted', function () {
     $project->delete();
 
     $this->assertDatabaseMissing('labels', ['id' => $label->id]);
-});
-
-test('labelables pivot table exists with correct columns', function () {
-    expect(Schema::hasTable('labelables'))->toBeTrue()
-        ->and(Schema::hasColumns('labelables', ['label_id', 'labelable_id', 'labelable_type']))->toBeTrue();
-});
-
-test('can attach label to a model via labelables pivot', function () {
-    $label = Label::factory()->create();
-
-    \Illuminate\Support\Facades\DB::table('labelables')->insert([
-        'label_id' => $label->id,
-        'labelable_id' => 1,
-        'labelable_type' => 'App\Models\Story',
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
-
-    $this->assertDatabaseHas('labelables', [
-        'label_id' => $label->id,
-        'labelable_type' => 'App\Models\Story',
-    ]);
-});
-
-test('labelables pivot enforces unique constraint', function () {
-    $label = Label::factory()->create();
-
-    \Illuminate\Support\Facades\DB::table('labelables')->insert([
-        'label_id' => $label->id,
-        'labelable_id' => 1,
-        'labelable_type' => 'App\Models\Story',
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
-
-    expect(fn () => \Illuminate\Support\Facades\DB::table('labelables')->insert([
-        'label_id' => $label->id,
-        'labelable_id' => 1,
-        'labelable_type' => 'App\Models\Story',
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]))->toThrow(\Illuminate\Database\QueryException::class);
-});
-
-test('cascade deletes labelables when label deleted', function () {
-    $label = Label::factory()->create();
-
-    \Illuminate\Support\Facades\DB::table('labelables')->insert([
-        'label_id' => $label->id,
-        'labelable_id' => 1,
-        'labelable_type' => 'App\Models\Story',
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
-
-    $label->delete();
-
-    $this->assertDatabaseMissing('labelables', ['label_id' => $label->id]);
 });
 
 test('seeder creates default labels', function () {

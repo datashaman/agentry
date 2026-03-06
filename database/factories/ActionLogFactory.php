@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Agent;
-use App\Models\Story;
+use App\Models\OpsRequest;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,26 +18,26 @@ class ActionLogFactory extends Factory
      */
     public function definition(): array
     {
-        $story = Story::factory()->create();
+        $opsRequest = OpsRequest::factory()->create();
 
         return [
             'agent_id' => Agent::factory(),
-            'work_item_id' => $story->id,
-            'work_item_type' => Story::class,
+            'work_item_id' => $opsRequest->id,
+            'work_item_type' => OpsRequest::class,
             'action' => fake()->randomElement(['created_branch', 'committed_code', 'opened_pr', 'ran_tests', 'deployed', 'escalated']),
             'reasoning' => fake()->sentence(),
             'timestamp' => fake()->dateTimeBetween('-1 week', 'now'),
         ];
     }
 
-    public function forStory(): static
+    public function forOpsRequest(): static
     {
         return $this->state(function () {
-            $story = Story::factory()->create();
+            $opsRequest = OpsRequest::factory()->create();
 
             return [
-                'work_item_id' => $story->id,
-                'work_item_type' => Story::class,
+                'work_item_id' => $opsRequest->id,
+                'work_item_type' => OpsRequest::class,
             ];
         });
     }

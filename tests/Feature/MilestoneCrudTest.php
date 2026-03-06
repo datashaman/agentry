@@ -1,11 +1,8 @@
 <?php
 
-use App\Models\Bug;
-use App\Models\Epic;
 use App\Models\Milestone;
 use App\Models\Organization;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\User;
 use Livewire\Livewire;
 
@@ -29,33 +26,6 @@ test('milestone detail page shows title, status, due date, description', functio
     $response->assertSee('First sprint deliverables');
     $response->assertSee('active');
     $response->assertSee('Apr 1, 2026');
-});
-
-test('milestone detail page shows assigned stories and bugs', function () {
-    $organization = Organization::factory()->create();
-    $user = User::factory()->withOrganization($organization)->create();
-    $project = Project::factory()->create(['organization_id' => $organization->id]);
-    $milestone = Milestone::factory()->create(['project_id' => $project->id]);
-    $epic = Epic::factory()->create(['project_id' => $project->id]);
-
-    Story::factory()->create([
-        'epic_id' => $epic->id,
-        'milestone_id' => $milestone->id,
-        'title' => 'Implement login',
-    ]);
-
-    Bug::factory()->create([
-        'project_id' => $project->id,
-        'milestone_id' => $milestone->id,
-        'title' => 'Fix header alignment',
-    ]);
-
-    $this->actingAs($user);
-
-    $response = $this->get(route('projects.milestones.show', [$project, $milestone]));
-    $response->assertOk();
-    $response->assertSee('Implement login');
-    $response->assertSee('Fix header alignment');
 });
 
 test('milestone detail page has edit and delete buttons', function () {
@@ -147,7 +117,7 @@ test('edit milestone form displays pre-populated values and updates a milestone'
     ]);
 });
 
-test('delete milestone removes it when no stories or bugs assigned', function () {
+test('delete milestone removes it', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $project = Project::factory()->create(['organization_id' => $organization->id]);
@@ -160,25 +130,4 @@ test('delete milestone removes it when no stories or bugs assigned', function ()
         ->assertRedirect(route('projects.milestones.index', $project));
 
     $this->assertDatabaseMissing('milestones', ['id' => $milestone->id]);
-});
-
-test('delete milestone is prevented when stories or bugs are assigned', function () {
-    $organization = Organization::factory()->create();
-    $user = User::factory()->withOrganization($organization)->create();
-    $project = Project::factory()->create(['organization_id' => $organization->id]);
-    $milestone = Milestone::factory()->create(['project_id' => $project->id]);
-    $epic = Epic::factory()->create(['project_id' => $project->id]);
-
-    Story::factory()->create([
-        'epic_id' => $epic->id,
-        'milestone_id' => $milestone->id,
-    ]);
-
-    $this->actingAs($user);
-
-    Livewire::test('pages::projects.milestones.show', ['project' => $project, 'milestone' => $milestone])
-        ->call('deleteMilestone')
-        ->assertNoRedirect();
-
-    $this->assertDatabaseHas('milestones', ['id' => $milestone->id]);
 });

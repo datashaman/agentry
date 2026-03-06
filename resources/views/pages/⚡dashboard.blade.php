@@ -1,9 +1,8 @@
 <?php
 
 use App\Models\ActionLog;
-use App\Models\Bug;
 use App\Models\HitlEscalation;
-use App\Models\Story;
+use App\Models\OpsRequest;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -34,31 +33,18 @@ new #[Title('Dashboard')] #[Layout('layouts.app')] class extends Component {
     }
 
     #[Computed]
-    public function storyCounts(): array
+    public function opsRequestCounts(): array
     {
         if (empty($this->projectIds)) {
             return [];
         }
 
-        return Story::query()
-            ->whereHas('epic', fn ($q) => $q->whereIn('project_id', $this->projectIds))
+        return OpsRequest::query()
+            ->whereIn('project_id', $this->projectIds)
             ->selectRaw('status, count(*) as count')
             ->groupBy('status')
             ->pluck('count', 'status')
             ->all();
-    }
-
-    #[Computed]
-    public function openBugsCount(): int
-    {
-        if (empty($this->projectIds)) {
-            return 0;
-        }
-
-        return Bug::query()
-            ->whereIn('project_id', $this->projectIds)
-            ->whereNotIn('status', ['closed_fixed', 'closed_duplicate', 'closed_cant_reproduce'])
-            ->count();
     }
 
     #[Computed]
@@ -70,32 +56,18 @@ new #[Title('Dashboard')] #[Layout('layouts.app')] class extends Component {
 
         return HitlEscalation::query()
             ->whereNull('resolved_at')
-            ->where(function ($query) {
-                $query->where(function ($q) {
-                    $q->where('work_item_type', Story::class)
-                        ->whereIn('work_item_id', Story::query()
-                            ->whereHas('epic', fn ($eq) => $eq->whereIn('project_id', $this->projectIds))
-                            ->select('id'));
-                })->orWhere(function ($q) {
-                    $q->where('work_item_type', Bug::class)
-                        ->whereIn('work_item_id', Bug::query()
-                            ->whereIn('project_id', $this->projectIds)
-                            ->select('id'));
-                })->orWhere(function ($q) {
-                    $q->where('work_item_type', \App\Models\OpsRequest::class)
-                        ->whereIn('work_item_id', \App\Models\OpsRequest::query()
-                            ->whereIn('project_id', $this->projectIds)
-                            ->select('id'));
-                });
-            })
+            ->where('work_item_type', OpsRequest::class)
+            ->whereIn('work_item_id', OpsRequest::query()
+                ->whereIn('project_id', $this->projectIds)
+                ->select('id'))
             ->count();
     }
 
     #[Computed]
-    public function activeStoriesCount(): int
+    public function activeOpsRequestsCount(): int
     {
-        return collect($this->storyCounts)
-            ->except(['closed_done', 'closed_wont_do', 'backlog'])
+        return collect($this->opsRequestCounts)
+            ->except(['closed', 'completed', 'cancelled'])
             ->sum();
     }
 
@@ -108,24 +80,10 @@ new #[Title('Dashboard')] #[Layout('layouts.app')] class extends Component {
 
         return ActionLog::query()
             ->with(['agent', 'workItem'])
-            ->where(function ($query) {
-                $query->where(function ($q) {
-                    $q->where('work_item_type', Story::class)
-                        ->whereIn('work_item_id', Story::query()
-                            ->whereHas('epic', fn ($eq) => $eq->whereIn('project_id', $this->projectIds))
-                            ->select('id'));
-                })->orWhere(function ($q) {
-                    $q->where('work_item_type', Bug::class)
-                        ->whereIn('work_item_id', Bug::query()
-                            ->whereIn('project_id', $this->projectIds)
-                            ->select('id'));
-                })->orWhere(function ($q) {
-                    $q->where('work_item_type', \App\Models\OpsRequest::class)
-                        ->whereIn('work_item_id', \App\Models\OpsRequest::query()
-                            ->whereIn('project_id', $this->projectIds)
-                            ->select('id'));
-                });
-            })
+            ->where('work_item_type', OpsRequest::class)
+            ->whereIn('work_item_id', OpsRequest::query()
+                ->whereIn('project_id', $this->projectIds)
+                ->select('id'))
             ->latest('timestamp')
             ->limit(10)
             ->get();
@@ -141,15 +99,15 @@ new #[Title('Dashboard')] #[Layout('layouts.app')] class extends Component {
                 <flux:text class="mt-1">{{ __('Organization overview') }}</flux:text>
             </div>
 
-            <div class="grid gap-4 md:grid-cols-3">
+            <div class="grid gap-4 md:grid-cols-2">
                 <div class="rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
-                    <flux:text class="text-sm font-medium">{{ __('Active Stories') }}</flux:text>
-                    <div class="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-100" data-test="active-stories-count">
-                        {{ $this->activeStoriesCount }}
+                    <flux:text class="text-sm font-medium">{{ __('Ops Requests') }}</flux:text>
+                    <div class="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-100" data-test="active-ops-requests-count">
+                        {{ $this->activeOpsRequestsCount }}
                     </div>
-                    @if (count($this->storyCounts) > 0)
+                    @if (count($this->opsRequestCounts) > 0)
                         <div class="mt-3 space-y-1">
-                            @foreach ($this->storyCounts as $status => $count)
+                            @foreach ($this->opsRequestCounts as $status => $count)
                                 <div class="flex items-center justify-between text-sm">
                                     <flux:text>{{ str_replace('_', ' ', ucfirst($status)) }}</flux:text>
                                     <flux:text class="font-medium">{{ $count }}</flux:text>
@@ -157,13 +115,6 @@ new #[Title('Dashboard')] #[Layout('layouts.app')] class extends Component {
                             @endforeach
                         </div>
                     @endif
-                </div>
-
-                <div class="rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">
-                    <flux:text class="text-sm font-medium">{{ __('Open Bugs') }}</flux:text>
-                    <div class="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-100" data-test="open-bugs-count">
-                        {{ $this->openBugsCount }}
-                    </div>
                 </div>
 
                 <div class="rounded-xl border border-zinc-200 p-6 dark:border-zinc-700">

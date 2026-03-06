@@ -26,7 +26,7 @@ new #[Title('Projects')] #[Layout('layouts.app')] class extends Component {
 
         return Project::query()
             ->where('organization_id', $this->organization->id)
-            ->withCount(['stories', 'bugs'])
+            ->withCount(['opsRequests'])
             ->orderBy('updated_at', 'desc')
             ->paginate(15);
     }
@@ -60,8 +60,7 @@ new #[Title('Projects')] #[Layout('layouts.app')] class extends Component {
                         <tr class="border-b border-zinc-200 dark:border-zinc-700">
                             <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Name') }}</th>
                             <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Slug') }}</th>
-                            <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Stories') }}</th>
-                            <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Bugs') }}</th>
+                            <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Ops Requests') }}</th>
                             <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Last Activity') }}</th>
                         </tr>
                     </thead>
@@ -77,10 +76,7 @@ new #[Title('Projects')] #[Layout('layouts.app')] class extends Component {
                                     <flux:text>{{ $project->slug }}</flux:text>
                                 </td>
                                 <td class="px-4 py-3">
-                                    <flux:text>{{ $project->stories_count }}</flux:text>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <flux:text>{{ $project->bugs_count }}</flux:text>
+                                    <flux:text>{{ $project->ops_requests_count }}</flux:text>
                                 </td>
                                 <td class="px-4 py-3">
                                     <flux:text>{{ $project->updated_at?->diffForHumans() ?? '-' }}</flux:text>

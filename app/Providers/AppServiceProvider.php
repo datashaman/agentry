@@ -2,10 +2,9 @@
 
 namespace App\Providers;
 
-use App\Events\BugTransitioned;
 use App\Events\OpsRequestTransitioned;
-use App\Events\StoryTransitioned;
 use App\Listeners\DispatchAgentWork;
+use App\Services\WorkItemProviderManager;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +19,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(WorkItemProviderManager::class);
     }
 
     /**
@@ -30,9 +29,11 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
 
-        Event::listen(StoryTransitioned::class, DispatchAgentWork::class);
-        Event::listen(BugTransitioned::class, DispatchAgentWork::class);
         Event::listen(OpsRequestTransitioned::class, DispatchAgentWork::class);
+
+        Event::listen(function (\SocialiteProviders\Manager\SocialiteWasCalled $event) {
+            $event->extendSocialite('atlassian', \SocialiteProviders\Atlassian\Provider::class);
+        });
     }
 
     /**

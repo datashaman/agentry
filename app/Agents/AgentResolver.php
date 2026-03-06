@@ -3,10 +3,8 @@
 namespace App\Agents;
 
 use App\Models\Agent;
-use App\Models\Bug;
 use App\Models\OpsRequest;
 use App\Models\Project;
-use App\Models\Story;
 
 class AgentResolver
 {
@@ -28,7 +26,7 @@ class AgentResolver
      *     timeout: ?int,
      * }
      */
-    public function resolve(Agent $agent, Story|Bug|OpsRequest|null $workItem = null): array
+    public function resolve(Agent $agent, ?OpsRequest $workItem = null): array
     {
         $agent->loadMissing(['agentRole', 'agentRole.skills', 'agentRole.organization']);
         $type = $agent->agentRole;
@@ -37,7 +35,7 @@ class AgentResolver
             ? $this->toolRegistry->resolveTools($type, $agent->provider)
             : [];
 
-        $project = $this->resolveProject($workItem);
+        $project = $workItem?->project;
         $instructions = $this->buildInstructions($type, $project);
 
         return [
@@ -50,19 +48,6 @@ class AgentResolver
             'max_tokens' => $agent->max_tokens ?? $type?->default_max_tokens,
             'timeout' => $agent->timeout ?? $type?->default_timeout,
         ];
-    }
-
-    protected function resolveProject(Story|Bug|OpsRequest|null $workItem): ?Project
-    {
-        if ($workItem === null) {
-            return null;
-        }
-
-        if ($workItem instanceof Story) {
-            return $workItem->epic?->project;
-        }
-
-        return $workItem->project;
     }
 
     protected function buildInstructions(?\App\Models\AgentRole $type, ?Project $project = null): ?string

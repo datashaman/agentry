@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Milestone extends Model
 {
@@ -39,21 +38,5 @@ class Milestone extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
-    }
-
-    /**
-     * @return HasMany<Story, $this>
-     */
-    public function stories(): HasMany
-    {
-        return $this->hasMany(Story::class);
-    }
-
-    /**
-     * @return HasMany<Bug, $this>
-     */
-    public function bugs(): HasMany
-    {
-        return $this->hasMany(Bug::class);
     }
 }

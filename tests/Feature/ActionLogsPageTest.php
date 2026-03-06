@@ -2,24 +2,21 @@
 
 use App\Models\ActionLog;
 use App\Models\Agent;
-use App\Models\Bug;
-use App\Models\Epic;
+use App\Models\OpsRequest;
 use App\Models\Organization;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\User;
 
 test('action logs page displays project action logs', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create(['current_organization_id' => $organization->id]);
     $project = Project::factory()->create(['organization_id' => $organization->id]);
-    $epic = Epic::factory()->create(['project_id' => $project->id]);
-    $story = Story::factory()->create(['epic_id' => $epic->id, 'title' => 'My story']);
+    $opsRequest = OpsRequest::factory()->create(['project_id' => $project->id]);
     $agent = Agent::factory()->create();
     ActionLog::factory()->create([
         'agent_id' => $agent->id,
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
+        'work_item_id' => $opsRequest->id,
+        'work_item_type' => OpsRequest::class,
         'action' => 'created_branch',
         'reasoning' => 'Starting work on the feature',
         'timestamp' => now(),
@@ -53,12 +50,11 @@ test('action logs page filters by agent', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $project = Project::factory()->create(['organization_id' => $organization->id]);
-    $epic = Epic::factory()->create(['project_id' => $project->id]);
-    $story = Story::factory()->create(['epic_id' => $epic->id]);
+    $opsRequest = OpsRequest::factory()->create(['project_id' => $project->id]);
     $agent1 = Agent::factory()->create(['name' => 'Agent Alpha']);
     $agent2 = Agent::factory()->create(['name' => 'Agent Beta']);
-    ActionLog::factory()->create(['agent_id' => $agent1->id, 'work_item_id' => $story->id, 'work_item_type' => Story::class, 'reasoning' => 'Alpha reasoning']);
-    ActionLog::factory()->create(['agent_id' => $agent2->id, 'work_item_id' => $story->id, 'work_item_type' => Story::class, 'reasoning' => 'Beta reasoning']);
+    ActionLog::factory()->create(['agent_id' => $agent1->id, 'work_item_id' => $opsRequest->id, 'work_item_type' => OpsRequest::class, 'reasoning' => 'Alpha reasoning']);
+    ActionLog::factory()->create(['agent_id' => $agent2->id, 'work_item_id' => $opsRequest->id, 'work_item_type' => OpsRequest::class, 'reasoning' => 'Beta reasoning']);
 
     $this->actingAs($user);
 
@@ -66,24 +62,6 @@ test('action logs page filters by agent', function () {
     $response->assertOk();
     $response->assertSee('Alpha reasoning');
     $response->assertDontSee('Beta reasoning');
-});
-
-test('action logs page filters by work item type', function () {
-    $organization = Organization::factory()->create();
-    $user = User::factory()->withOrganization($organization)->create();
-    $project = Project::factory()->create(['organization_id' => $organization->id]);
-    $epic = Epic::factory()->create(['project_id' => $project->id]);
-    $story = Story::factory()->create(['epic_id' => $epic->id]);
-    $bug = Bug::factory()->create(['project_id' => $project->id]);
-    ActionLog::factory()->create(['work_item_id' => $story->id, 'work_item_type' => Story::class, 'reasoning' => 'Story reasoning']);
-    ActionLog::factory()->create(['work_item_id' => $bug->id, 'work_item_type' => Bug::class, 'reasoning' => 'Bug reasoning']);
-
-    $this->actingAs($user);
-
-    $response = $this->get(route('projects.action-logs.index', [$project, 'workItemType' => Bug::class]));
-    $response->assertOk();
-    $response->assertSee('Bug reasoning');
-    $response->assertDontSee('Story reasoning');
 });
 
 test('action logs page is accessible from project dashboard', function () {
@@ -102,9 +80,8 @@ test('action logs page shows work item type in table', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $project = Project::factory()->create(['organization_id' => $organization->id]);
-    $epic = Epic::factory()->create(['project_id' => $project->id]);
-    $story = Story::factory()->create(['epic_id' => $epic->id]);
-    ActionLog::factory()->create(['work_item_id' => $story->id, 'work_item_type' => Story::class]);
+    $opsRequest = OpsRequest::factory()->create(['project_id' => $project->id]);
+    ActionLog::factory()->create(['work_item_id' => $opsRequest->id, 'work_item_type' => OpsRequest::class]);
 
     $this->actingAs($user);
 

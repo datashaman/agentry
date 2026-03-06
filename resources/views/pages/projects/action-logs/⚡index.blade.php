@@ -2,11 +2,8 @@
 
 use App\Models\ActionLog;
 use App\Models\Agent;
-use App\Models\Bug;
 use App\Models\OpsRequest;
 use App\Models\Project;
-use App\Models\Story;
-use App\Models\Task;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -45,29 +42,10 @@ new #[Title('Action Logs')] #[Layout('layouts.app')] class extends Component {
 
         return ActionLog::query()
             ->with(['agent', 'workItem'])
-            ->where(function ($query) use ($projectId) {
-                $query->where(function ($q) use ($projectId) {
-                    $q->where('work_item_type', Story::class)
-                        ->whereIn('work_item_id', Story::query()
-                            ->whereHas('epic', fn ($eq) => $eq->where('project_id', $projectId))
-                            ->select('id'));
-                })->orWhere(function ($q) use ($projectId) {
-                    $q->where('work_item_type', Task::class)
-                        ->whereIn('work_item_id', Task::query()
-                            ->whereHas('story.epic', fn ($eq) => $eq->where('project_id', $projectId))
-                            ->select('id'));
-                })->orWhere(function ($q) use ($projectId) {
-                    $q->where('work_item_type', Bug::class)
-                        ->whereIn('work_item_id', Bug::query()
-                            ->where('project_id', $projectId)
-                            ->select('id'));
-                })->orWhere(function ($q) use ($projectId) {
-                    $q->where('work_item_type', OpsRequest::class)
-                        ->whereIn('work_item_id', OpsRequest::query()
-                            ->where('project_id', $projectId)
-                            ->select('id'));
-                });
-            });
+            ->where('work_item_type', OpsRequest::class)
+            ->whereIn('work_item_id', OpsRequest::query()
+                ->where('project_id', $projectId)
+                ->select('id'));
     }
 
     #[Computed]
@@ -116,11 +94,6 @@ new #[Title('Action Logs')] #[Layout('layouts.app')] class extends Component {
         }
 
         return match (get_class($item)) {
-            Story::class => route('projects.stories.show', [$this->project, $item]),
-            Task::class => $item->story && $item->story->epic
-                ? route('projects.stories.show', [$this->project, $item->story])
-                : null,
-            Bug::class => route('projects.bugs.show', [$this->project, $item]),
             OpsRequest::class => route('projects.ops-requests.show', [$this->project, $item]),
             default => null,
         };
@@ -181,9 +154,6 @@ new #[Title('Action Logs')] #[Layout('layouts.app')] class extends Component {
             <flux:label>{{ __('Work Item Type') }}</flux:label>
             <flux:select wire:model.live="workItemType" data-test="filter-work-item-type">
                 <flux:select.option value="">{{ __('All types') }}</flux:select.option>
-                <flux:select.option value="App\Models\Story">{{ __('Story') }}</flux:select.option>
-                <flux:select.option value="App\Models\Task">{{ __('Task') }}</flux:select.option>
-                <flux:select.option value="App\Models\Bug">{{ __('Bug') }}</flux:select.option>
                 <flux:select.option value="App\Models\OpsRequest">{{ __('Ops Request') }}</flux:select.option>
             </flux:select>
         </flux:field>

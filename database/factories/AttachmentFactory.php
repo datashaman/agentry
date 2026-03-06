@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\Story;
+use App\Models\OpsRequest;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,11 +17,11 @@ class AttachmentFactory extends Factory
      */
     public function definition(): array
     {
-        $story = Story::factory()->create();
+        $opsRequest = OpsRequest::factory()->create();
 
         return [
-            'work_item_id' => $story->id,
-            'work_item_type' => Story::class,
+            'work_item_id' => $opsRequest->id,
+            'work_item_type' => OpsRequest::class,
             'filename' => fake()->word().'.pdf',
             'path' => 'attachments/'.fake()->uuid().'.pdf',
             'mime_type' => fake()->randomElement(['application/pdf', 'image/png', 'image/jpeg', 'text/plain']),
@@ -29,14 +29,11 @@ class AttachmentFactory extends Factory
         ];
     }
 
-    /**
-     * Attach to a Story.
-     */
-    public function forStory(): static
+    public function forOpsRequest(): static
     {
         return $this->state(fn (array $attributes) => [
-            'work_item_id' => Story::factory()->create()->id,
-            'work_item_type' => Story::class,
+            'work_item_id' => OpsRequest::factory()->create()->id,
+            'work_item_type' => OpsRequest::class,
         ]);
     }
 }

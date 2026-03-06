@@ -2,10 +2,7 @@
 
 use App\Models\ActionLog;
 use App\Models\Agent;
-use App\Models\Bug;
 use App\Models\OpsRequest;
-use App\Models\Story;
-use App\Models\Task;
 use Carbon\CarbonImmutable;
 
 test('can create an action log', function () {
@@ -28,69 +25,6 @@ test('agent has many action logs', function () {
     ActionLog::factory()->count(3)->create(['agent_id' => $agent->id]);
 
     expect($agent->actionLogs)->toHaveCount(3);
-});
-
-test('action log polymorphically belongs to story', function () {
-    $story = Story::factory()->create();
-    $actionLog = ActionLog::factory()->create([
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
-    ]);
-
-    expect($actionLog->workItem)->toBeInstanceOf(Story::class)
-        ->and($actionLog->workItem->id)->toBe($story->id);
-});
-
-test('story has many action logs', function () {
-    $story = Story::factory()->create();
-    ActionLog::factory()->count(3)->create([
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
-    ]);
-
-    expect($story->actionLogs)->toHaveCount(3);
-});
-
-test('action log polymorphically belongs to task', function () {
-    $task = Task::factory()->create();
-    $actionLog = ActionLog::factory()->create([
-        'work_item_id' => $task->id,
-        'work_item_type' => Task::class,
-    ]);
-
-    expect($actionLog->workItem)->toBeInstanceOf(Task::class)
-        ->and($actionLog->workItem->id)->toBe($task->id);
-});
-
-test('task has many action logs', function () {
-    $task = Task::factory()->create();
-    ActionLog::factory()->count(3)->create([
-        'work_item_id' => $task->id,
-        'work_item_type' => Task::class,
-    ]);
-
-    expect($task->actionLogs)->toHaveCount(3);
-});
-
-test('action log polymorphically belongs to bug', function () {
-    $bug = Bug::factory()->create();
-    $actionLog = ActionLog::factory()->create([
-        'work_item_id' => $bug->id,
-        'work_item_type' => Bug::class,
-    ]);
-
-    expect($actionLog->workItem)->toBeInstanceOf(Bug::class)
-        ->and($actionLog->workItem->id)->toBe($bug->id);
-});
-
-test('bug has many action logs', function () {
-    $bug = Bug::factory()->create();
-    ActionLog::factory()->count(3)->create([
-        'work_item_id' => $bug->id,
-        'work_item_type' => Bug::class,
-    ]);
-
-    expect($bug->actionLogs)->toHaveCount(3);
 });
 
 test('action log polymorphically belongs to ops request', function () {
@@ -184,14 +118,14 @@ test('can query action logs by agent', function () {
 });
 
 test('can query action logs by work item', function () {
-    $story = Story::factory()->create();
+    $opsRequest = OpsRequest::factory()->create();
     ActionLog::factory()->count(4)->create([
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
+        'work_item_id' => $opsRequest->id,
+        'work_item_type' => OpsRequest::class,
     ]);
     ActionLog::factory()->count(2)->create();
 
-    expect(ActionLog::where('work_item_id', $story->id)
-        ->where('work_item_type', Story::class)
+    expect(ActionLog::where('work_item_id', $opsRequest->id)
+        ->where('work_item_type', OpsRequest::class)
         ->count())->toBe(4);
 });

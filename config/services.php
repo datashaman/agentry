@@ -35,6 +35,18 @@ return [
         ],
     ],
 
+    'jira' => [
+        'client_id' => env('JIRA_CLIENT_ID'),
+        'client_secret' => env('JIRA_CLIENT_SECRET'),
+        'redirect' => env('JIRA_REDIRECT_URI', '/auth/jira/callback'),
+    ],
+
+    'atlassian' => [
+        'client_id' => env('JIRA_CLIENT_ID'),
+        'client_secret' => env('JIRA_CLIENT_SECRET'),
+        'redirect' => env('JIRA_REDIRECT_URI', '/auth/jira/callback'),
+    ],
+
     'github' => [
         'client_id' => env('GITHUB_CLIENT_ID'),
         'client_secret' => env('GITHUB_CLIENT_SECRET'),

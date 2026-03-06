@@ -1,10 +1,8 @@
 <?php
 
 use App\Models\Agent;
-use App\Models\Bug;
 use App\Models\HitlEscalation;
 use App\Models\OpsRequest;
-use App\Models\Story;
 
 test('can create a hitl escalation', function () {
     $escalation = HitlEscalation::factory()->create();
@@ -12,28 +10,6 @@ test('can create a hitl escalation', function () {
     expect($escalation)->toBeInstanceOf(HitlEscalation::class)
         ->and($escalation->trigger_type)->not->toBeEmpty()
         ->and($escalation->reason)->not->toBeEmpty();
-});
-
-test('escalation polymorphically belongs to story', function () {
-    $story = Story::factory()->create();
-    $escalation = HitlEscalation::factory()->create([
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
-    ]);
-
-    expect($escalation->workItem)->toBeInstanceOf(Story::class)
-        ->and($escalation->workItem->id)->toBe($story->id);
-});
-
-test('escalation polymorphically belongs to bug', function () {
-    $bug = Bug::factory()->create();
-    $escalation = HitlEscalation::factory()->create([
-        'work_item_id' => $bug->id,
-        'work_item_type' => Bug::class,
-    ]);
-
-    expect($escalation->workItem)->toBeInstanceOf(Bug::class)
-        ->and($escalation->workItem->id)->toBe($bug->id);
 });
 
 test('escalation polymorphically belongs to ops request', function () {
@@ -53,26 +29,6 @@ test('escalation belongs to agent (raised_by)', function () {
 
     expect($escalation->raisedByAgent)->toBeInstanceOf(Agent::class)
         ->and($escalation->raisedByAgent->id)->toBe($agent->id);
-});
-
-test('story has many hitl escalations', function () {
-    $story = Story::factory()->create();
-    HitlEscalation::factory()->count(3)->create([
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
-    ]);
-
-    expect($story->hitlEscalations)->toHaveCount(3);
-});
-
-test('bug has many hitl escalations', function () {
-    $bug = Bug::factory()->create();
-    HitlEscalation::factory()->count(2)->create([
-        'work_item_id' => $bug->id,
-        'work_item_type' => Bug::class,
-    ]);
-
-    expect($bug->hitlEscalations)->toHaveCount(2);
 });
 
 test('ops request has many hitl escalations', function () {
@@ -113,10 +69,10 @@ test('resolved_at is cast to datetime', function () {
 });
 
 test('nullable fields accept null', function () {
-    $story = Story::factory()->create();
+    $opsRequest = OpsRequest::factory()->create();
     $escalation = HitlEscalation::factory()->create([
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
+        'work_item_id' => $opsRequest->id,
+        'work_item_type' => OpsRequest::class,
         'raised_by_agent_id' => null,
         'trigger_class' => null,
         'agent_confidence' => null,
@@ -145,36 +101,6 @@ test('isResolved returns false when resolved_at is null', function () {
     expect($escalation->isResolved())->toBeFalse();
 });
 
-test('unresolved escalation blocks story progress', function () {
-    $story = Story::factory()->create();
-    HitlEscalation::factory()->create([
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
-    ]);
-
-    expect($story->hasUnresolvedEscalation())->toBeTrue();
-});
-
-test('resolved escalation does not block story progress', function () {
-    $story = Story::factory()->create();
-    HitlEscalation::factory()->resolved()->create([
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
-    ]);
-
-    expect($story->hasUnresolvedEscalation())->toBeFalse();
-});
-
-test('unresolved escalation blocks bug progress', function () {
-    $bug = Bug::factory()->create();
-    HitlEscalation::factory()->create([
-        'work_item_id' => $bug->id,
-        'work_item_type' => Bug::class,
-    ]);
-
-    expect($bug->hasUnresolvedEscalation())->toBeTrue();
-});
-
 test('unresolved escalation blocks ops request progress', function () {
     $opsRequest = OpsRequest::factory()->create();
     HitlEscalation::factory()->create([
@@ -185,24 +111,34 @@ test('unresolved escalation blocks ops request progress', function () {
     expect($opsRequest->hasUnresolvedEscalation())->toBeTrue();
 });
 
-test('mixed resolved and unresolved escalations still block', function () {
-    $story = Story::factory()->create();
+test('resolved escalation does not block ops request progress', function () {
+    $opsRequest = OpsRequest::factory()->create();
     HitlEscalation::factory()->resolved()->create([
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
-    ]);
-    HitlEscalation::factory()->create([
-        'work_item_id' => $story->id,
-        'work_item_type' => Story::class,
+        'work_item_id' => $opsRequest->id,
+        'work_item_type' => OpsRequest::class,
     ]);
 
-    expect($story->hasUnresolvedEscalation())->toBeTrue();
+    expect($opsRequest->hasUnresolvedEscalation())->toBeFalse();
+});
+
+test('mixed resolved and unresolved escalations still block', function () {
+    $opsRequest = OpsRequest::factory()->create();
+    HitlEscalation::factory()->resolved()->create([
+        'work_item_id' => $opsRequest->id,
+        'work_item_type' => OpsRequest::class,
+    ]);
+    HitlEscalation::factory()->create([
+        'work_item_id' => $opsRequest->id,
+        'work_item_type' => OpsRequest::class,
+    ]);
+
+    expect($opsRequest->hasUnresolvedEscalation())->toBeTrue();
 });
 
 test('no escalations means not blocked', function () {
-    $story = Story::factory()->create();
+    $opsRequest = OpsRequest::factory()->create();
 
-    expect($story->hasUnresolvedEscalation())->toBeFalse();
+    expect($opsRequest->hasUnresolvedEscalation())->toBeFalse();
 });
 
 test('resolution flow works', function () {

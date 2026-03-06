@@ -1,10 +1,7 @@
 <?php
 
-use App\Models\Bug;
-use App\Models\Epic;
 use App\Models\Organization;
 use App\Models\Project;
-use App\Models\Story;
 use App\Models\User;
 
 test('guests are redirected to the login page', function () {
@@ -46,35 +43,6 @@ test('projects page does not display projects from other organizations', functio
     $response = $this->get(route('projects.index'));
     $response->assertOk();
     $response->assertDontSee('Secret Project');
-});
-
-test('projects page shows story count for each project', function () {
-    $organization = Organization::factory()->create();
-    $user = User::factory()->withOrganization($organization)->create();
-    $project = Project::factory()->create(['organization_id' => $organization->id, 'name' => 'Counted Project']);
-    $epic = Epic::factory()->create(['project_id' => $project->id]);
-    Story::factory()->count(3)->create(['epic_id' => $epic->id]);
-
-    $this->actingAs($user);
-
-    $response = $this->get(route('projects.index'));
-    $response->assertOk();
-    $response->assertSee('Counted Project');
-    $response->assertSeeInOrder(['Counted Project', '3']);
-});
-
-test('projects page shows bug count for each project', function () {
-    $organization = Organization::factory()->create();
-    $user = User::factory()->withOrganization($organization)->create();
-    $project = Project::factory()->create(['organization_id' => $organization->id, 'name' => 'Buggy Project']);
-    Bug::factory()->count(2)->create(['project_id' => $project->id]);
-
-    $this->actingAs($user);
-
-    $response = $this->get(route('projects.index'));
-    $response->assertOk();
-    $response->assertSee('Buggy Project');
-    $response->assertSeeInOrder(['Buggy Project', '2']);
 });
 
 test('projects page shows project slug', function () {

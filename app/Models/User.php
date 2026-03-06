@@ -29,6 +29,10 @@ class User extends Authenticatable
         'github_id',
         'github_token',
         'github_nickname',
+        'jira_account_id',
+        'jira_token',
+        'jira_refresh_token',
+        'jira_cloud_id',
     ];
 
     /**
@@ -42,6 +46,8 @@ class User extends Authenticatable
         'two_factor_recovery_codes',
         'remember_token',
         'github_token',
+        'jira_token',
+        'jira_refresh_token',
     ];
 
     /**
@@ -55,6 +61,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'github_token' => 'encrypted',
+            'jira_token' => 'encrypted',
+            'jira_refresh_token' => 'encrypted',
         ];
     }
 
@@ -130,5 +138,10 @@ class User extends Authenticatable
     public function hasGitHub(): bool
     {
         return $this->github_id !== null;
+    }
+
+    public function hasJira(): bool
+    {
+        return $this->jira_account_id !== null;
     }
 }

@@ -75,22 +75,6 @@ class OpsRequest extends Model
     }
 
     /**
-     * @return BelongsToMany<Story, $this>
-     */
-    public function stories(): BelongsToMany
-    {
-        return $this->belongsToMany(Story::class)->withTimestamps();
-    }
-
-    /**
-     * @return BelongsToMany<Bug, $this>
-     */
-    public function bugs(): BelongsToMany
-    {
-        return $this->belongsToMany(Bug::class)->withTimestamps();
-    }
-
-    /**
      * @return BelongsToMany<Repo, $this>
      */
     public function repos(): BelongsToMany

@@ -5,9 +5,7 @@ namespace App\Agents\Workflows;
 use App\Agents\AgentResolver;
 use App\Agents\Workflows\Prompts\EvaluatorPrompts;
 use App\Models\Agent;
-use App\Models\Bug;
 use App\Models\OpsRequest;
-use App\Models\Story;
 use App\Models\Team;
 use Closure;
 
@@ -20,7 +18,7 @@ class EvaluatorOptimizerRunner
     /**
      * @param  Closure(array, string): string  $llmGateway
      */
-    public function run(Team $team, string $request, Closure $llmGateway, Story|Bug|OpsRequest|null $workItem = null): WorkflowResult
+    public function run(Team $team, string $request, Closure $llmGateway, ?OpsRequest $workItem = null): WorkflowResult
     {
         $config = $team->workflow_config ?? [];
         $generatorAgentId = $config['generator_agent_id'] ?? null;

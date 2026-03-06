@@ -1,9 +1,7 @@
 <?php
 
-use App\Models\Bug;
 use App\Models\HitlEscalation;
 use App\Models\OpsRequest;
-use App\Models\Story;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -47,24 +45,10 @@ new #[Title('Escalations')] #[Layout('layouts.app')] class extends Component {
         $query = HitlEscalation::query()
             ->whereNull('resolved_at')
             ->with(['raisedByAgent'])
-            ->where(function ($query) {
-                $query->where(function ($q) {
-                    $q->where('work_item_type', Story::class)
-                        ->whereIn('work_item_id', Story::query()
-                            ->whereHas('epic', fn ($eq) => $eq->whereIn('project_id', $this->projectIds))
-                            ->select('id'));
-                })->orWhere(function ($q) {
-                    $q->where('work_item_type', Bug::class)
-                        ->whereIn('work_item_id', Bug::query()
-                            ->whereIn('project_id', $this->projectIds)
-                            ->select('id'));
-                })->orWhere(function ($q) {
-                    $q->where('work_item_type', OpsRequest::class)
-                        ->whereIn('work_item_id', OpsRequest::query()
-                            ->whereIn('project_id', $this->projectIds)
-                            ->select('id'));
-                });
-            });
+            ->where('work_item_type', OpsRequest::class)
+            ->whereIn('work_item_id', OpsRequest::query()
+                ->whereIn('project_id', $this->projectIds)
+                ->select('id'));
 
         if ($this->triggerType !== '') {
             $query->where('trigger_type', $this->triggerType);
@@ -72,8 +56,6 @@ new #[Title('Escalations')] #[Layout('layouts.app')] class extends Component {
 
         if ($this->workItemType !== '') {
             $typeClass = match ($this->workItemType) {
-                'story' => Story::class,
-                'bug' => Bug::class,
                 'ops' => OpsRequest::class,
                 default => null,
             };
@@ -111,8 +93,6 @@ new #[Title('Escalations')] #[Layout('layouts.app')] class extends Component {
         }
 
         return match ($escalation->work_item_type) {
-            Story::class => route('projects.stories.show', [$workItem->epic->project, $workItem]),
-            Bug::class => route('projects.bugs.show', [$workItem->project, $workItem]),
             OpsRequest::class => route('projects.ops-requests.show', [$workItem->project, $workItem]),
             default => null,
         };
@@ -121,8 +101,6 @@ new #[Title('Escalations')] #[Layout('layouts.app')] class extends Component {
     public function getWorkItemLabel($escalation): string
     {
         return match ($escalation->work_item_type) {
-            Story::class => 'Story',
-            Bug::class => 'Bug',
             OpsRequest::class => 'Ops Request',
             default => 'Unknown',
         };
@@ -149,8 +127,6 @@ new #[Title('Escalations')] #[Layout('layouts.app')] class extends Component {
 
         <select wire:model.live="workItemType" class="rounded-md border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-600 dark:bg-zinc-800" data-test="work-item-type-filter">
             <option value="">{{ __('All Work Items') }}</option>
-            <option value="story">{{ __('Stories') }}</option>
-            <option value="bug">{{ __('Bugs') }}</option>
             <option value="ops">{{ __('Ops Requests') }}</option>
         </select>
     </div>

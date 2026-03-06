@@ -1,10 +1,8 @@
 <?php
 
 use App\Models\Agent;
-use App\Models\Bug;
 use App\Models\OpsRequest;
 use App\Models\Project;
-use App\Models\Story;
 
 test('can create an ops request', function () {
     $opsRequest = OpsRequest::factory()->create();
@@ -122,84 +120,6 @@ test('ops request environment is nullable', function () {
     expect($opsRequest->environment)->toBeNull();
 });
 
-test('ops request has many-to-many with stories', function () {
-    $opsRequest = OpsRequest::factory()->create();
-    $stories = Story::factory()->count(2)->create();
-
-    $opsRequest->stories()->attach($stories->pluck('id'));
-
-    expect($opsRequest->stories)->toHaveCount(2);
-});
-
-test('story has many-to-many with ops requests', function () {
-    $story = Story::factory()->create();
-    $opsRequests = OpsRequest::factory()->count(2)->create();
-
-    $story->opsRequests()->attach($opsRequests->pluck('id'));
-
-    expect($story->opsRequests)->toHaveCount(2);
-});
-
-test('ops request story pivot has timestamps', function () {
-    $opsRequest = OpsRequest::factory()->create();
-    $story = Story::factory()->create();
-
-    $opsRequest->stories()->attach($story->id);
-
-    $pivot = $opsRequest->stories->first()->pivot;
-    expect($pivot->created_at)->not->toBeNull()
-        ->and($pivot->updated_at)->not->toBeNull();
-});
-
-test('ops request story pivot prevents duplicates', function () {
-    $opsRequest = OpsRequest::factory()->create();
-    $story = Story::factory()->create();
-
-    $opsRequest->stories()->attach($story->id);
-
-    expect(fn () => $opsRequest->stories()->attach($story->id))
-        ->toThrow(\Illuminate\Database\QueryException::class);
-});
-
-test('ops request has many-to-many with bugs', function () {
-    $opsRequest = OpsRequest::factory()->create();
-    $bugs = Bug::factory()->count(2)->create();
-
-    $opsRequest->bugs()->attach($bugs->pluck('id'));
-
-    expect($opsRequest->bugs)->toHaveCount(2);
-});
-
-test('bug has many-to-many with ops requests', function () {
-    $bug = Bug::factory()->create();
-    $opsRequests = OpsRequest::factory()->count(2)->create();
-
-    $bug->opsRequests()->attach($opsRequests->pluck('id'));
-
-    expect($bug->opsRequests)->toHaveCount(2);
-});
-
-test('ops request bug pivot has timestamps', function () {
-    $opsRequest = OpsRequest::factory()->create();
-    $bug = Bug::factory()->create();
-
-    $opsRequest->bugs()->attach($bug->id);
-
-    $pivot = $opsRequest->bugs->first()->pivot;
-    expect($pivot->created_at)->not->toBeNull()
-        ->and($pivot->updated_at)->not->toBeNull();
-});
-
-test('ops request bug pivot prevents duplicates', function () {
-    $opsRequest = OpsRequest::factory()->create();
-    $bug = Bug::factory()->create();
-
-    $opsRequest->bugs()->attach($bug->id);
-
-    expect(fn () => $opsRequest->bugs()->attach($bug->id))
-        ->toThrow(\Illuminate\Database\QueryException::class);
-});
-
 test('can update an ops request', function () {
     $opsRequest = OpsRequest::factory()->create();
 
@@ -239,20 +159,6 @@ test('agent deletion nullifies ops request assigned_agent_id', function () {
     $agent->delete();
 
     expect($opsRequest->fresh()->assigned_agent_id)->toBeNull();
-});
-
-test('cascade deletes pivot records when ops request deleted', function () {
-    $opsRequest = OpsRequest::factory()->create();
-    $story = Story::factory()->create();
-    $bug = Bug::factory()->create();
-
-    $opsRequest->stories()->attach($story->id);
-    $opsRequest->bugs()->attach($bug->id);
-
-    $opsRequest->delete();
-
-    $this->assertDatabaseMissing('ops_request_story', ['ops_request_id' => $opsRequest->id]);
-    $this->assertDatabaseMissing('bug_ops_request', ['ops_request_id' => $opsRequest->id]);
 });
 
 test('can list ops requests', function () {

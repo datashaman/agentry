@@ -4,6 +4,7 @@ use App\Http\Controllers\DownloadAttachmentController;
 use App\Http\Controllers\GitHubAppSetupController;
 use App\Http\Controllers\GitHubController;
 use App\Http\Controllers\GitHubWebhookController;
+use App\Http\Controllers\JiraController;
 use App\Http\Controllers\SwitchOrganizationController;
 use Illuminate\Support\Facades\Route;
 
@@ -13,6 +14,9 @@ Route::post('github/webhook', GitHubWebhookController::class)->name('github.webh
 
 Route::get('auth/github/redirect', [GitHubController::class, 'redirect'])->name('github.redirect');
 Route::get('auth/github/callback', [GitHubController::class, 'callback'])->name('github.callback');
+
+Route::get('auth/jira/redirect', [JiraController::class, 'redirect'])->name('jira.redirect')->middleware('auth');
+Route::get('auth/jira/callback', [JiraController::class, 'callback'])->name('jira.callback')->middleware('auth');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('github/setup', GitHubAppSetupController::class)->name('github.app.setup');
@@ -26,11 +30,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('projects/{project}', 'pages::projects.show')->name('projects.show');
     Route::livewire('projects/{project}/edit', 'pages::projects.edit')->name('projects.edit');
     Route::livewire('projects/{project}/action-logs', 'pages::projects.action-logs.index')->name('projects.action-logs.index');
-    Route::livewire('projects/{project}/epics', 'pages::projects.epics.index')->name('projects.epics.index');
-    Route::livewire('projects/{project}/stories', 'pages::projects.stories.index')->name('projects.stories.index');
-    Route::livewire('projects/{project}/stories/{story}', 'pages::projects.stories.show')->name('projects.stories.show');
-    Route::livewire('projects/{project}/bugs', 'pages::projects.bugs.index')->name('projects.bugs.index');
-    Route::livewire('projects/{project}/bugs/{bug}', 'pages::projects.bugs.show')->name('projects.bugs.show');
+    Route::livewire('projects/{project}/work-items', 'pages::projects.work-items.index')->name('projects.work-items.index');
     Route::livewire('projects/{project}/repos', 'pages::projects.repos.index')->name('projects.repos.index');
     Route::livewire('projects/{project}/repos/create', 'pages::projects.repos.create')->name('projects.repos.create');
     Route::livewire('projects/{project}/repos/{repo}', 'pages::projects.repos.show')->name('projects.repos.show');

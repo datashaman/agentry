@@ -7,7 +7,7 @@ use App\Jobs\RunAgentWork;
 use App\Models\Agent;
 use App\Models\AgentRole;
 use App\Models\EventResponder;
-use App\Models\Story;
+use App\Models\OpsRequest;
 use App\Models\Team;
 use Illuminate\Support\Facades\Log;
 
@@ -15,28 +15,28 @@ test('runs workflow with responder instructions when team has workflow_type', fu
     $team = Team::factory()->chain()->create();
     $agentRole = AgentRole::factory()->create();
     $agent = Agent::factory()->create(['team_id' => $team->id, 'agent_role_id' => $agentRole->id]);
-    $story = Story::factory()->create(['assigned_agent_id' => $agent->id]);
+    $opsRequest = OpsRequest::factory()->create(['assigned_agent_id' => $agent->id]);
     $responder = EventResponder::factory()->forAgentRole($agentRole)->create([
-        'work_item_type' => 'story',
-        'status' => 'in_development',
+        'work_item_type' => 'ops_request',
+        'status' => 'planning',
         'instructions' => 'Review the implementation carefully',
     ]);
 
     $workflowRunner = Mockery::mock(WorkflowRunner::class);
     $workflowRunner->shouldReceive('run')
         ->once()
-        ->withArgs(function ($t, $request, $gateway, $workItem) use ($team, $story) {
+        ->withArgs(function ($t, $request, $gateway, $workItem) use ($team, $opsRequest) {
             return $t->is($team)
                 && $request === 'Review the implementation carefully'
                 && is_callable($gateway)
-                && $workItem->is($story);
+                && $workItem->is($opsRequest);
         })
         ->andReturn(new WorkflowResult(response: 'done'));
 
     $agentResolver = Mockery::mock(AgentResolver::class);
     $agentResolver->shouldNotReceive('resolve');
 
-    $job = new RunAgentWork($agent, $team, $story, $responder);
+    $job = new RunAgentWork($agent, $team, $opsRequest, $responder);
     $job->handle($agentResolver, $workflowRunner);
 });
 
@@ -44,11 +44,11 @@ test('appends responder instructions to resolved config for single agent', funct
     $team = Team::factory()->create(['workflow_type' => 'none']);
     $agentRole = AgentRole::factory()->create();
     $agent = Agent::factory()->create(['team_id' => $team->id, 'agent_role_id' => $agentRole->id]);
-    $story = Story::factory()->create(['assigned_agent_id' => $agent->id]);
+    $opsRequest = OpsRequest::factory()->create(['assigned_agent_id' => $agent->id]);
     $responder = EventResponder::factory()->forAgentRole($agentRole)->create([
-        'work_item_type' => 'story',
-        'status' => 'spec_critique',
-        'instructions' => 'Critique this spec for completeness',
+        'work_item_type' => 'ops_request',
+        'status' => 'planning',
+        'instructions' => 'Plan the execution steps',
     ]);
 
     $resolvedConfig = [
@@ -65,7 +65,7 @@ test('appends responder instructions to resolved config for single agent', funct
     $agentResolver = Mockery::mock(AgentResolver::class);
     $agentResolver->shouldReceive('resolve')
         ->once()
-        ->with(Mockery::on(fn ($a) => $a->is($agent)), Mockery::on(fn ($s) => $s->is($story)))
+        ->with(Mockery::on(fn ($a) => $a->is($agent)), Mockery::on(fn ($s) => $s->is($opsRequest)))
         ->andReturn($resolvedConfig);
 
     $workflowRunner = Mockery::mock(WorkflowRunner::class);
@@ -78,7 +78,7 @@ test('appends responder instructions to resolved config for single agent', funct
                 && $context['model'] === 'claude-sonnet-4-6';
         });
 
-    $job = new RunAgentWork($agent, null, $story, $responder);
+    $job = new RunAgentWork($agent, null, $opsRequest, $responder);
     $job->handle($agentResolver, $workflowRunner);
 });
 
@@ -86,10 +86,10 @@ test('placeholder LLM gateway logs and returns empty string', function () {
     $team = Team::factory()->create(['workflow_type' => 'none']);
     $agentRole = AgentRole::factory()->create();
     $agent = Agent::factory()->create(['team_id' => $team->id, 'agent_role_id' => $agentRole->id]);
-    $story = Story::factory()->create(['assigned_agent_id' => $agent->id]);
+    $opsRequest = OpsRequest::factory()->create(['assigned_agent_id' => $agent->id]);
     $responder = EventResponder::factory()->forAgentRole($agentRole)->create([
-        'work_item_type' => 'story',
-        'status' => 'in_review',
+        'work_item_type' => 'ops_request',
+        'status' => 'verifying',
         'instructions' => 'Check test coverage',
     ]);
 
@@ -113,6 +113,6 @@ test('placeholder LLM gateway logs and returns empty string', function () {
 
     $workflowRunner = Mockery::mock(WorkflowRunner::class);
 
-    $job = new RunAgentWork($agent, null, $story, $responder);
+    $job = new RunAgentWork($agent, null, $opsRequest, $responder);
     $job->handle($agentResolver, $workflowRunner);
 });

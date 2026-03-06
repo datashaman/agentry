@@ -30,7 +30,6 @@ new #[Title('Labels')] #[Layout('layouts.app')] class extends Component {
     public function labels(): \Illuminate\Database\Eloquent\Collection
     {
         return $this->project->labels()
-            ->withCount(['stories', 'bugs'])
             ->orderBy('name')
             ->get();
     }
@@ -125,8 +124,6 @@ new #[Title('Labels')] #[Layout('layouts.app')] class extends Component {
                     <tr class="border-b border-zinc-200 dark:border-zinc-700">
                         <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Color') }}</th>
                         <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Name') }}</th>
-                        <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Stories') }}</th>
-                        <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Bugs') }}</th>
                         <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
@@ -141,12 +138,6 @@ new #[Title('Labels')] #[Layout('layouts.app')] class extends Component {
                                     <flux:input wire:model="editName" size="sm" data-test="edit-label-name" />
                                 </td>
                                 <td class="px-4 py-3">
-                                    <flux:text>{{ $label->stories_count }}</flux:text>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <flux:text>{{ $label->bugs_count }}</flux:text>
-                                </td>
-                                <td class="px-4 py-3">
                                     <div class="flex items-center gap-2">
                                         <flux:button size="sm" variant="primary" wire:click="updateLabel" data-test="save-label-button">{{ __('Save') }}</flux:button>
                                         <flux:button size="sm" variant="ghost" wire:click="cancelEditing" data-test="cancel-edit-button">{{ __('Cancel') }}</flux:button>
@@ -158,12 +149,6 @@ new #[Title('Labels')] #[Layout('layouts.app')] class extends Component {
                                 </td>
                                 <td class="px-4 py-3">
                                     <flux:text class="font-medium text-zinc-900 dark:text-zinc-100" data-test="label-name">{{ $label->name }}</flux:text>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <flux:text data-test="label-stories-count">{{ $label->stories_count }}</flux:text>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <flux:text data-test="label-bugs-count">{{ $label->bugs_count }}</flux:text>
                                 </td>
                                 <td class="px-4 py-3">
                                     <div class="flex items-center gap-2">
