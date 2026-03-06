@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Organization;
+use App\Models\Repo;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -35,6 +36,19 @@ class SkillFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'organization_id' => $organization->id,
+        ]);
+    }
+
+    /**
+     * Create a skill imported from a repo.
+     */
+    public function imported(Repo $repo): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'source_repo_id' => $repo->id,
+            'source_path' => '.agents/skills/'.($attributes['slug'] ?? 'example').'/SKILL.md',
+            'source_sha' => fake()->sha1(),
+            'frontmatter_metadata' => ['license' => 'MIT'],
         ]);
     }
 }

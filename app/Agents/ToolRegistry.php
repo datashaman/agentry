@@ -2,6 +2,8 @@
 
 namespace App\Agents;
 
+use App\Agents\Tools\ActivateSkillTool;
+use App\Agents\Tools\LoadSkillResourceTool;
 use App\Models\AgentRole;
 
 class ToolRegistry
@@ -46,7 +48,10 @@ class ToolRegistry
      *
      * @var array<string, class-string>
      */
-    protected array $customTools = [];
+    protected array $customTools = [
+        'activate_skill' => ActivateSkillTool::class,
+        'load_skill_resource' => LoadSkillResourceTool::class,
+    ];
 
     /**
      * Resolve tools for an agent role filtered by provider.

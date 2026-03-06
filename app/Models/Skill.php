@@ -26,7 +26,28 @@ class Skill extends Model
         'slug',
         'description',
         'content',
+        'source_repo_id',
+        'source_path',
+        'source_sha',
+        'frontmatter_metadata',
+        'resource_paths',
     ];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'frontmatter_metadata' => 'array',
+            'resource_paths' => 'array',
+        ];
+    }
+
+    public function isImported(): bool
+    {
+        return $this->source_repo_id !== null;
+    }
 
     /**
      * @return BelongsTo<Organization, $this>
@@ -34,6 +55,14 @@ class Skill extends Model
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    /**
+     * @return BelongsTo<Repo, $this>
+     */
+    public function sourceRepo(): BelongsTo
+    {
+        return $this->belongsTo(Repo::class, 'source_repo_id');
     }
 
     /**
