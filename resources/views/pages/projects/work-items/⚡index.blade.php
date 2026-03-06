@@ -65,19 +65,16 @@ new #[Title('Work Items')] #[Layout('layouts.app')] class extends Component {
             return;
         }
 
-        if (! $this->project->organization?->github_installation_id && $this->project->work_item_provider === 'github') {
-            $this->error = __('No GitHub App installed for this organization. Install the GitHub App first.');
-            $this->loading = false;
-
-            return;
-        }
-
         $filters = [];
 
         if ($this->search !== '') {
             $this->workItems = $provider->searchIssues($this->project->organization, $this->search);
         } else {
             $this->workItems = $provider->listIssues($this->project->organization, $projectKey, $filters);
+        }
+
+        if (empty($this->workItems) && $this->search === '') {
+            $this->error = __('No work items returned. Check that your GitHub account has access to :key, or install the GitHub App on the organization.', ['key' => $projectKey]);
         }
 
         $this->loading = false;
