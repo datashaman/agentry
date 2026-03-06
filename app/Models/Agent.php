@@ -93,22 +93,6 @@ class Agent extends Model
     }
 
     /**
-     * @return HasMany<PullRequest, $this>
-     */
-    public function authoredPullRequests(): HasMany
-    {
-        return $this->hasMany(PullRequest::class);
-    }
-
-    /**
-     * @return HasMany<Review, $this>
-     */
-    public function reviews(): HasMany
-    {
-        return $this->hasMany(Review::class);
-    }
-
-    /**
      * @return HasMany<Critique, $this>
      */
     public function critiques(): HasMany

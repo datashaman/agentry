@@ -2,13 +2,11 @@
 
 use App\Models\Agent;
 use App\Models\Bug;
-use App\Models\ChangeSet;
 use App\Models\Critique;
 use App\Models\Epic;
 use App\Models\HitlEscalation;
 use App\Models\Organization;
 use App\Models\Project;
-use App\Models\PullRequest;
 use App\Models\Story;
 use App\Models\Team;
 use App\Models\User;
@@ -181,34 +179,6 @@ test('bug detail page displays HITL escalations (resolved and unresolved)', func
     $response->assertSee('Resolved');
     $response->assertSee('Approved for immediate deploy');
     $response->assertSee('Triage Bot');
-});
-
-test('bug detail page displays change sets and pull requests', function () {
-    $organization = Organization::factory()->create();
-    $user = User::factory()->withOrganization($organization)->create();
-    $project = Project::factory()->create(['organization_id' => $organization->id]);
-    $bug = Bug::factory()->create(['project_id' => $project->id]);
-
-    $changeSet = ChangeSet::factory()->create([
-        'work_item_id' => $bug->id,
-        'work_item_type' => Bug::class,
-        'status' => 'ready',
-        'summary' => 'Hotfix for login button',
-    ]);
-
-    PullRequest::factory()->create([
-        'change_set_id' => $changeSet->id,
-        'title' => 'Fix Safari tap handler',
-    ]);
-
-    $this->actingAs($user);
-
-    $response = $this->get(route('projects.bugs.show', [$project, $bug]));
-    $response->assertOk();
-    $response->assertSee('Change Sets');
-    $response->assertSee('Hotfix for login button');
-    $response->assertSee('ready');
-    $response->assertSee('Fix Safari tap handler');
 });
 
 test('bug detail page shows breadcrumbs with organization and project', function () {

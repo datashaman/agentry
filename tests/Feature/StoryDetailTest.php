@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Agent;
-use App\Models\ChangeSet;
 use App\Models\Critique;
 use App\Models\Dependency;
 use App\Models\Epic;
@@ -9,7 +8,6 @@ use App\Models\HitlEscalation;
 use App\Models\Milestone;
 use App\Models\Organization;
 use App\Models\Project;
-use App\Models\PullRequest;
 use App\Models\Story;
 use App\Models\Subtask;
 use App\Models\Task;
@@ -199,33 +197,6 @@ test('story detail page displays HITL escalations (resolved and unresolved)', fu
     $response->assertSee('Resolved');
     $response->assertSee('Approved after review');
     $response->assertSee('Review Bot');
-});
-
-test('story detail page displays change sets and pull requests', function () {
-    $organization = Organization::factory()->create();
-    $user = User::factory()->withOrganization($organization)->create();
-    $project = Project::factory()->create(['organization_id' => $organization->id]);
-    $epic = Epic::factory()->create(['project_id' => $project->id]);
-    $story = Story::factory()->create(['epic_id' => $epic->id]);
-
-    $changeSet = ChangeSet::factory()->forStory($story)->create([
-        'status' => 'ready',
-        'summary' => 'Auth implementation changes',
-    ]);
-
-    PullRequest::factory()->create([
-        'change_set_id' => $changeSet->id,
-        'title' => 'Add login endpoint',
-    ]);
-
-    $this->actingAs($user);
-
-    $response = $this->get(route('projects.stories.show', [$project, $story]));
-    $response->assertOk();
-    $response->assertSee('Change Sets');
-    $response->assertSee('Auth implementation changes');
-    $response->assertSee('ready');
-    $response->assertSee('Add login endpoint');
 });
 
 test('story detail page displays dependencies', function () {

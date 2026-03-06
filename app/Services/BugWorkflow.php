@@ -3,18 +3,18 @@
 namespace App\Services;
 
 use App\Models\Agent;
-use App\Models\Branch;
 use App\Models\Bug;
-use App\Models\ChangeSet;
 use App\Models\Dependency;
 use App\Models\HitlEscalation;
-use App\Models\PullRequest;
 use App\Models\Repo;
 use App\Models\Story;
-use App\Models\Worktree;
 
 class BugWorkflow
 {
+    public function __construct(
+        protected GitHubAppService $github,
+    ) {}
+
     /**
      * Triage Agent deduplicates, classifies, and sets severity/priority.
      */
@@ -92,75 +92,39 @@ class BugWorkflow
     }
 
     /**
-     * Check worktree state for the bug on a given repo.
+     * Derive the branch name for a bug fix.
+     */
+    public function branchName(Bug $bug): string
+    {
+        return 'bugfix/bug-'.$bug->id;
+    }
+
+    /**
+     * Create a branch on GitHub for the bug fix.
+     */
+    public function createBranch(Bug $bug, Repo $repo): bool
+    {
+        return $this->github->createBranch(
+            $repo,
+            $this->branchName($bug),
+            $repo->default_branch ?? 'main',
+        );
+    }
+
+    /**
+     * Create a pull request on GitHub for the bug fix.
      *
-     * @return array{action: string, worktree: ?Worktree}
+     * @return array{number: int, html_url: string}|null
      */
-    public function checkWorktree(Bug $bug, Repo $repo): array
+    public function createPullRequest(Bug $bug, Repo $repo): ?array
     {
-        $activeWorktree = Worktree::where('repo_id', $repo->id)
-            ->where('status', 'active')
-            ->first();
-
-        if (! $activeWorktree) {
-            return ['action' => 'create', 'worktree' => null];
-        }
-
-        if ($activeWorktree->work_item_type === Bug::class && $activeWorktree->work_item_id === $bug->id) {
-            return ['action' => 'resume', 'worktree' => $activeWorktree];
-        }
-
-        return ['action' => 'escalate', 'worktree' => $activeWorktree];
-    }
-
-    /**
-     * Create a fresh worktree for the bug fix.
-     */
-    public function createWorktree(Bug $bug, Repo $repo, Branch $branch): Worktree
-    {
-        return Worktree::create([
-            'repo_id' => $repo->id,
-            'branch_id' => $branch->id,
-            'work_item_id' => $bug->id,
-            'work_item_type' => Bug::class,
-            'path' => '/worktrees/'.$repo->name.'/bug-'.$bug->id,
-            'status' => 'active',
-            'last_activity_at' => now(),
-        ]);
-    }
-
-    /**
-     * Create a ChangeSet grouping branches and PRs across affected repos.
-     */
-    public function createChangeSet(Bug $bug, Agent $codingAgent, array $repos): ChangeSet
-    {
-        $changeSet = ChangeSet::create([
-            'work_item_id' => $bug->id,
-            'work_item_type' => Bug::class,
-            'status' => 'draft',
-            'summary' => 'Fix for bug: '.$bug->title,
-        ]);
-
-        foreach ($repos as $repo) {
-            $branch = Branch::create([
-                'repo_id' => $repo->id,
-                'name' => 'bugfix/bug-'.$bug->id,
-                'base_branch' => $repo->default_branch ?? 'main',
-                'work_item_id' => $bug->id,
-                'work_item_type' => Bug::class,
-            ]);
-
-            PullRequest::create([
-                'change_set_id' => $changeSet->id,
-                'branch_id' => $branch->id,
-                'repo_id' => $repo->id,
-                'agent_id' => $codingAgent->id,
-                'title' => 'Bug #'.$bug->id.': '.$bug->title,
-                'status' => 'open',
-            ]);
-        }
-
-        return $changeSet;
+        return $this->github->createPullRequest(
+            $repo,
+            'Bug #'.$bug->id.': '.$bug->title,
+            $this->branchName($bug),
+            $repo->default_branch ?? 'main',
+            $bug->description ?? '',
+        );
     }
 
     /**
@@ -227,7 +191,6 @@ class BugWorkflow
     {
         $bug->transitionTo('closed_fixed');
 
-        // Find stories blocked by this bug that may now be unblocked
         $unblockedStories = collect();
 
         $dependencies = Dependency::where('blocker_type', Bug::class)
@@ -246,12 +209,14 @@ class BugWorkflow
     }
 
     /**
-     * Cleanup worktrees after bug release.
+     * Clean up branches after bug release.
      */
-    public function cleanup(Bug $bug): void
+    public function cleanup(Bug $bug, array $repos): void
     {
-        $bug->worktrees()->update([
-            'status' => 'stale',
-        ]);
+        $branchName = $this->branchName($bug);
+
+        foreach ($repos as $repo) {
+            $this->github->deleteBranch($repo, $branchName);
+        }
     }
 }

@@ -1,12 +1,9 @@
 <?php
 
-use App\Models\Branch;
 use App\Models\Organization;
 use App\Models\Project;
-use App\Models\PullRequest;
 use App\Models\Repo;
 use App\Models\User;
-use App\Models\Worktree;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 
@@ -23,6 +20,11 @@ test('repo detail page shows name, url, language, branch, tags', function () {
         'tags' => ['frontend', 'ui'],
     ]);
 
+    Http::fake([
+        'api.github.com/app/installations/*/access_tokens' => Http::response(['token' => 'test-token']),
+        'api.github.com/repos/example/detail-repo/pulls*' => Http::response([]),
+    ]);
+
     $this->actingAs($user);
 
     $response = $this->get(route('projects.repos.show', [$project, $repo]));
@@ -35,30 +37,41 @@ test('repo detail page shows name, url, language, branch, tags', function () {
     $response->assertSee('ui');
 });
 
-test('repo detail page shows counts of branches, worktrees, and pull requests', function () {
+test('repo detail page shows open pull request count from GitHub', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $project = Project::factory()->create(['organization_id' => $organization->id]);
-    $repo = Repo::factory()->create(['project_id' => $project->id]);
+    $repo = Repo::factory()->create([
+        'project_id' => $project->id,
+        'url' => 'https://github.com/acme/app',
+    ]);
 
-    Branch::factory()->count(3)->create(['repo_id' => $repo->id]);
-    Worktree::factory()->count(2)->create(['repo_id' => $repo->id]);
-    PullRequest::factory()->count(4)->create(['repo_id' => $repo->id]);
+    Http::fake([
+        'api.github.com/app/installations/*/access_tokens' => Http::response(['token' => 'test-token']),
+        'api.github.com/repos/acme/app/pulls*' => Http::response([
+            ['number' => 1, 'title' => 'PR One', 'state' => 'open'],
+            ['number' => 2, 'title' => 'PR Two', 'state' => 'open'],
+            ['number' => 3, 'title' => 'PR Three', 'state' => 'open'],
+        ]),
+    ]);
 
     $this->actingAs($user);
 
     $response = $this->get(route('projects.repos.show', [$project, $repo]));
     $response->assertOk();
-    $response->assertSeeInOrder(['Branches', '3']);
-    $response->assertSeeInOrder(['Worktrees', '2']);
-    $response->assertSeeInOrder(['Pull Requests', '4']);
+    $response->assertSeeInOrder(['Open Pull Requests', '3']);
 });
 
 test('repo detail page has edit and delete buttons', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $project = Project::factory()->create(['organization_id' => $organization->id]);
-    $repo = Repo::factory()->create(['project_id' => $project->id]);
+    $repo = Repo::factory()->create(['project_id' => $project->id, 'url' => 'https://github.com/acme/app']);
+
+    Http::fake([
+        'api.github.com/app/installations/*/access_tokens' => Http::response(['token' => 'test-token']),
+        'api.github.com/repos/acme/app/pulls*' => Http::response([]),
+    ]);
 
     $this->actingAs($user);
 
@@ -238,7 +251,12 @@ test('delete repo removes the repo and redirects to index', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $project = Project::factory()->create(['organization_id' => $organization->id]);
-    $repo = Repo::factory()->create(['project_id' => $project->id]);
+    $repo = Repo::factory()->create(['project_id' => $project->id, 'url' => 'https://github.com/acme/app']);
+
+    Http::fake([
+        'api.github.com/app/installations/*/access_tokens' => Http::response(['token' => 'test-token']),
+        'api.github.com/repos/acme/app/pulls*' => Http::response([]),
+    ]);
 
     $this->actingAs($user);
 

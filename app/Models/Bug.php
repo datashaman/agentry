@@ -146,30 +146,6 @@ class Bug extends Model
     }
 
     /**
-     * @return MorphMany<Branch, $this>
-     */
-    public function branches(): MorphMany
-    {
-        return $this->morphMany(Branch::class, 'work_item');
-    }
-
-    /**
-     * @return MorphMany<Worktree, $this>
-     */
-    public function worktrees(): MorphMany
-    {
-        return $this->morphMany(Worktree::class, 'work_item');
-    }
-
-    /**
-     * @return MorphMany<ChangeSet, $this>
-     */
-    public function changeSets(): MorphMany
-    {
-        return $this->morphMany(ChangeSet::class, 'work_item');
-    }
-
-    /**
      * @return MorphMany<Critique, $this>
      */
     public function critiques(): MorphMany
