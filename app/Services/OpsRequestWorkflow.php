@@ -3,16 +3,18 @@
 namespace App\Services;
 
 use App\Models\Agent;
-use App\Models\Branch;
-use App\Models\ChangeSet;
 use App\Models\HitlEscalation;
 use App\Models\OpsRequest;
-use App\Models\PullRequest;
+use App\Models\Repo;
 use App\Models\Runbook;
 use App\Models\RunbookStep;
 
 class OpsRequestWorkflow
 {
+    public function __construct(
+        protected GitHubAppService $github,
+    ) {}
+
     /**
      * Route ops request based on category: code_change, direct_action, or runbook.
      */
@@ -60,37 +62,39 @@ class OpsRequestWorkflow
     // --- Code Change Path ---
 
     /**
-     * Code change path: create a ChangeSet and follow standard PR review pipeline.
+     * Derive the branch name for an ops request.
      */
-    public function createChangeSet(OpsRequest $opsRequest, Agent $codingAgent, array $repos): ChangeSet
+    public function branchName(OpsRequest $opsRequest): string
     {
-        $changeSet = ChangeSet::create([
-            'work_item_id' => $opsRequest->id,
-            'work_item_type' => OpsRequest::class,
-            'status' => 'draft',
-            'summary' => 'Ops request: '.$opsRequest->title,
-        ]);
+        return 'ops/ops-'.$opsRequest->id;
+    }
 
-        foreach ($repos as $repo) {
-            $branch = Branch::create([
-                'repo_id' => $repo->id,
-                'name' => 'ops/ops-'.$opsRequest->id,
-                'base_branch' => $repo->default_branch ?? 'main',
-                'work_item_id' => $opsRequest->id,
-                'work_item_type' => OpsRequest::class,
-            ]);
+    /**
+     * Create a branch on GitHub for the ops request.
+     */
+    public function createBranch(OpsRequest $opsRequest, Repo $repo): bool
+    {
+        return $this->github->createBranch(
+            $repo,
+            $this->branchName($opsRequest),
+            $repo->default_branch ?? 'main',
+        );
+    }
 
-            PullRequest::create([
-                'change_set_id' => $changeSet->id,
-                'branch_id' => $branch->id,
-                'repo_id' => $repo->id,
-                'agent_id' => $codingAgent->id,
-                'title' => 'Ops #'.$opsRequest->id.': '.$opsRequest->title,
-                'status' => 'open',
-            ]);
-        }
-
-        return $changeSet;
+    /**
+     * Create a pull request on GitHub for the ops request.
+     *
+     * @return array{number: int, html_url: string}|null
+     */
+    public function createPullRequest(OpsRequest $opsRequest, Repo $repo): ?array
+    {
+        return $this->github->createPullRequest(
+            $repo,
+            'Ops #'.$opsRequest->id.': '.$opsRequest->title,
+            $this->branchName($opsRequest),
+            $repo->default_branch ?? 'main',
+            $opsRequest->description ?? '',
+        );
     }
 
     // --- Direct Action Path ---
@@ -225,12 +229,14 @@ class OpsRequestWorkflow
     }
 
     /**
-     * Cleanup worktrees after ops request completion.
+     * Clean up branches after ops request completion.
      */
-    public function cleanup(OpsRequest $opsRequest): void
+    public function cleanup(OpsRequest $opsRequest, array $repos): void
     {
-        $opsRequest->worktrees()->update([
-            'status' => 'stale',
-        ]);
+        $branchName = $this->branchName($opsRequest);
+
+        foreach ($repos as $repo) {
+            $this->github->deleteBranch($repo, $branchName);
+        }
     }
 }

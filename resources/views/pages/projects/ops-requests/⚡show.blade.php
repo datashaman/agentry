@@ -3,7 +3,9 @@
 use App\Models\HitlEscalation;
 use App\Models\OpsRequest;
 use App\Models\Project;
+use App\Services\GitHubAppService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -26,10 +28,6 @@ new #[Title('Ops Request Detail')] #[Layout('layouts.app')] class extends Compon
             'bugs',
             'runbooks.steps',
             'hitlEscalations.raisedByAgent',
-            'changeSets.pullRequests.branch',
-            'changeSets.pullRequests.repo',
-            'changeSets.pullRequests.agent',
-            'changeSets.pullRequests.reviews.agent',
         ]);
     }
 
@@ -73,6 +71,24 @@ new #[Title('Ops Request Detail')] #[Layout('layouts.app')] class extends Compon
         ]);
 
         $this->opsRequest->load('hitlEscalations.raisedByAgent');
+    }
+
+    #[Computed]
+    public function pullRequests(): array
+    {
+        $github = app(GitHubAppService::class);
+        $branchName = 'ops/ops-' . $this->opsRequest->id;
+        $prs = [];
+
+        foreach ($this->project->repos as $repo) {
+            foreach ($github->listPullRequests($repo, $branchName) as $pr) {
+                $pr['_repo_name'] = $repo->name;
+                $pr['_reviews'] = $github->listPullRequestReviews($repo, $pr['number']);
+                $prs[] = $pr;
+            }
+        }
+
+        return $prs;
     }
 
     #[Computed]
@@ -145,10 +161,47 @@ new #[Title('Ops Request Detail')] #[Layout('layouts.app')] class extends Compon
         </div>
     @endif
 
-    {{-- Change Sets & PRs --}}
-    <div data-test="ops-request-changesets">
-        <x-changeset-detail :changeSets="$opsRequest->changeSets" />
-    </div>
+    {{-- Pull Requests --}}
+    @if (count($this->pullRequests) > 0)
+        <div data-test="ops-request-pull-requests">
+            <flux:heading size="lg">{{ __('Pull Requests') }}</flux:heading>
+            <div class="mt-2 space-y-3">
+                @foreach ($this->pullRequests as $pr)
+                    <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700" data-test="pr-item">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <flux:text class="font-medium">{{ $pr['title'] }}</flux:text>
+                            <flux:badge size="sm" variant="pill">{{ $pr['state'] }}</flux:badge>
+                            <flux:badge size="sm" variant="pill">{{ $pr['_repo_name'] }}</flux:badge>
+                            <flux:badge size="sm" variant="pill" class="font-mono">{{ $pr['head']['ref'] }}</flux:badge>
+                            @if ($pr['html_url'])
+                                <a href="{{ $pr['html_url'] }}" target="_blank" rel="noopener noreferrer" class="text-sm text-primary-600 hover:underline dark:text-primary-400" data-test="pr-external-link">
+                                    {{ __('Open PR') }} ↗
+                                </a>
+                            @endif
+                        </div>
+                        @if (count($pr['_reviews']) > 0)
+                            <div class="mt-3 space-y-2">
+                                @foreach ($pr['_reviews'] as $review)
+                                    <div class="rounded bg-zinc-50 px-3 py-2 dark:bg-zinc-800/50" data-test="review-item">
+                                        <div class="flex flex-wrap items-center gap-2 text-sm">
+                                            <flux:text class="font-medium">{{ $review['user']['login'] ?? '-' }}</flux:text>
+                                            <flux:badge size="sm" variant="pill">{{ str_replace('_', ' ', $review['state']) }}</flux:badge>
+                                            @if ($review['submitted_at'] ?? null)
+                                                <flux:text class="text-zinc-500 dark:text-zinc-400">{{ \Carbon\Carbon::parse($review['submitted_at'])->format('M j, Y H:i') }}</flux:text>
+                                            @endif
+                                        </div>
+                                        @if ($review['body'] ?? null)
+                                            <flux:text class="mt-1 block text-sm text-zinc-600 dark:text-zinc-400 line-clamp-2">{{ Str::limit($review['body'], 200) }}</flux:text>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
 
     {{-- Runbooks --}}
     @if ($opsRequest->runbooks->isNotEmpty())

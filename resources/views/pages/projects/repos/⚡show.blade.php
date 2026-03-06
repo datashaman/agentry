@@ -2,6 +2,7 @@
 
 use App\Models\Project;
 use App\Models\Repo;
+use App\Services\GitHubAppService;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -14,11 +15,6 @@ new #[Title('Repository Detail')] #[Layout('layouts.app')] class extends Compone
 
     public bool $showDeleteModal = false;
 
-    public function mount(): void
-    {
-        $this->repo->loadCount(['branches', 'worktrees', 'pullRequests']);
-    }
-
     public function deleteRepo(): void
     {
         $this->repo->delete();
@@ -30,6 +26,14 @@ new #[Title('Repository Detail')] #[Layout('layouts.app')] class extends Compone
     public function organization(): ?\App\Models\Organization
     {
         return $this->project->organization;
+    }
+
+    #[Computed]
+    public function pullRequests(): array
+    {
+        $github = app(GitHubAppService::class);
+
+        return $github->listPullRequests($this->repo, state: 'open');
     }
 }; ?>
 
@@ -80,20 +84,10 @@ new #[Title('Repository Detail')] #[Layout('layouts.app')] class extends Compone
         </div>
     </div>
 
-    {{-- Counts --}}
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3" data-test="repo-counts">
-        <a href="{{ route('projects.repos.branches.index', [$project, $repo]) }}" wire:navigate class="rounded-lg border border-zinc-200 p-4 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50" data-test="branches-count">
-            <flux:text class="text-sm font-medium text-zinc-500 dark:text-zinc-400">{{ __('Branches') }}</flux:text>
-            <flux:heading size="xl" class="mt-1">{{ $repo->branches_count }}</flux:heading>
-        </a>
-        <a href="{{ route('projects.repos.worktrees.index', [$project, $repo]) }}" wire:navigate class="rounded-lg border border-zinc-200 p-4 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50" data-test="worktrees-count">
-            <flux:text class="text-sm font-medium text-zinc-500 dark:text-zinc-400">{{ __('Worktrees') }}</flux:text>
-            <flux:heading size="xl" class="mt-1">{{ $repo->worktrees_count }}</flux:heading>
-        </a>
-        <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700" data-test="pull-requests-count">
-            <flux:text class="text-sm font-medium text-zinc-500 dark:text-zinc-400">{{ __('Pull Requests') }}</flux:text>
-            <flux:heading size="xl" class="mt-1">{{ $repo->pull_requests_count }}</flux:heading>
-        </div>
+    {{-- Pull Requests --}}
+    <div data-test="pull-requests-count">
+        <flux:text class="font-medium text-zinc-500 dark:text-zinc-400">{{ __('Open Pull Requests') }}</flux:text>
+        <flux:text class="mt-1">{{ count($this->pullRequests) }}</flux:text>
     </div>
 
     {{-- Delete Confirmation Modal --}}

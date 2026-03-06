@@ -2,41 +2,42 @@
 
 use App\Exceptions\InvalidStatusTransitionException;
 use App\Models\Agent;
-use App\Models\Branch;
-use App\Models\ChangeSet;
 use App\Models\HitlEscalation;
 use App\Models\OpsRequest;
+use App\Models\Organization;
+use App\Models\Project;
 use App\Models\Repo;
 use App\Models\Runbook;
-use App\Models\Worktree;
+use App\Services\GitHubAppService;
 use App\Services\OpsRequestWorkflow;
+use Illuminate\Support\Facades\Http;
 
 // --- Routing ---
 
 test('routes deployment ops request to code_change path', function () {
     $opsRequest = OpsRequest::factory()->create(['category' => 'deployment']);
-    $workflow = new OpsRequestWorkflow;
+    $workflow = app(OpsRequestWorkflow::class);
 
     expect($workflow->route($opsRequest))->toBe('code_change');
 });
 
 test('routes infrastructure ops request to code_change path', function () {
     $opsRequest = OpsRequest::factory()->create(['category' => 'infrastructure']);
-    $workflow = new OpsRequestWorkflow;
+    $workflow = app(OpsRequestWorkflow::class);
 
     expect($workflow->route($opsRequest))->toBe('code_change');
 });
 
 test('routes config ops request to direct_action path', function () {
     $opsRequest = OpsRequest::factory()->create(['category' => 'config']);
-    $workflow = new OpsRequestWorkflow;
+    $workflow = app(OpsRequestWorkflow::class);
 
     expect($workflow->route($opsRequest))->toBe('direct_action');
 });
 
 test('routes data ops request to runbook path', function () {
     $opsRequest = OpsRequest::factory()->create(['category' => 'data']);
-    $workflow = new OpsRequestWorkflow;
+    $workflow = app(OpsRequestWorkflow::class);
 
     expect($workflow->route($opsRequest))->toBe('runbook');
 });
@@ -46,7 +47,7 @@ test('routes data ops request to runbook path', function () {
 test('triage assigns agent and transitions to triaged', function () {
     $opsRequest = OpsRequest::factory()->create(['status' => 'new']);
     $agent = Agent::factory()->create();
-    $workflow = new OpsRequestWorkflow;
+    $workflow = app(OpsRequestWorkflow::class);
 
     $result = $workflow->triage($opsRequest, $agent);
 
@@ -56,41 +57,51 @@ test('triage assigns agent and transitions to triaged', function () {
 
 test('close as invalid from new', function () {
     $opsRequest = OpsRequest::factory()->create(['status' => 'new']);
-    $workflow = new OpsRequestWorkflow;
+    $workflow = app(OpsRequestWorkflow::class);
 
     $result = $workflow->closeInvalid($opsRequest);
 
     expect($result->fresh()->status)->toBe('closed_invalid');
 });
 
-// --- Code Change Path ---
+// --- Branch Name ---
 
-test('code change path creates changeset with branches and PRs', function () {
-    $opsRequest = OpsRequest::factory()->create(['status' => 'planning', 'category' => 'deployment']);
-    $agent = Agent::factory()->create();
-    $repo1 = Repo::factory()->create();
-    $repo2 = Repo::factory()->create();
-    $workflow = new OpsRequestWorkflow;
+test('branch name follows convention for ops request', function () {
+    $opsRequest = OpsRequest::factory()->create();
+    $workflow = app(OpsRequestWorkflow::class);
 
-    $changeSet = $workflow->createChangeSet($opsRequest, $agent, [$repo1, $repo2]);
+    expect($workflow->branchName($opsRequest))->toBe('ops/ops-'.$opsRequest->id);
+});
 
-    expect($changeSet)->toBeInstanceOf(ChangeSet::class)
-        ->and($changeSet->work_item_id)->toBe($opsRequest->id)
-        ->and($changeSet->work_item_type)->toBe(OpsRequest::class)
-        ->and($changeSet->status)->toBe('draft')
-        ->and($changeSet->pullRequests)->toHaveCount(2);
+// --- Code Change Path - Create Branch ---
 
-    $changeSet->pullRequests->each(function ($pr) use ($opsRequest) {
-        expect($pr->status)->toBe('open')
-            ->and($pr->title)->toContain('Ops #'.$opsRequest->id);
-    });
+test('create branch calls GitHub API for ops request', function () {
+    $organization = Organization::factory()->create(['github_installation_id' => 100]);
+    $project = Project::factory()->create(['organization_id' => $organization->id]);
+    $repo = Repo::factory()->create(['project_id' => $project->id, 'default_branch' => 'main', 'url' => 'https://github.com/acme/app']);
+    $opsRequest = OpsRequest::factory()->create();
+
+    $mock = Mockery::mock(GitHubAppService::class)->makePartial();
+    $mock->shouldReceive('getInstallationToken')->andReturn('test-token');
+    app()->instance(GitHubAppService::class, $mock);
+
+    Http::fake([
+        'api.github.com/repos/acme/app/git/ref/heads/main' => Http::response(['object' => ['sha' => 'abc123']]),
+        'api.github.com/repos/acme/app/git/refs' => Http::response(['ref' => 'refs/heads/ops/ops-'.$opsRequest->id], 201),
+    ]);
+
+    $workflow = app(OpsRequestWorkflow::class);
+
+    $result = $workflow->createBranch($opsRequest, $repo);
+
+    expect($result)->toBeTrue();
 });
 
 // --- Direct Action Path ---
 
 test('low-risk direct action executes autonomously', function () {
     $opsRequest = OpsRequest::factory()->create(['status' => 'planning', 'risk_level' => 'low']);
-    $workflow = new OpsRequestWorkflow;
+    $workflow = app(OpsRequestWorkflow::class);
 
     $result = $workflow->executeDirectAction($opsRequest);
 
@@ -100,7 +111,7 @@ test('low-risk direct action executes autonomously', function () {
 test('high-risk direct action triggers HITL escalation', function () {
     $opsRequest = OpsRequest::factory()->create(['status' => 'planning', 'risk_level' => 'high']);
     $agent = Agent::factory()->create();
-    $workflow = new OpsRequestWorkflow;
+    $workflow = app(OpsRequestWorkflow::class);
 
     $escalation = $workflow->escalateDirectAction($opsRequest, $agent);
 
@@ -115,7 +126,7 @@ test('high-risk direct action triggers HITL escalation', function () {
 test('high-risk ops request cannot execute with unresolved escalation', function () {
     $opsRequest = OpsRequest::factory()->create(['status' => 'planning', 'risk_level' => 'high']);
     $agent = Agent::factory()->create();
-    $workflow = new OpsRequestWorkflow;
+    $workflow = app(OpsRequestWorkflow::class);
 
     $workflow->escalateDirectAction($opsRequest, $agent);
 
@@ -126,7 +137,7 @@ test('high-risk ops request cannot execute with unresolved escalation', function
 test('high-risk ops request can execute after escalation resolved', function () {
     $opsRequest = OpsRequest::factory()->create(['status' => 'planning', 'risk_level' => 'high']);
     $agent = Agent::factory()->create();
-    $workflow = new OpsRequestWorkflow;
+    $workflow = app(OpsRequestWorkflow::class);
 
     $escalation = $workflow->escalateDirectAction($opsRequest, $agent);
     $escalation->update([
@@ -145,7 +156,7 @@ test('high-risk ops request can execute after escalation resolved', function () 
 test('runbook path generates runbook with steps and HITL review escalation', function () {
     $opsRequest = OpsRequest::factory()->create(['status' => 'planning', 'category' => 'data']);
     $agent = Agent::factory()->create();
-    $workflow = new OpsRequestWorkflow;
+    $workflow = app(OpsRequestWorkflow::class);
 
     $result = $workflow->generateRunbook($opsRequest, $agent, 'Data Migration', [
         'Backup current database',
@@ -167,17 +178,6 @@ test('runbook path generates runbook with steps and HITL review escalation', fun
         ->and($result['escalation']->resolved_at)->toBeNull();
 });
 
-test('runbook cannot execute until HITL review resolved', function () {
-    $opsRequest = OpsRequest::factory()->create(['status' => 'planning', 'risk_level' => 'high', 'category' => 'data']);
-    $agent = Agent::factory()->create();
-    $workflow = new OpsRequestWorkflow;
-
-    $workflow->generateRunbook($opsRequest, $agent, 'Migration', ['Step 1']);
-
-    expect(fn () => $workflow->startExecution($opsRequest->fresh()))
-        ->toThrow(InvalidStatusTransitionException::class);
-});
-
 test('approve runbook updates status to approved', function () {
     $opsRequest = OpsRequest::factory()->create(['status' => 'planning']);
     $runbook = Runbook::create([
@@ -186,7 +186,7 @@ test('approve runbook updates status to approved', function () {
         'description' => 'Test',
         'status' => 'draft',
     ]);
-    $workflow = new OpsRequestWorkflow;
+    $workflow = app(OpsRequestWorkflow::class);
 
     $result = $workflow->approveRunbook($runbook);
 
@@ -197,7 +197,7 @@ test('approve runbook updates status to approved', function () {
 
 test('start verification transitions to verifying', function () {
     $opsRequest = OpsRequest::factory()->create(['status' => 'executing']);
-    $workflow = new OpsRequestWorkflow;
+    $workflow = app(OpsRequestWorkflow::class);
 
     $result = $workflow->startVerification($opsRequest);
 
@@ -206,7 +206,7 @@ test('start verification transitions to verifying', function () {
 
 test('verification success closes as done', function () {
     $opsRequest = OpsRequest::factory()->create(['status' => 'verifying']);
-    $workflow = new OpsRequestWorkflow;
+    $workflow = app(OpsRequestWorkflow::class);
 
     $result = $workflow->verifySuccess($opsRequest);
 
@@ -216,7 +216,7 @@ test('verification success closes as done', function () {
 test('verification failure escalates to HITL', function () {
     $opsRequest = OpsRequest::factory()->create(['status' => 'verifying']);
     $agent = Agent::factory()->create();
-    $workflow = new OpsRequestWorkflow;
+    $workflow = app(OpsRequestWorkflow::class);
 
     $escalation = $workflow->escalateVerificationFailure(
         $opsRequest,
@@ -232,7 +232,7 @@ test('verification failure escalates to HITL', function () {
 
 test('HITL rejection from verifying closes as rejected', function () {
     $opsRequest = OpsRequest::factory()->create(['status' => 'verifying']);
-    $workflow = new OpsRequestWorkflow;
+    $workflow = app(OpsRequestWorkflow::class);
 
     $result = $workflow->rejectFromVerification($opsRequest);
 
@@ -241,143 +241,62 @@ test('HITL rejection from verifying closes as rejected', function () {
 
 // --- Cleanup ---
 
-test('cleanup marks worktrees as stale', function () {
+test('cleanup deletes branch on GitHub', function () {
+    $organization = Organization::factory()->create(['github_installation_id' => 100]);
+    $project = Project::factory()->create(['organization_id' => $organization->id]);
+    $repo = Repo::factory()->create(['project_id' => $project->id, 'url' => 'https://github.com/acme/app']);
     $opsRequest = OpsRequest::factory()->create(['status' => 'closed_done']);
-    $repo = Repo::factory()->create();
-    $branch = Branch::factory()->create(['repo_id' => $repo->id]);
-    $worktree = Worktree::create([
-        'repo_id' => $repo->id,
-        'branch_id' => $branch->id,
-        'work_item_id' => $opsRequest->id,
-        'work_item_type' => OpsRequest::class,
-        'path' => '/worktrees/test/ops-'.$opsRequest->id,
-        'status' => 'active',
-        'last_activity_at' => now(),
+
+    $mock = Mockery::mock(GitHubAppService::class)->makePartial();
+    $mock->shouldReceive('getInstallationToken')->andReturn('test-token');
+    app()->instance(GitHubAppService::class, $mock);
+
+    Http::fake([
+        'api.github.com/repos/acme/app/git/refs/heads/*' => Http::response(null, 204),
     ]);
-    $workflow = new OpsRequestWorkflow;
 
-    $workflow->cleanup($opsRequest);
+    $workflow = app(OpsRequestWorkflow::class);
 
-    expect($worktree->fresh()->status)->toBe('stale');
+    $workflow->cleanup($opsRequest, [$repo]);
+
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'git/refs/heads/ops/ops-'.$opsRequest->id)
+        && $request->method() === 'DELETE');
 });
 
-// --- Full Code Change Path Lifecycle ---
-
-test('full code change path: new -> triaged -> planning -> executing -> verifying -> closed_done', function () {
-    $opsRequest = OpsRequest::factory()->create(['status' => 'new', 'category' => 'deployment', 'risk_level' => 'low']);
-    $agent = Agent::factory()->create();
-    $repo = Repo::factory()->create();
-    $workflow = new OpsRequestWorkflow;
-
-    // Route
-    expect($workflow->route($opsRequest))->toBe('code_change');
-
-    // Triage
-    $workflow->triage($opsRequest, $agent);
-    expect($opsRequest->fresh()->status)->toBe('triaged');
-
-    // Planning
-    $workflow->startPlanning($opsRequest->fresh());
-    expect($opsRequest->fresh()->status)->toBe('planning');
-
-    // Create changeset
-    $changeSet = $workflow->createChangeSet($opsRequest->fresh(), $agent, [$repo]);
-    expect($changeSet->pullRequests)->toHaveCount(1);
-
-    // Execute
-    $workflow->startExecution($opsRequest->fresh());
-    expect($opsRequest->fresh()->status)->toBe('executing');
-
-    // Verify
-    $workflow->startVerification($opsRequest->fresh());
-    expect($opsRequest->fresh()->status)->toBe('verifying');
-
-    // Close
-    $workflow->verifySuccess($opsRequest->fresh());
-    expect($opsRequest->fresh()->status)->toBe('closed_done');
-
-    // Cleanup
-    $workflow->cleanup($opsRequest->fresh());
-});
-
-// --- Full Direct Action Path Lifecycle ---
+// --- Full Lifecycle ---
 
 test('full direct action path: low-risk executes autonomously', function () {
     $opsRequest = OpsRequest::factory()->create(['status' => 'new', 'category' => 'config', 'risk_level' => 'low']);
     $agent = Agent::factory()->create();
-    $workflow = new OpsRequestWorkflow;
+    $workflow = app(OpsRequestWorkflow::class);
 
-    // Route
     expect($workflow->route($opsRequest))->toBe('direct_action');
 
-    // Triage
     $workflow->triage($opsRequest, $agent);
     expect($opsRequest->fresh()->status)->toBe('triaged');
 
-    // Planning
     $workflow->startPlanning($opsRequest->fresh());
     expect($opsRequest->fresh()->status)->toBe('planning');
 
-    // Execute directly (low risk)
     $workflow->executeDirectAction($opsRequest->fresh());
     expect($opsRequest->fresh()->status)->toBe('executing');
 
-    // Verify and close
     $workflow->startVerification($opsRequest->fresh());
     $workflow->verifySuccess($opsRequest->fresh());
     expect($opsRequest->fresh()->status)->toBe('closed_done');
 });
-
-test('full direct action path: high-risk requires HITL approval', function () {
-    $opsRequest = OpsRequest::factory()->create(['status' => 'new', 'category' => 'config', 'risk_level' => 'high']);
-    $agent = Agent::factory()->create();
-    $workflow = new OpsRequestWorkflow;
-
-    // Triage and plan
-    $workflow->triage($opsRequest, $agent);
-    $workflow->startPlanning($opsRequest->fresh());
-    expect($opsRequest->fresh()->status)->toBe('planning');
-
-    // Escalate for HITL
-    $escalation = $workflow->escalateDirectAction($opsRequest->fresh(), $agent);
-
-    // Cannot execute with unresolved escalation
-    expect(fn () => $workflow->startExecution($opsRequest->fresh()))
-        ->toThrow(InvalidStatusTransitionException::class);
-
-    // Resolve escalation
-    $escalation->update([
-        'resolution' => 'Approved for production',
-        'resolved_by' => 'admin@example.com',
-        'resolved_at' => now(),
-    ]);
-
-    // Now can execute
-    $workflow->startExecution($opsRequest->fresh());
-    expect($opsRequest->fresh()->status)->toBe('executing');
-
-    // Verify and close
-    $workflow->startVerification($opsRequest->fresh());
-    $workflow->verifySuccess($opsRequest->fresh());
-    expect($opsRequest->fresh()->status)->toBe('closed_done');
-});
-
-// --- Full Runbook Path Lifecycle ---
 
 test('full runbook path: generate -> HITL review -> approve -> execute -> verify -> close', function () {
     $opsRequest = OpsRequest::factory()->create(['status' => 'new', 'category' => 'data', 'risk_level' => 'high']);
     $agent = Agent::factory()->create();
-    $workflow = new OpsRequestWorkflow;
+    $workflow = app(OpsRequestWorkflow::class);
 
-    // Route
     expect($workflow->route($opsRequest))->toBe('runbook');
 
-    // Triage and plan
     $workflow->triage($opsRequest, $agent);
     $workflow->startPlanning($opsRequest->fresh());
     expect($opsRequest->fresh()->status)->toBe('planning');
 
-    // Generate runbook (always escalates to HITL)
     $result = $workflow->generateRunbook($opsRequest->fresh(), $agent, 'Data Migration', [
         'Backup database',
         'Run migration',
@@ -387,54 +306,22 @@ test('full runbook path: generate -> HITL review -> approve -> execute -> verify
     expect($result['runbook']->steps)->toHaveCount(3)
         ->and($opsRequest->fresh()->hasUnresolvedEscalation())->toBeTrue();
 
-    // Cannot execute until HITL resolves
     expect(fn () => $workflow->startExecution($opsRequest->fresh()))
         ->toThrow(InvalidStatusTransitionException::class);
 
-    // Resolve HITL review
     $result['escalation']->update([
         'resolution' => 'Runbook reviewed and approved',
         'resolved_by' => 'admin@example.com',
         'resolved_at' => now(),
     ]);
 
-    // Approve runbook
     $workflow->approveRunbook($result['runbook']);
     expect($result['runbook']->fresh()->status)->toBe('approved');
 
-    // Execute
     $workflow->startExecution($opsRequest->fresh());
     expect($opsRequest->fresh()->status)->toBe('executing');
 
-    // Verify and close
     $workflow->startVerification($opsRequest->fresh());
     $workflow->verifySuccess($opsRequest->fresh());
     expect($opsRequest->fresh()->status)->toBe('closed_done');
-});
-
-// --- Verification Failure with HITL Rejection ---
-
-test('full lifecycle with verification failure and HITL rejection', function () {
-    $opsRequest = OpsRequest::factory()->create(['status' => 'new', 'category' => 'config', 'risk_level' => 'low']);
-    $agent = Agent::factory()->create();
-    $workflow = new OpsRequestWorkflow;
-
-    // Triage -> Plan -> Execute
-    $workflow->triage($opsRequest, $agent);
-    $workflow->startPlanning($opsRequest->fresh());
-    $workflow->executeDirectAction($opsRequest->fresh());
-    $workflow->startVerification($opsRequest->fresh());
-    expect($opsRequest->fresh()->status)->toBe('verifying');
-
-    // Verification fails — escalate
-    $escalation = $workflow->escalateVerificationFailure(
-        $opsRequest->fresh(),
-        $agent,
-        'Service returned unexpected 503 errors'
-    );
-    expect($escalation->trigger_class)->toBe('verification_failure');
-
-    // HITL rejects the outcome
-    $workflow->rejectFromVerification($opsRequest->fresh());
-    expect($opsRequest->fresh()->status)->toBe('closed_rejected');
 });

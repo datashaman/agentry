@@ -4,28 +4,15 @@ namespace App\Services;
 
 use App\Models\Agent;
 use App\Models\Bug;
-use App\Models\ChangeSet;
 use App\Models\Critique;
 use App\Models\HitlEscalation;
-use App\Models\PullRequest;
-use App\Models\Review;
 use App\Models\Story;
 
 class StoryReviewReleaseWorkflow
 {
-    /**
-     * Review Agent reviews a single PR, creating a Review record.
-     */
-    public function reviewPullRequest(PullRequest $pullRequest, Agent $reviewAgent, string $status, ?string $body = null): Review
-    {
-        return Review::create([
-            'pull_request_id' => $pullRequest->id,
-            'agent_id' => $reviewAgent->id,
-            'status' => $status,
-            'body' => $body,
-            'submitted_at' => now(),
-        ]);
-    }
+    public function __construct(
+        protected GitHubAppService $github,
+    ) {}
 
     /**
      * Submit story for review — transitions from in_development to in_review.
@@ -99,17 +86,19 @@ class StoryReviewReleaseWorkflow
     }
 
     /**
-     * Release Agent merges all PRs in a ChangeSet.
+     * Merge all pull requests for the story branch across repos.
      */
-    public function mergeChangeSet(ChangeSet $changeSet): ChangeSet
+    public function mergePullRequests(Story $story, array $repos): void
     {
-        $changeSet->pullRequests->each(function (PullRequest $pr) {
-            $pr->update(['status' => 'merged']);
-        });
+        $branchName = 'feature/story-'.$story->id;
 
-        $changeSet->update(['status' => 'merged']);
+        foreach ($repos as $repo) {
+            $prs = $this->github->listPullRequests($repo, $branchName, 'open');
 
-        return $changeSet;
+            foreach ($prs as $pr) {
+                $this->github->mergePullRequest($repo, $pr['number']);
+            }
+        }
     }
 
     /**
@@ -148,21 +137,15 @@ class StoryReviewReleaseWorkflow
     }
 
     /**
-     * Clean up worktrees and branches after deployment.
+     * Clean up branches after deployment.
      */
-    public function cleanup(Story $story): void
+    public function cleanup(Story $story, array $repos): void
     {
-        $story->worktrees()->update([
-            'status' => 'stale',
-        ]);
+        $branchName = 'feature/story-'.$story->id;
 
-        $story->changeSets->each(function (ChangeSet $changeSet) {
-            $changeSet->pullRequests->each(function (PullRequest $pr) {
-                if ($pr->branch) {
-                    $pr->branch->worktrees()->update(['status' => 'stale']);
-                }
-            });
-        });
+        foreach ($repos as $repo) {
+            $this->github->deleteBranch($repo, $branchName);
+        }
     }
 
     /**

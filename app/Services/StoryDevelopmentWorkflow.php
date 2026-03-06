@@ -3,17 +3,17 @@
 namespace App\Services;
 
 use App\Models\Agent;
-use App\Models\Branch;
-use App\Models\ChangeSet;
 use App\Models\Critique;
 use App\Models\HitlEscalation;
-use App\Models\PullRequest;
 use App\Models\Repo;
 use App\Models\Story;
-use App\Models\Worktree;
 
 class StoryDevelopmentWorkflow
 {
+    public function __construct(
+        protected GitHubAppService $github,
+    ) {}
+
     /**
      * Run design critique before coding begins, producing a Critique of type "design".
      */
@@ -33,112 +33,39 @@ class StoryDevelopmentWorkflow
     }
 
     /**
-     * Check worktree state and return the appropriate action.
+     * Derive the branch name for a story.
+     */
+    public function branchName(Story $story): string
+    {
+        return 'feature/story-'.$story->id;
+    }
+
+    /**
+     * Create a branch on GitHub for the story on the given repo.
+     */
+    public function createBranch(Story $story, Repo $repo): bool
+    {
+        return $this->github->createBranch(
+            $repo,
+            $this->branchName($story),
+            $repo->default_branch ?? 'main',
+        );
+    }
+
+    /**
+     * Create a pull request on GitHub for the story.
      *
-     * Returns: ['action' => 'create'|'resume'|'escalate', 'worktree' => ?Worktree]
-     *
-     * @return array{action: string, worktree: ?Worktree}
+     * @return array{number: int, html_url: string}|null
      */
-    public function checkWorktree(Story $story, Repo $repo): array
+    public function createPullRequest(Story $story, Repo $repo): ?array
     {
-        $activeWorktree = Worktree::where('repo_id', $repo->id)
-            ->where('status', 'active')
-            ->first();
-
-        if (! $activeWorktree) {
-            return ['action' => 'create', 'worktree' => null];
-        }
-
-        if ($activeWorktree->work_item_type === Story::class && $activeWorktree->work_item_id === $story->id) {
-            return ['action' => 'resume', 'worktree' => $activeWorktree];
-        }
-
-        return ['action' => 'escalate', 'worktree' => $activeWorktree];
-    }
-
-    /**
-     * Create a fresh worktree for the story on the given repo.
-     */
-    public function createWorktree(Story $story, Repo $repo, Branch $branch): Worktree
-    {
-        return Worktree::create([
-            'repo_id' => $repo->id,
-            'branch_id' => $branch->id,
-            'work_item_id' => $story->id,
-            'work_item_type' => Story::class,
-            'path' => '/worktrees/'.$repo->name.'/story-'.$story->id,
-            'status' => 'active',
-            'last_activity_at' => now(),
-        ]);
-    }
-
-    /**
-     * Resume an existing worktree by updating its last activity timestamp.
-     */
-    public function resumeWorktree(Worktree $worktree): Worktree
-    {
-        $worktree->update(['last_activity_at' => now()]);
-
-        return $worktree;
-    }
-
-    /**
-     * Escalate when a different work item's worktree is active on the repo.
-     */
-    public function escalateWorktreeConflict(Story $story, Worktree $conflictingWorktree, Agent $agent): HitlEscalation
-    {
-        return HitlEscalation::create([
-            'work_item_id' => $story->id,
-            'work_item_type' => Story::class,
-            'raised_by_agent_id' => $agent->id,
-            'trigger_type' => 'ambiguity',
-            'trigger_class' => 'worktree_conflict',
-            'reason' => 'Active worktree for different work item exists on repo. Conflicting worktree ID: '.$conflictingWorktree->id,
-        ]);
-    }
-
-    /**
-     * Create a ChangeSet grouping branches and PRs across affected repos.
-     */
-    public function createChangeSet(Story $story, Agent $codingAgent, array $repos): ChangeSet
-    {
-        $changeSet = ChangeSet::create([
-            'work_item_id' => $story->id,
-            'work_item_type' => Story::class,
-            'status' => 'draft',
-            'summary' => 'Changes for story: '.$story->title,
-        ]);
-
-        foreach ($repos as $repo) {
-            $branch = Branch::create([
-                'repo_id' => $repo->id,
-                'name' => 'feature/story-'.$story->id,
-                'base_branch' => $repo->default_branch ?? 'main',
-                'work_item_id' => $story->id,
-                'work_item_type' => Story::class,
-            ]);
-
-            PullRequest::create([
-                'change_set_id' => $changeSet->id,
-                'branch_id' => $branch->id,
-                'repo_id' => $repo->id,
-                'agent_id' => $codingAgent->id,
-                'title' => 'Story #'.$story->id.': '.$story->title,
-                'status' => 'open',
-            ]);
-        }
-
-        return $changeSet;
-    }
-
-    /**
-     * Handle blocked status — Planning Agent attempts resolution.
-     */
-    public function handleBlocked(Story $story): Story
-    {
-        $story->transitionTo('blocked');
-
-        return $story;
+        return $this->github->createPullRequest(
+            $repo,
+            'Story #'.$story->id.': '.$story->title,
+            $this->branchName($story),
+            $repo->default_branch ?? 'main',
+            $story->description ?? '',
+        );
     }
 
     /**
@@ -154,6 +81,16 @@ class StoryDevelopmentWorkflow
             'trigger_class' => 'cross_team_blocker',
             'reason' => $reason,
         ]);
+    }
+
+    /**
+     * Handle blocked status.
+     */
+    public function handleBlocked(Story $story): Story
+    {
+        $story->transitionTo('blocked');
+
+        return $story;
     }
 
     /**

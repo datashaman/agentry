@@ -251,6 +251,258 @@ class GitHubAppService
     }
 
     /**
+     * Create a branch on a GitHub repository.
+     */
+    public function createBranch(Repo $repo, string $branchName, string $baseBranch): bool
+    {
+        $organization = $repo->project->organization;
+        $token = $this->getInstallationToken($organization);
+
+        if (! $token) {
+            return false;
+        }
+
+        $ownerRepo = $repo->gitHubOwnerAndRepo();
+
+        if (! $ownerRepo) {
+            return false;
+        }
+
+        $endpoint = "https://api.github.com/repos/{$ownerRepo['owner']}/{$ownerRepo['repo']}";
+
+        // Get the SHA of the base branch
+        $refResponse = Http::withToken($token)
+            ->accept('application/vnd.github+json')
+            ->get("{$endpoint}/git/ref/heads/{$baseBranch}");
+
+        if (! $refResponse->successful()) {
+            Log::warning('GitHub: failed to get base branch ref', [
+                'repo_id' => $repo->id,
+                'base_branch' => $baseBranch,
+                'status' => $refResponse->status(),
+            ]);
+
+            return false;
+        }
+
+        $sha = $refResponse->json('object.sha');
+
+        // Create the new branch
+        $response = Http::withToken($token)
+            ->accept('application/vnd.github+json')
+            ->post("{$endpoint}/git/refs", [
+                'ref' => "refs/heads/{$branchName}",
+                'sha' => $sha,
+            ]);
+
+        if (! $response->successful()) {
+            Log::warning('GitHub: failed to create branch', [
+                'repo_id' => $repo->id,
+                'branch' => $branchName,
+                'status' => $response->status(),
+                'body' => $response->json(),
+            ]);
+
+            return false;
+        }
+
+        Log::info('GitHub branch created', [
+            'repo_id' => $repo->id,
+            'branch' => $branchName,
+        ]);
+
+        return true;
+    }
+
+    /**
+     * Create a pull request on a GitHub repository.
+     *
+     * @return array{number: int, html_url: string}|null
+     */
+    public function createPullRequest(Repo $repo, string $title, string $head, string $base, string $body = ''): ?array
+    {
+        $organization = $repo->project->organization;
+        $token = $this->getInstallationToken($organization);
+
+        if (! $token) {
+            return null;
+        }
+
+        $ownerRepo = $repo->gitHubOwnerAndRepo();
+
+        if (! $ownerRepo) {
+            return null;
+        }
+
+        $response = Http::withToken($token)
+            ->accept('application/vnd.github+json')
+            ->post("https://api.github.com/repos/{$ownerRepo['owner']}/{$ownerRepo['repo']}/pulls", [
+                'title' => $title,
+                'head' => $head,
+                'base' => $base,
+                'body' => $body,
+            ]);
+
+        if (! $response->successful()) {
+            Log::warning('GitHub: failed to create pull request', [
+                'repo_id' => $repo->id,
+                'head' => $head,
+                'status' => $response->status(),
+                'body' => $response->json(),
+            ]);
+
+            return null;
+        }
+
+        $data = $response->json();
+
+        return [
+            'number' => $data['number'],
+            'html_url' => $data['html_url'],
+        ];
+    }
+
+    /**
+     * List pull requests for a branch on a GitHub repository.
+     *
+     * @return list<array{number: int, title: string, state: string, html_url: string, user: array, created_at: string, updated_at: string}>
+     */
+    public function listPullRequests(Repo $repo, ?string $head = null, string $state = 'all'): array
+    {
+        $organization = $repo->project->organization;
+        $token = $this->getInstallationToken($organization);
+
+        if (! $token) {
+            return [];
+        }
+
+        $ownerRepo = $repo->gitHubOwnerAndRepo();
+
+        if (! $ownerRepo) {
+            return [];
+        }
+
+        $query = ['state' => $state, 'per_page' => 100];
+
+        if ($head) {
+            $query['head'] = "{$ownerRepo['owner']}:{$head}";
+        }
+
+        $response = Http::withToken($token)
+            ->accept('application/vnd.github+json')
+            ->get("https://api.github.com/repos/{$ownerRepo['owner']}/{$ownerRepo['repo']}/pulls", $query);
+
+        if (! $response->successful()) {
+            return [];
+        }
+
+        return $response->json();
+    }
+
+    /**
+     * List reviews for a pull request.
+     *
+     * @return list<array{id: int, user: array, state: string, body: string, submitted_at: string}>
+     */
+    public function listPullRequestReviews(Repo $repo, int $prNumber): array
+    {
+        $organization = $repo->project->organization;
+        $token = $this->getInstallationToken($organization);
+
+        if (! $token) {
+            return [];
+        }
+
+        $ownerRepo = $repo->gitHubOwnerAndRepo();
+
+        if (! $ownerRepo) {
+            return [];
+        }
+
+        $response = Http::withToken($token)
+            ->accept('application/vnd.github+json')
+            ->get("https://api.github.com/repos/{$ownerRepo['owner']}/{$ownerRepo['repo']}/pulls/{$prNumber}/reviews");
+
+        if (! $response->successful()) {
+            return [];
+        }
+
+        return $response->json();
+    }
+
+    /**
+     * Merge a pull request.
+     */
+    public function mergePullRequest(Repo $repo, int $prNumber, string $mergeMethod = 'squash'): bool
+    {
+        $organization = $repo->project->organization;
+        $token = $this->getInstallationToken($organization);
+
+        if (! $token) {
+            return false;
+        }
+
+        $ownerRepo = $repo->gitHubOwnerAndRepo();
+
+        if (! $ownerRepo) {
+            return false;
+        }
+
+        $response = Http::withToken($token)
+            ->accept('application/vnd.github+json')
+            ->put("https://api.github.com/repos/{$ownerRepo['owner']}/{$ownerRepo['repo']}/pulls/{$prNumber}/merge", [
+                'merge_method' => $mergeMethod,
+            ]);
+
+        if (! $response->successful()) {
+            Log::warning('GitHub: failed to merge pull request', [
+                'repo_id' => $repo->id,
+                'pr_number' => $prNumber,
+                'status' => $response->status(),
+            ]);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Delete a branch on a GitHub repository.
+     */
+    public function deleteBranch(Repo $repo, string $branchName): bool
+    {
+        $organization = $repo->project->organization;
+        $token = $this->getInstallationToken($organization);
+
+        if (! $token) {
+            return false;
+        }
+
+        $ownerRepo = $repo->gitHubOwnerAndRepo();
+
+        if (! $ownerRepo) {
+            return false;
+        }
+
+        $response = Http::withToken($token)
+            ->accept('application/vnd.github+json')
+            ->delete("https://api.github.com/repos/{$ownerRepo['owner']}/{$ownerRepo['repo']}/git/refs/heads/{$branchName}");
+
+        if (! $response->successful() && $response->status() !== 404) {
+            Log::warning('GitHub: failed to delete branch', [
+                'repo_id' => $repo->id,
+                'branch' => $branchName,
+                'status' => $response->status(),
+            ]);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Update an existing check run.
      *
      * @param  array{title: string, summary: string, text?: string}|null  $output
