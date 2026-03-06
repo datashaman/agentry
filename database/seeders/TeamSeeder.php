@@ -18,10 +18,38 @@ class TeamSeeder extends Seeder
             ['name' => 'Pinky HQ'],
         );
 
-        Team::factory()->create([
-            'organization_id' => $organization->id,
-            'name' => 'Core Engineering',
-            'slug' => 'core-engineering',
-        ]);
+        $teams = [
+            [
+                'name' => 'Core Engineering',
+                'slug' => 'core-engineering',
+                'workflow_type' => 'none',
+            ],
+            [
+                'name' => 'Quality Gate',
+                'slug' => 'quality-gate',
+                'workflow_type' => 'chain',
+            ],
+            [
+                'name' => 'Development',
+                'slug' => 'development',
+                'workflow_type' => 'evaluator_optimizer',
+            ],
+            [
+                'name' => 'QA & Release',
+                'slug' => 'qa-release',
+                'workflow_type' => 'chain',
+            ],
+            [
+                'name' => 'Ops',
+                'slug' => 'ops',
+                'workflow_type' => 'chain',
+            ],
+        ];
+
+        foreach ($teams as $team) {
+            Team::factory()->create(array_merge($team, [
+                'organization_id' => $organization->id,
+            ]));
+        }
     }
 }
