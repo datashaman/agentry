@@ -77,6 +77,8 @@ class GitHubController extends Controller
             'github_nickname' => $githubUser->getNickname(),
         ]);
 
+        $user->createPersonalOrganization();
+
         Auth::login($user, remember: true);
 
         return redirect()->route('dashboard');
