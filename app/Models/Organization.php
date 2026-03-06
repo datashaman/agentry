@@ -12,6 +12,62 @@ class Organization extends Model
     /** @use HasFactory<\Database\Factories\OrganizationFactory> */
     use HasFactory;
 
+    /**
+     * All available agent permissions grouped by category.
+     *
+     * @var array<string, list<string>>
+     */
+    public const AGENT_PERMISSIONS = [
+        'Branches' => [
+            'create_branches',
+            'delete_branches',
+        ],
+        'Pull Requests' => [
+            'create_pull_requests',
+            'update_pull_requests',
+            'merge_pull_requests',
+            'close_pull_requests',
+            'comment_on_pull_requests',
+        ],
+        'Code' => [
+            'push_code',
+        ],
+        'Epics' => [
+            'create_epics',
+            'update_epics',
+            'delete_epics',
+        ],
+        'Stories' => [
+            'create_stories',
+            'update_stories',
+            'delete_stories',
+        ],
+        'Bugs' => [
+            'create_bugs',
+            'update_bugs',
+            'close_bugs',
+        ],
+        'Ops Requests' => [
+            'create_ops_requests',
+            'update_ops_requests',
+            'close_ops_requests',
+            'execute_runbooks',
+        ],
+        'Milestones' => [
+            'create_milestones',
+            'update_milestones',
+            'delete_milestones',
+        ],
+        'Labels' => [
+            'create_labels',
+            'update_labels',
+            'delete_labels',
+        ],
+        'Deployments' => [
+            'trigger_deployments',
+        ],
+    ];
+
     public function getRouteKeyName(): string
     {
         return 'slug';
@@ -28,7 +84,18 @@ class Organization extends Model
         'github_installation_id',
         'github_account_login',
         'github_account_type',
+        'agent_permissions',
     ];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'agent_permissions' => 'array',
+        ];
+    }
 
     protected static function booted(): void
     {
@@ -78,6 +145,19 @@ class Organization extends Model
                 'min_rating' => 'good',
             ]]);
         });
+    }
+
+    public function agentCan(string $permission): bool
+    {
+        return (bool) ($this->agent_permissions[$permission] ?? false);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function allAgentPermissionKeys(): array
+    {
+        return array_merge(...array_values(self::AGENT_PERMISSIONS));
     }
 
     public function hasGitHubApp(): bool
