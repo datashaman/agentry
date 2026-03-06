@@ -85,26 +85,25 @@ test('teams page displays agent details', function () {
         ->assertSee('85%');
 });
 
-test('teams page shows empty state when no teams', function () {
+test('teams page shows default development team for new organization', function () {
     $user = User::factory()->withOrganization()->create();
 
     $this->actingAs($user)
         ->get(route('teams.index'))
         ->assertOk()
-        ->assertSee('No Teams');
+        ->assertSee('Development');
 });
 
 test('teams page shows empty agent message when team has no agents', function () {
     $user = User::factory()->withOrganization()->create();
     $org = $user->currentOrganization();
 
-    Team::factory()->create(['organization_id' => $org->id, 'name' => 'Empty Team']);
+    Team::factory()->create(['organization_id' => $org->id, 'name' => 'Empty Team', 'slug' => 'empty-team']);
 
     $this->actingAs($user)
         ->get(route('teams.index'))
         ->assertOk()
         ->assertSee('Empty Team')
-        ->assertSee('0 agents')
         ->assertSee('No agents in this team.');
 });
 

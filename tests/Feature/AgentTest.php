@@ -118,7 +118,8 @@ test('cascade deletes agents when team deleted', function () {
 });
 
 test('can list agents', function () {
-    Agent::factory()->count(3)->create();
+    $team = Team::factory()->create();
+    Agent::factory()->count(3)->create(['team_id' => $team->id]);
 
-    expect(Agent::count())->toBe(3);
+    expect($team->agents()->count())->toBe(3);
 });

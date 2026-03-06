@@ -78,9 +78,11 @@ test('can delete an agent role', function () {
 });
 
 test('can list agent roles', function () {
-    AgentRole::factory()->count(3)->create();
+    $organization = Organization::factory()->create();
+    AgentRole::factory()->count(3)->create(['organization_id' => $organization->id]);
 
-    expect(AgentRole::count())->toBe(3);
+    // 2 default roles + 3 factory-created
+    expect($organization->agentRoles()->count())->toBe(5);
 });
 
 test('seeder creates all 10 agent roles', function () {
