@@ -18,6 +18,8 @@ class Organization extends Model
     protected $fillable = [
         'name',
         'slug',
+        'provider',
+        'provider_id',
         'github_installation_id',
         'github_account_login',
         'github_account_type',

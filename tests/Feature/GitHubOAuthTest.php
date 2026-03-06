@@ -2,6 +2,7 @@
 
 use App\Models\Organization;
 use App\Models\User;
+use Illuminate\Support\Facades\Http;
 use Laravel\Socialite\Contracts\Provider;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
@@ -15,6 +16,8 @@ test('github redirect sends user to github', function () {
 });
 
 test('github callback stores token and redirects', function () {
+    Http::fake(['api.github.com/user/orgs' => Http::response([])]);
+
     $user = User::factory()->withOrganization(Organization::factory()->create())->create();
 
     $socialiteUser = new SocialiteUser;
