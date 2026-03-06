@@ -24,6 +24,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('projects', 'pages::projects.index')->name('projects.index');
     Route::livewire('projects/create', 'pages::projects.create')->name('projects.create');
     Route::livewire('projects/{project}', 'pages::projects.show')->name('projects.show');
+    Route::livewire('projects/{project}/edit', 'pages::projects.edit')->name('projects.edit');
     Route::livewire('projects/{project}/action-logs', 'pages::projects.action-logs.index')->name('projects.action-logs.index');
     Route::livewire('projects/{project}/epics', 'pages::projects.epics.index')->name('projects.epics.index');
     Route::livewire('projects/{project}/stories', 'pages::projects.stories.index')->name('projects.stories.index');
