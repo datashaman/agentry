@@ -5,6 +5,7 @@ use App\Models\Project;
 use App\Models\Repo;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
+use Livewire\Livewire;
 
 test('repos page shows github not connected state when user has no github', function () {
     $organization = Organization::factory()->create();
@@ -19,7 +20,27 @@ test('repos page shows github not connected state when user has no github', func
     $response->assertSee('Connect GitHub');
 });
 
-test('repos page fetches and displays github repos for personal org', function () {
+test('repos page shows loading state initially for github-connected users', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->withOrganization($organization)->create([
+        'github_id' => '12345',
+        'github_token' => 'fake-token',
+        'github_nickname' => 'testuser',
+    ]);
+    $project = Project::factory()->create(['organization_id' => $organization->id]);
+
+    Http::fake([
+        'api.github.com/user/repos*' => Http::response([]),
+    ]);
+
+    $this->actingAs($user);
+
+    $response = $this->get(route('projects.repos.index', $project));
+    $response->assertOk();
+    $response->assertSee('Loading repositories from GitHub...');
+});
+
+test('repos page fetches and displays github repos after loading', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create([
         'github_id' => '12345',
@@ -55,20 +76,18 @@ test('repos page fetches and displays github repos for personal org', function (
 
     $this->actingAs($user);
 
-    $response = $this->get(route('projects.repos.index', $project));
-    $response->assertOk();
-    $response->assertSee('my-laravel-app');
-    $response->assertSee('vue-frontend');
-    $response->assertSee('PHP');
-    $response->assertSee('JavaScript');
-    $response->assertSee('Public');
-    $response->assertSee('Private');
+    Livewire::test('pages::projects.repos.index', ['project' => $project])
+        ->call('loadGitHubRepos')
+        ->assertSee('my-laravel-app')
+        ->assertSee('vue-frontend')
+        ->assertSee('PHP')
+        ->assertSee('JavaScript')
+        ->assertSee('Public')
+        ->assertSee('Private');
 });
 
-test('repos page fetches repos from github org when org has github_account_login', function () {
-    $organization = Organization::factory()->create([
-        'github_account_login' => 'acme-org',
-    ]);
+test('repos page fetches all repo visibilities including private', function () {
+    $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create([
         'github_id' => '12345',
         'github_token' => 'fake-token',
@@ -77,26 +96,16 @@ test('repos page fetches repos from github org when org has github_account_login
     $project = Project::factory()->create(['organization_id' => $organization->id]);
 
     Http::fake([
-        'api.github.com/orgs/acme-org/repos*' => Http::response([
-            [
-                'id' => 10,
-                'name' => 'org-repo',
-                'full_name' => 'acme-org/org-repo',
-                'html_url' => 'https://github.com/acme-org/org-repo',
-                'description' => 'Org repository',
-                'language' => 'Python',
-                'default_branch' => 'main',
-                'private' => false,
-            ],
-        ]),
+        'api.github.com/user/repos*' => Http::response([]),
     ]);
 
     $this->actingAs($user);
 
-    $response = $this->get(route('projects.repos.index', $project));
-    $response->assertOk();
-    $response->assertSee('org-repo');
-    $response->assertSee('Python');
+    Livewire::test('pages::projects.repos.index', ['project' => $project])
+        ->call('loadGitHubRepos');
+
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'visibility=all')
+        && str_contains($request->url(), 'affiliation=owner%2Ccollaborator%2Corganization_member'));
 });
 
 test('repos page shows linked state for already linked repos', function () {
@@ -131,10 +140,47 @@ test('repos page shows linked state for already linked repos', function () {
 
     $this->actingAs($user);
 
-    $response = $this->get(route('projects.repos.index', $project));
-    $response->assertOk();
-    $response->assertSee('linked-repo');
-    $response->assertSee('Unlink');
+    Livewire::test('pages::projects.repos.index', ['project' => $project])
+        ->call('loadGitHubRepos')
+        ->assertSee('linked-repo')
+        ->assertSee('Unlink');
+});
+
+test('linked repo name links to repo detail page', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->withOrganization($organization)->create([
+        'github_id' => '12345',
+        'github_token' => 'fake-token',
+        'github_nickname' => 'testuser',
+    ]);
+    $project = Project::factory()->create(['organization_id' => $organization->id]);
+
+    $repo = Repo::factory()->create([
+        'project_id' => $project->id,
+        'name' => 'linked-repo',
+        'url' => 'https://github.com/testuser/linked-repo',
+    ]);
+
+    Http::fake([
+        'api.github.com/user/repos*' => Http::response([
+            [
+                'id' => 1,
+                'name' => 'linked-repo',
+                'full_name' => 'testuser/linked-repo',
+                'html_url' => 'https://github.com/testuser/linked-repo',
+                'description' => null,
+                'language' => 'PHP',
+                'default_branch' => 'main',
+                'private' => false,
+            ],
+        ]),
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::projects.repos.index', ['project' => $project])
+        ->call('loadGitHubRepos')
+        ->assertSee(route('projects.repos.show', [$project, $repo]));
 });
 
 test('repos page has link to add manually', function () {
@@ -165,16 +211,21 @@ test('repos page shows no repos found when github returns empty', function () {
 
     $this->actingAs($user);
 
-    $response = $this->get(route('projects.repos.index', $project));
-    $response->assertOk();
-    $response->assertSee('No Repositories Found');
+    Livewire::test('pages::projects.repos.index', ['project' => $project])
+        ->call('loadGitHubRepos')
+        ->assertSee('No Repositories Found');
 });
 
 test('repo detail placeholder page loads', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $project = Project::factory()->create(['organization_id' => $organization->id]);
-    $repo = Repo::factory()->create(['project_id' => $project->id]);
+    $repo = Repo::factory()->create(['project_id' => $project->id, 'url' => 'https://github.com/acme/app']);
+
+    Http::fake([
+        'api.github.com/app/installations/*/access_tokens' => Http::response(['token' => 'test-token']),
+        'api.github.com/repos/acme/app/pulls*' => Http::response([]),
+    ]);
 
     $this->actingAs($user);
 

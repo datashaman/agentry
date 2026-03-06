@@ -16,6 +16,10 @@ new #[Title('Repositories')] #[Layout('layouts.app')] class extends Component {
     #[Session]
     public string $search = '';
 
+    public array $gitHubRepos = [];
+
+    public bool $loadingRepos = true;
+
     #[Computed]
     public function organization(): ?\App\Models\Organization
     {
@@ -35,32 +39,44 @@ new #[Title('Repositories')] #[Layout('layouts.app')] class extends Component {
     }
 
     #[Computed]
-    public function gitHubRepos(): array
+    public function filteredGitHubRepos(): array
     {
-        if (! $this->gitHubConnected) {
-            return [];
-        }
-
-        $token = Auth::user()->github_token;
-        $org = $this->organization;
-
-        if ($org?->github_account_login) {
-            $repos = $this->fetchAllPages("https://api.github.com/orgs/{$org->github_account_login}/repos", $token);
-        } elseif ($org?->provider === 'github' && $org?->name) {
-            $repos = $this->fetchAllPages("https://api.github.com/orgs/{$org->name}/repos", $token);
-        } else {
-            $repos = $this->fetchAllPages('https://api.github.com/user/repos', $token, ['affiliation' => 'owner']);
-        }
-
-        usort($repos, fn ($a, $b) => strcasecmp($a['name'], $b['name']));
+        $repos = $this->gitHubRepos;
 
         if ($this->search !== '') {
             $search = strtolower($this->search);
             $repos = array_values(array_filter($repos, fn ($repo) => str_contains(strtolower($repo['name']), $search)
+                || str_contains(strtolower($repo['full_name'] ?? ''), $search)
                 || str_contains(strtolower($repo['description'] ?? ''), $search)));
         }
 
         return $repos;
+    }
+
+    public function mount(): void
+    {
+        $this->loadingRepos = $this->gitHubConnected;
+    }
+
+    public function loadGitHubRepos(): void
+    {
+        if (! $this->gitHubConnected) {
+            $this->loadingRepos = false;
+
+            return;
+        }
+
+        $token = Auth::user()->github_token;
+        $repos = $this->fetchAllPages('https://api.github.com/user/repos', $token, [
+            'affiliation' => 'owner,collaborator,organization_member',
+            'visibility' => 'all',
+            'sort' => 'full_name',
+        ]);
+
+        usort($repos, fn ($a, $b) => strcasecmp($a['full_name'] ?? $a['name'], $b['full_name'] ?? $b['name']));
+
+        $this->gitHubRepos = $repos;
+        $this->loadingRepos = false;
     }
 
     public function linkRepo(int $gitHubId): void
@@ -126,7 +142,9 @@ new #[Title('Repositories')] #[Layout('layouts.app')] class extends Component {
     }
 }; ?>
 
-<div class="flex h-full w-full flex-1 flex-col gap-6">
+<div class="flex h-full w-full flex-1 flex-col gap-6"
+    @if ($loadingRepos) wire:init="loadGitHubRepos" @endif
+>
     <x-breadcrumbs :organization="$this->organization" :project="$project" />
 
     <div class="flex items-center justify-between">
@@ -149,10 +167,17 @@ new #[Title('Repositories')] #[Layout('layouts.app')] class extends Component {
                 </div>
             </div>
         </div>
+    @elseif ($loadingRepos)
+        <div class="flex flex-1 items-center justify-center">
+            <div class="text-center">
+                <flux:icon name="arrow-path" class="mx-auto size-8 animate-spin text-zinc-400" />
+                <flux:text class="mt-3">{{ __('Loading repositories from GitHub...') }}</flux:text>
+            </div>
+        </div>
     @else
         <flux:input wire:model.live.debounce.300ms="search" placeholder="{{ __('Search repositories...') }}" icon="magnifying-glass" data-test="repo-search" />
 
-        @if (empty($this->gitHubRepos))
+        @if (empty($this->filteredGitHubRepos))
             <div class="flex flex-1 items-center justify-center">
                 <div class="text-center">
                     <flux:heading size="lg">{{ __('No Repositories Found') }}</flux:heading>
@@ -160,7 +185,7 @@ new #[Title('Repositories')] #[Layout('layouts.app')] class extends Component {
                         @if ($search !== '')
                             {{ __('No repositories match your search.') }}
                         @else
-                            {{ __('No repositories found for this organization.') }}
+                            {{ __('No repositories found on GitHub.') }}
                         @endif
                     </flux:text>
                 </div>
@@ -178,14 +203,21 @@ new #[Title('Repositories')] #[Layout('layouts.app')] class extends Component {
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($this->gitHubRepos as $ghRepo)
+                        @foreach ($this->filteredGitHubRepos as $ghRepo)
                             @php
                                 $isLinked = in_array(strtolower($ghRepo['html_url']), $this->linkedRepoUrls);
+                                $localRepo = $isLinked ? $project->repos->first(fn ($r) => strtolower($r->url) === strtolower($ghRepo['html_url'])) : null;
                             @endphp
                             <tr class="border-b border-zinc-200 dark:border-zinc-700 {{ $isLinked ? 'bg-green-50/50 dark:bg-green-900/10' : '' }}" data-test="repo-row" wire:key="gh-repo-{{ $ghRepo['id'] }}">
                                 <td class="px-4 py-3">
                                     <div>
-                                        <flux:text class="font-medium text-zinc-900 dark:text-zinc-100">{{ $ghRepo['name'] }}</flux:text>
+                                        @if ($localRepo)
+                                            <a href="{{ route('projects.repos.show', [$project, $localRepo]) }}" wire:navigate class="font-medium text-zinc-900 hover:underline dark:text-zinc-100" data-test="repo-show-link">
+                                                {{ $ghRepo['full_name'] ?? $ghRepo['name'] }}
+                                            </a>
+                                        @else
+                                            <flux:text class="font-medium text-zinc-900 dark:text-zinc-100">{{ $ghRepo['full_name'] ?? $ghRepo['name'] }}</flux:text>
+                                        @endif
                                         @if ($ghRepo['description'] ?? null)
                                             <flux:text class="mt-0.5 text-xs text-zinc-500">{{ Str::limit($ghRepo['description'], 80) }}</flux:text>
                                         @endif
@@ -204,11 +236,11 @@ new #[Title('Repositories')] #[Layout('layouts.app')] class extends Component {
                                 </td>
                                 <td class="px-4 py-3 text-right">
                                     @if ($isLinked)
-                                        <flux:button size="sm" variant="danger" wire:click="unlinkRepo({{ $ghRepo['id'] }})" wire:confirm="{{ __('Remove this repository from the project?') }}" data-test="unlink-repo-button">
+                                        <flux:button size="sm" variant="danger" wire:click="unlinkRepo({{ $ghRepo['id'] }})" wire:target="unlinkRepo({{ $ghRepo['id'] }})" wire:confirm="{{ __('Remove this repository from the project?') }}" data-test="unlink-repo-button">
                                             {{ __('Unlink') }}
                                         </flux:button>
                                     @else
-                                        <flux:button size="sm" variant="primary" wire:click="linkRepo({{ $ghRepo['id'] }})" data-test="link-repo-button">
+                                        <flux:button size="sm" variant="primary" wire:click="linkRepo({{ $ghRepo['id'] }})" wire:target="linkRepo({{ $ghRepo['id'] }})" data-test="link-repo-button">
                                             {{ __('Link') }}
                                         </flux:button>
                                     @endif
