@@ -170,7 +170,7 @@ class GitHubIssuesService implements WorkItemProvider
     }
 
     /**
-     * @return array{key: string, title: string, type: string, status: string, priority: string|null, assignee: string|null, url: string, created_at: string|null, updated_at: string|null}
+     * @return array{key: string, title: string, description: string|null, type: string, status: string, priority: string|null, assignee: string|null, url: string, created_at: string|null, updated_at: string|null}
      */
     protected function normalizeIssue(array $issue): array
     {
@@ -181,6 +181,7 @@ class GitHubIssuesService implements WorkItemProvider
         return [
             'key' => "#{$issue['number']}",
             'title' => $issue['title'],
+            'description' => $issue['body'] ?? null,
             'type' => $labels ?: 'Issue',
             'status' => $issue['state'] ?? 'open',
             'priority' => null,

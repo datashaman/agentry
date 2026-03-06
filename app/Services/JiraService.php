@@ -65,7 +65,7 @@ class JiraService implements WorkItemProvider
             ->get($this->baseUrl($user).'/search', [
                 'jql' => $jql,
                 'maxResults' => $filters['maxResults'] ?? 50,
-                'fields' => 'summary,issuetype,status,priority,assignee,created,updated',
+                'fields' => 'summary,description,issuetype,status,priority,assignee,created,updated',
             ]);
 
         if (! $response->successful()) {
@@ -90,7 +90,7 @@ class JiraService implements WorkItemProvider
 
         $response = $this->request($user)
             ->get($this->baseUrl($user)."/issue/{$issueKey}", [
-                'fields' => 'summary,issuetype,status,priority,assignee,created,updated',
+                'fields' => 'summary,description,issuetype,status,priority,assignee,created,updated',
             ]);
 
         if (! $response->successful()) {
@@ -138,7 +138,7 @@ class JiraService implements WorkItemProvider
             ->get($this->baseUrl($user).'/search', [
                 'jql' => $jql,
                 'maxResults' => 25,
-                'fields' => 'summary,issuetype,status,priority,assignee,created,updated',
+                'fields' => 'summary,description,issuetype,status,priority,assignee,created,updated',
             ]);
 
         if (! $response->successful()) {
@@ -198,15 +198,21 @@ class JiraService implements WorkItemProvider
     }
 
     /**
-     * @return array{key: string, title: string, type: string, status: string, priority: string|null, assignee: string|null, url: string, created_at: string|null, updated_at: string|null}
+     * @return array{key: string, title: string, description: string|null, type: string, status: string, priority: string|null, assignee: string|null, url: string, created_at: string|null, updated_at: string|null}
      */
     protected function normalizeIssue(array $issue, User $user): array
     {
         $fields = $issue['fields'] ?? [];
+        $description = $fields['description'] ?? null;
+
+        if (is_array($description)) {
+            $description = json_encode($description);
+        }
 
         return [
             'key' => $issue['key'],
             'title' => $fields['summary'] ?? '',
+            'description' => $description,
             'type' => $fields['issuetype']['name'] ?? 'Unknown',
             'status' => $fields['status']['name'] ?? 'Unknown',
             'priority' => $fields['priority']['name'] ?? null,

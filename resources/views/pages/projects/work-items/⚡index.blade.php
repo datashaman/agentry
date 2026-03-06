@@ -1,5 +1,7 @@
 <?php
 
+use App\Events\WorkItemTracked;
+use App\Events\WorkItemUntracked;
 use App\Models\Project;
 use App\Services\WorkItemProviderManager;
 use Livewire\Attributes\Computed;
@@ -100,10 +102,17 @@ new #[Title('Work Items')] #[Layout('layouts.app')] class extends Component {
             return;
         }
 
-        $this->project->workItems()->create([
+        $manager = app(WorkItemProviderManager::class);
+        $provider = $manager->resolve($this->project);
+
+        $fullIssue = $provider?->getIssue($this->project->organization, $issue['key']);
+        $description = $fullIssue['description'] ?? $issue['description'] ?? null;
+
+        $workItem = $this->project->workItems()->create([
             'provider' => $this->project->work_item_provider,
             'provider_key' => $issue['key'],
             'title' => $issue['title'],
+            'description' => $description,
             'type' => $issue['type'],
             'status' => $issue['status'],
             'priority' => $issue['priority'],
@@ -111,12 +120,44 @@ new #[Title('Work Items')] #[Layout('layouts.app')] class extends Component {
             'url' => $issue['url'],
         ]);
 
+        $conversation = $workItem->conversation()->create();
+
+        if ($this->project->instructions) {
+            $conversation->messages()->create([
+                'role' => 'system',
+                'content' => $this->project->instructions,
+            ]);
+        }
+
+        $lines = [
+            "Title: {$issue['title']}",
+            'Type: '.($issue['type'] ?? 'Unknown'),
+            'Status: '.($issue['status'] ?? 'Unknown'),
+            'Priority: '.($issue['priority'] ?? 'None'),
+            'Assignee: '.($issue['assignee'] ?? 'Unassigned'),
+            "URL: {$issue['url']}",
+        ];
+
+        if ($description) {
+            $lines[] = '';
+            $lines[] = "Description:\n{$description}";
+        }
+
+        $conversation->messages()->create([
+            'role' => 'user',
+            'content' => implode("\n", $lines),
+        ]);
+
+        WorkItemTracked::dispatch($workItem);
+
         unset($this->trackedKeys);
     }
 
     public function untrackIssue(string $key): void
     {
         $this->project->workItems()->where('provider_key', $key)->delete();
+
+        WorkItemUntracked::dispatch($this->project, $key);
 
         unset($this->trackedKeys);
     }

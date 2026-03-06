@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class WorkItem extends Model
 {
@@ -19,9 +20,11 @@ class WorkItem extends Model
         'provider',
         'provider_key',
         'title',
+        'description',
         'type',
         'status',
         'priority',
+        'classified_type',
         'assignee',
         'url',
     ];
@@ -32,5 +35,13 @@ class WorkItem extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * @return HasOne<Conversation, $this>
+     */
+    public function conversation(): HasOne
+    {
+        return $this->hasOne(Conversation::class);
     }
 }

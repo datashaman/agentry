@@ -163,7 +163,7 @@ new #[Title('Edit Agent Role')] #[Layout('layouts.app')] class extends Component
     public function addEventResponder(): void
     {
         $this->validate([
-            'responderWorkItemType' => ['required', 'in:story,bug,ops_request'],
+            'responderWorkItemType' => ['required', 'in:story,bug,ops_request,work_item'],
             'responderStatus' => ['required', 'string'],
             'responderInstructions' => ['required', 'string'],
         ]);
