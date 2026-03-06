@@ -11,6 +11,10 @@ use Livewire\Component;
 new #[Title('New Project')] #[Layout('layouts.app')] class extends Component {
     public string $name = '';
 
+    public string $description = '';
+
+    public string $instructions = '';
+
     public function createProject(): void
     {
         $org = Auth::user()->currentOrganization();
@@ -22,6 +26,8 @@ new #[Title('New Project')] #[Layout('layouts.app')] class extends Component {
 
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'instructions' => ['nullable', 'string', 'max:5000'],
         ]);
 
         $baseSlug = Str::slug($validated['name']);
@@ -35,6 +41,8 @@ new #[Title('New Project')] #[Layout('layouts.app')] class extends Component {
             'organization_id' => $org->id,
             'name' => $validated['name'],
             'slug' => $slug,
+            'description' => $validated['description'] ?: null,
+            'instructions' => $validated['instructions'] ?: null,
         ]);
 
         $this->redirect(route('projects.show', $project), navigate: true);
@@ -65,6 +73,20 @@ new #[Title('New Project')] #[Layout('layouts.app')] class extends Component {
             <flux:label>{{ __('Name') }}</flux:label>
             <flux:input wire:model="name" data-test="project-name-input" required />
             <flux:error name="name" />
+        </flux:field>
+
+        <flux:field>
+            <flux:label>{{ __('Description') }}</flux:label>
+            <flux:textarea wire:model="description" data-test="project-description-input" rows="3" />
+            <flux:description>{{ __('A brief description of the project.') }}</flux:description>
+            <flux:error name="description" />
+        </flux:field>
+
+        <flux:field>
+            <flux:label>{{ __('Instructions') }}</flux:label>
+            <flux:textarea wire:model="instructions" data-test="project-instructions-input" rows="6" />
+            <flux:description>{{ __('Instructions included at the start of agent conversations for this project.') }}</flux:description>
+            <flux:error name="instructions" />
         </flux:field>
 
         <div class="flex items-center gap-2">

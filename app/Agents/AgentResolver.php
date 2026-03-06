@@ -5,6 +5,7 @@ namespace App\Agents;
 use App\Models\Agent;
 use App\Models\Bug;
 use App\Models\OpsRequest;
+use App\Models\Project;
 use App\Models\Story;
 
 class AgentResolver
@@ -36,7 +37,8 @@ class AgentResolver
             ? $this->toolRegistry->resolveTools($type, $agent->provider)
             : [];
 
-        $instructions = $this->buildInstructions($type);
+        $project = $this->resolveProject($workItem);
+        $instructions = $this->buildInstructions($type, $project);
 
         return [
             'instructions' => $instructions,
@@ -50,22 +52,37 @@ class AgentResolver
         ];
     }
 
-    protected function buildInstructions(?\App\Models\AgentRole $type): ?string
+    protected function resolveProject(Story|Bug|OpsRequest|null $workItem): ?Project
     {
-        if ($type === null) {
+        if ($workItem === null) {
             return null;
         }
 
-        $parts = [];
-
-        if (! empty(trim((string) $type->instructions ?? ''))) {
-            $parts[] = trim($type->instructions);
+        if ($workItem instanceof Story) {
+            return $workItem->epic?->project;
         }
 
-        foreach ($type->skills ?? [] as $skill) {
-            $content = trim((string) ($skill->content ?? ''));
-            if ($content !== '') {
-                $parts[] = "## Skill: {$skill->name}\n{$content}";
+        return $workItem->project;
+    }
+
+    protected function buildInstructions(?\App\Models\AgentRole $type, ?Project $project = null): ?string
+    {
+        $parts = [];
+
+        if ($project && ! empty(trim((string) $project->instructions ?? ''))) {
+            $parts[] = "## Project: {$project->name}\n".trim($project->instructions);
+        }
+
+        if ($type !== null) {
+            if (! empty(trim((string) $type->instructions ?? ''))) {
+                $parts[] = trim($type->instructions);
+            }
+
+            foreach ($type->skills ?? [] as $skill) {
+                $content = trim((string) ($skill->content ?? ''));
+                if ($content !== '') {
+                    $parts[] = "## Skill: {$skill->name}\n{$content}";
+                }
             }
         }
 

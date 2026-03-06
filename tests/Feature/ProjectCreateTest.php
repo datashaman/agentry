@@ -32,6 +32,26 @@ test('project create form displays and creates a project', function () {
 
     $project = Project::where('name', 'My App')->first();
     expect($project->slug)->toBe('my-app');
+    expect($project->description)->toBeNull();
+    expect($project->instructions)->toBeNull();
+});
+
+test('project create with description and instructions', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->withOrganization($organization)->create();
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::projects.create')
+        ->set('name', 'My App')
+        ->set('description', 'A cool project')
+        ->set('instructions', 'Always use PHP 8.5 features')
+        ->call('createProject')
+        ->assertRedirect();
+
+    $project = Project::where('name', 'My App')->first();
+    expect($project->description)->toBe('A cool project');
+    expect($project->instructions)->toBe('Always use PHP 8.5 features');
 });
 
 test('project create validates required name', function () {
