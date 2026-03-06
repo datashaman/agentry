@@ -28,11 +28,11 @@ return new class extends Migration
 
         Schema::dropIfExists('subtasks');
         Schema::dropIfExists('tasks');
-        Schema::dropIfExists('stories');
-        Schema::dropIfExists('epics');
-        Schema::dropIfExists('bugs');
         Schema::dropIfExists('ops_request_story');
         Schema::dropIfExists('bug_ops_request');
+        Schema::dropIfExists('bugs');
+        Schema::dropIfExists('stories');
+        Schema::dropIfExists('epics');
         Schema::dropIfExists('labelables');
         Schema::dropIfExists('dependencies');
 

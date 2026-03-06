@@ -50,30 +50,7 @@
         >
             {{ __('Repos') }}
         </a>
-        <a
-            href="{{ route('projects.milestones.index', $project) }}"
-            wire:navigate
-            @class([
-                'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                'bg-zinc-100 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100' => request()->routeIs('projects.milestones.*'),
-                'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100' => ! request()->routeIs('projects.milestones.*'),
-            ])
-            data-test="sub-nav-milestones"
-        >
-            {{ __('Milestones') }}
-        </a>
-        <a
-            href="{{ route('projects.labels.index', $project) }}"
-            wire:navigate
-            @class([
-                'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                'bg-zinc-100 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100' => request()->routeIs('projects.labels.*'),
-                'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100' => ! request()->routeIs('projects.labels.*'),
-            ])
-            data-test="sub-nav-labels"
-        >
-            {{ __('Labels') }}
-        </a>
+
         <a
             href="{{ route('projects.action-logs.index', $project) }}"
             wire:navigate

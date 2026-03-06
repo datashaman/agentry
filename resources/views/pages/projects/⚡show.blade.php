@@ -33,14 +33,6 @@ new #[Title('Project')] #[Layout('layouts.app')] class extends Component {
         return $this->project->work_item_provider;
     }
 
-    #[Computed]
-    public function milestones(): \Illuminate\Database\Eloquent\Collection
-    {
-        return $this->project->milestones()
-            ->whereIn('status', ['open', 'active'])
-            ->orderBy('due_date')
-            ->get();
-    }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
@@ -86,27 +78,4 @@ new #[Title('Project')] #[Layout('layouts.app')] class extends Component {
         </a>
     </div>
 
-    @if ($this->milestones->isNotEmpty())
-        <div>
-            <flux:heading size="lg">{{ __('Milestones') }}</flux:heading>
-            <div class="mt-3 space-y-2">
-                @foreach ($this->milestones as $milestone)
-                    <a href="{{ route('projects.milestones.show', ['project' => $project, 'milestone' => $milestone]) }}" wire:navigate class="flex items-center justify-between rounded-lg border border-zinc-200 p-3 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50" data-test="milestone-row">
-                        <div>
-                            <flux:text class="font-medium">{{ $milestone->title }}</flux:text>
-                            @if ($milestone->description)
-                                <flux:text class="text-sm text-zinc-500">{{ Str::limit($milestone->description, 80) }}</flux:text>
-                            @endif
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <flux:badge size="sm" variant="pill">{{ $milestone->status }}</flux:badge>
-                            @if ($milestone->due_date)
-                                <flux:text class="text-sm">{{ $milestone->due_date->format('M j, Y') }}</flux:text>
-                            @endif
-                        </div>
-                    </a>
-                @endforeach
-            </div>
-        </div>
-    @endif
 </div>

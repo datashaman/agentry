@@ -23,16 +23,14 @@ Organization
 ├── Skill[]
 └── Project[]
     ├── Repo[]
-    ├── Milestone[]
-    ├── Label[]
     └── OpsRequest[]
 ```
 
-**Organization** is the top-level tenant. It owns projects, teams, agent roles, and skills. It also holds GitHub App installation details and an **agent permissions** system that controls what actions agents can take (branches, pull requests, code, work items, ops requests, milestones, labels, deployments).
+**Organization** is the top-level tenant. It owns projects, teams, agent roles, and skills. It also holds GitHub App installation details and an **agent permissions** system that controls what actions agents can take (branches, pull requests, code, work items, ops requests, deployments).
 
 **Team** groups agents together. Teams are assigned to projects, establishing which agents can work on which codebases.
 
-**Project** is the primary container for work. It holds repos, milestones, labels, and ops requests. Projects connect to external work item providers (Jira or GitHub Issues) for stories, bugs, and tasks.
+**Project** is the primary container for work. It holds repos and ops requests. Projects connect to external work item providers (Jira or GitHub Issues) for stories, bugs, and tasks.
 
 ---
 

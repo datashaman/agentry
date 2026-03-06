@@ -48,22 +48,6 @@ class Project extends Model
     }
 
     /**
-     * @return HasMany<Label, $this>
-     */
-    public function labels(): HasMany
-    {
-        return $this->hasMany(Label::class);
-    }
-
-    /**
-     * @return HasMany<Milestone, $this>
-     */
-    public function milestones(): HasMany
-    {
-        return $this->hasMany(Milestone::class);
-    }
-
-    /**
      * @return array<string, string>
      */
     protected function casts(): array
