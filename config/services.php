@@ -41,6 +41,7 @@ return [
         'redirect' => env('GITHUB_REDIRECT_URI', '/auth/github/callback'),
         'app_id' => env('GITHUB_APP_ID'),
         'app_private_key' => env('GITHUB_APP_PRIVATE_KEY'),
+        'webhook_secret' => env('GITHUB_WEBHOOK_SECRET'),
     ],
 
 ];

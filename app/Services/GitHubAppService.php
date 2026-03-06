@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Models\Organization;
+use App\Models\Repo;
 use Firebase\JWT\JWT;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class GitHubAppService
 {
@@ -80,5 +82,223 @@ class GitHubAppService
         }
 
         return $response->json();
+    }
+
+    /**
+     * Create a webhook on a GitHub repository.
+     *
+     * @param  list<string>  $events
+     */
+    public function createRepoWebhook(Repo $repo, array $events = ['check_suite', 'pull_request']): ?int
+    {
+        $organization = $repo->project->organization;
+        $token = $this->getInstallationToken($organization);
+
+        if (! $token) {
+            Log::warning('GitHub: could not get installation token for webhook creation', [
+                'repo_id' => $repo->id,
+            ]);
+
+            return null;
+        }
+
+        $ownerRepo = $repo->gitHubOwnerAndRepo();
+
+        if (! $ownerRepo) {
+            Log::warning('GitHub: could not parse owner/repo from URL', [
+                'repo_id' => $repo->id,
+                'url' => $repo->url,
+            ]);
+
+            return null;
+        }
+
+        $webhookUrl = route('github.webhook');
+        $secret = config('services.github.webhook_secret');
+
+        $response = Http::withToken($token)
+            ->accept('application/vnd.github+json')
+            ->post("https://api.github.com/repos/{$ownerRepo['owner']}/{$ownerRepo['repo']}/hooks", [
+                'name' => 'web',
+                'active' => true,
+                'events' => $events,
+                'config' => [
+                    'url' => $webhookUrl,
+                    'content_type' => 'json',
+                    'secret' => $secret,
+                    'insecure_ssl' => '0',
+                ],
+            ]);
+
+        if (! $response->successful()) {
+            Log::warning('GitHub: failed to create webhook', [
+                'repo_id' => $repo->id,
+                'status' => $response->status(),
+                'body' => $response->json(),
+            ]);
+
+            return null;
+        }
+
+        $webhookId = $response->json('id');
+
+        $repo->update(['github_webhook_id' => $webhookId]);
+
+        Log::info('GitHub webhook created', [
+            'repo_id' => $repo->id,
+            'webhook_id' => $webhookId,
+        ]);
+
+        return $webhookId;
+    }
+
+    /**
+     * Delete a webhook from a GitHub repository.
+     */
+    public function deleteRepoWebhook(Repo $repo): bool
+    {
+        if (! $repo->github_webhook_id) {
+            return false;
+        }
+
+        $organization = $repo->project->organization;
+        $token = $this->getInstallationToken($organization);
+
+        if (! $token) {
+            return false;
+        }
+
+        $ownerRepo = $repo->gitHubOwnerAndRepo();
+
+        if (! $ownerRepo) {
+            return false;
+        }
+
+        $response = Http::withToken($token)
+            ->accept('application/vnd.github+json')
+            ->delete("https://api.github.com/repos/{$ownerRepo['owner']}/{$ownerRepo['repo']}/hooks/{$repo->github_webhook_id}");
+
+        if ($response->successful() || $response->status() === 404) {
+            $repo->update(['github_webhook_id' => null]);
+
+            Log::info('GitHub webhook deleted', [
+                'repo_id' => $repo->id,
+            ]);
+
+            return true;
+        }
+
+        Log::warning('GitHub: failed to delete webhook', [
+            'repo_id' => $repo->id,
+            'status' => $response->status(),
+        ]);
+
+        return false;
+    }
+
+    /**
+     * Create a check run on a commit.
+     *
+     * @param  array{title: string, summary: string, text?: string}|null  $output
+     * @return int|null The check run ID
+     */
+    public function createCheckRun(
+        Repo $repo,
+        string $headSha,
+        string $name,
+        string $status = 'queued',
+        ?array $output = null,
+    ): ?int {
+        $organization = $repo->project->organization;
+        $token = $this->getInstallationToken($organization);
+
+        if (! $token) {
+            return null;
+        }
+
+        $ownerRepo = $repo->gitHubOwnerAndRepo();
+
+        if (! $ownerRepo) {
+            return null;
+        }
+
+        $body = [
+            'name' => $name,
+            'head_sha' => $headSha,
+            'status' => $status,
+        ];
+
+        if ($output) {
+            $body['output'] = $output;
+        }
+
+        $response = Http::withToken($token)
+            ->accept('application/vnd.github+json')
+            ->post("https://api.github.com/repos/{$ownerRepo['owner']}/{$ownerRepo['repo']}/check-runs", $body);
+
+        if (! $response->successful()) {
+            Log::warning('GitHub: failed to create check run', [
+                'repo_id' => $repo->id,
+                'head_sha' => $headSha,
+                'status' => $response->status(),
+                'body' => $response->json(),
+            ]);
+
+            return null;
+        }
+
+        return $response->json('id');
+    }
+
+    /**
+     * Update an existing check run.
+     *
+     * @param  array{title: string, summary: string, text?: string}|null  $output
+     */
+    public function updateCheckRun(
+        Repo $repo,
+        int $checkRunId,
+        string $status = 'in_progress',
+        ?string $conclusion = null,
+        ?array $output = null,
+    ): bool {
+        $organization = $repo->project->organization;
+        $token = $this->getInstallationToken($organization);
+
+        if (! $token) {
+            return false;
+        }
+
+        $ownerRepo = $repo->gitHubOwnerAndRepo();
+
+        if (! $ownerRepo) {
+            return false;
+        }
+
+        $body = ['status' => $status];
+
+        if ($conclusion) {
+            $body['conclusion'] = $conclusion;
+        }
+
+        if ($output) {
+            $body['output'] = $output;
+        }
+
+        $response = Http::withToken($token)
+            ->accept('application/vnd.github+json')
+            ->patch("https://api.github.com/repos/{$ownerRepo['owner']}/{$ownerRepo['repo']}/check-runs/{$checkRunId}", $body);
+
+        if (! $response->successful()) {
+            Log::warning('GitHub: failed to update check run', [
+                'repo_id' => $repo->id,
+                'check_run_id' => $checkRunId,
+                'status' => $response->status(),
+            ]);
+
+            return false;
+        }
+
+        return true;
     }
 }

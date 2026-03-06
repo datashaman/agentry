@@ -3,10 +3,13 @@
 use App\Http\Controllers\DownloadAttachmentController;
 use App\Http\Controllers\GitHubAppSetupController;
 use App\Http\Controllers\GitHubController;
+use App\Http\Controllers\GitHubWebhookController;
 use App\Http\Controllers\SwitchOrganizationController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
+
+Route::post('github/webhook', GitHubWebhookController::class)->name('github.webhook');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('auth/github/redirect', [GitHubController::class, 'redirect'])->name('github.redirect');

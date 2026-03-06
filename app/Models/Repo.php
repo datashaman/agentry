@@ -23,6 +23,7 @@ class Repo extends Model
         'primary_language',
         'default_branch',
         'tags',
+        'github_webhook_id',
     ];
 
     /**
@@ -33,6 +34,23 @@ class Repo extends Model
         return [
             'tags' => 'array',
         ];
+    }
+
+    /**
+     * @return array{owner: string, repo: string}|null
+     */
+    public function gitHubOwnerAndRepo(): ?array
+    {
+        if (preg_match('#github\.com[/:]([^/]+)/([^/.]+)#', $this->url, $matches)) {
+            return ['owner' => $matches[1], 'repo' => $matches[2]];
+        }
+
+        return null;
+    }
+
+    public function hasWebhook(): bool
+    {
+        return $this->github_webhook_id !== null;
     }
 
     /**
