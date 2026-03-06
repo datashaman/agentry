@@ -1,8 +1,11 @@
 <?php
 
+use App\Contracts\WorkItemProvider;
 use App\Models\Organization;
 use App\Models\Project;
 use App\Models\User;
+use App\Models\WorkItem;
+use App\Services\WorkItemProviderManager;
 use Livewire\Livewire;
 
 test('guests are redirected from work items page', function () {
@@ -66,24 +69,91 @@ test('work items page shows error when project key is missing', function () {
     $this->actingAs($user);
 
     Livewire::test('pages::projects.work-items.index', ['project' => $project])
-        ->call('loadWorkItems')
+        ->call('loadIssues')
         ->assertSet('error', 'No project key configured. Edit the project to set a project key (e.g. owner/repo for GitHub).');
 });
 
-test('work items page shows helpful message when no results returned', function () {
-    $organization = Organization::factory()->create(['github_installation_id' => null]);
-    $user = User::factory()->withOrganization($organization)->create(['github_token' => null]);
+test('tracking an issue creates a work item record', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->withOrganization($organization)->create();
     $project = Project::factory()->create([
         'organization_id' => $organization->id,
         'work_item_provider' => 'github',
         'work_item_provider_config' => ['project_key' => 'owner/repo'],
     ]);
 
+    $fakeProvider = Mockery::mock(WorkItemProvider::class);
+    $fakeProvider->allows('listIssues')->andReturn([
+        [
+            'key' => '#42',
+            'title' => 'Fix the widget',
+            'type' => 'bug',
+            'status' => 'open',
+            'priority' => null,
+            'assignee' => 'dev1',
+            'url' => 'https://github.com/owner/repo/issues/42',
+            'created_at' => '2026-01-01T00:00:00Z',
+            'updated_at' => '2026-01-01T00:00:00Z',
+        ],
+    ]);
+
+    $fakeManager = Mockery::mock(WorkItemProviderManager::class);
+    $fakeManager->allows('resolve')->andReturn($fakeProvider);
+    $this->app->instance(WorkItemProviderManager::class, $fakeManager);
+
     $this->actingAs($user);
 
     Livewire::test('pages::projects.work-items.index', ['project' => $project])
-        ->call('loadWorkItems')
-        ->assertSee('No work items returned');
+        ->call('loadIssues')
+        ->assertSee('Fix the widget')
+        ->call('trackIssue', '#42');
+
+    expect($project->workItems()->where('provider_key', '#42')->exists())->toBeTrue();
+});
+
+test('untracking an issue deletes the work item record', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->withOrganization($organization)->create();
+    $project = Project::factory()->create([
+        'organization_id' => $organization->id,
+        'work_item_provider' => 'github',
+        'work_item_provider_config' => ['project_key' => 'owner/repo'],
+    ]);
+
+    WorkItem::factory()->create([
+        'project_id' => $project->id,
+        'provider' => 'github',
+        'provider_key' => '#42',
+        'title' => 'Fix the widget',
+        'url' => 'https://github.com/owner/repo/issues/42',
+    ]);
+
+    $fakeProvider = Mockery::mock(WorkItemProvider::class);
+    $fakeProvider->allows('listIssues')->andReturn([
+        [
+            'key' => '#42',
+            'title' => 'Fix the widget',
+            'type' => 'bug',
+            'status' => 'open',
+            'priority' => null,
+            'assignee' => null,
+            'url' => 'https://github.com/owner/repo/issues/42',
+            'created_at' => '2026-01-01T00:00:00Z',
+            'updated_at' => '2026-01-01T00:00:00Z',
+        ],
+    ]);
+
+    $fakeManager = Mockery::mock(WorkItemProviderManager::class);
+    $fakeManager->allows('resolve')->andReturn($fakeProvider);
+    $this->app->instance(WorkItemProviderManager::class, $fakeManager);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::projects.work-items.index', ['project' => $project])
+        ->call('loadIssues')
+        ->call('untrackIssue', '#42');
+
+    expect($project->workItems()->where('provider_key', '#42')->exists())->toBeFalse();
 });
 
 test('project edit page shows work item provider fields', function () {

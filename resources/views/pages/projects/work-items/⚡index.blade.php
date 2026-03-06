@@ -4,15 +4,17 @@ use App\Models\Project;
 use App\Services\WorkItemProviderManager;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Session;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Work Items')] #[Layout('layouts.app')] class extends Component {
     public Project $project;
 
+    #[Session]
     public string $search = '';
 
-    public array $workItems = [];
+    public array $providerIssues = [];
 
     public bool $loading = true;
 
@@ -36,12 +38,18 @@ new #[Title('Work Items')] #[Layout('layouts.app')] class extends Component {
         return $this->project->work_item_provider !== null;
     }
 
+    #[Computed]
+    public function trackedKeys(): array
+    {
+        return $this->project->workItems()->pluck('provider_key')->all();
+    }
+
     public function mount(): void
     {
         $this->loading = $this->isConfigured;
     }
 
-    public function loadWorkItems(): void
+    public function loadIssues(): void
     {
         $this->error = null;
 
@@ -65,30 +73,57 @@ new #[Title('Work Items')] #[Layout('layouts.app')] class extends Component {
             return;
         }
 
-        $filters = [];
-
         if ($this->search !== '') {
-            $this->workItems = $provider->searchIssues($this->project->organization, $this->search);
+            $this->providerIssues = $provider->searchIssues($this->project->organization, $this->search);
         } else {
-            $this->workItems = $provider->listIssues($this->project->organization, $projectKey, $filters);
-        }
-
-        if (empty($this->workItems) && $this->search === '') {
-            $this->error = __('No work items returned. Check that your GitHub account has access to :key, or install the GitHub App on the organization.', ['key' => $projectKey]);
+            $this->providerIssues = $provider->listIssues($this->project->organization, $projectKey);
         }
 
         $this->loading = false;
     }
 
-    public function searchWorkItems(): void
+    public function searchIssues(): void
     {
         $this->loading = true;
-        $this->loadWorkItems();
+        $this->loadIssues();
+    }
+
+    public function trackIssue(string $key): void
+    {
+        $issue = collect($this->providerIssues)->firstWhere('key', $key);
+
+        if (! $issue) {
+            return;
+        }
+
+        if ($this->project->workItems()->where('provider_key', $key)->exists()) {
+            return;
+        }
+
+        $this->project->workItems()->create([
+            'provider' => $this->project->work_item_provider,
+            'provider_key' => $issue['key'],
+            'title' => $issue['title'],
+            'type' => $issue['type'],
+            'status' => $issue['status'],
+            'priority' => $issue['priority'],
+            'assignee' => $issue['assignee'],
+            'url' => $issue['url'],
+        ]);
+
+        unset($this->trackedKeys);
+    }
+
+    public function untrackIssue(string $key): void
+    {
+        $this->project->workItems()->where('provider_key', $key)->delete();
+
+        unset($this->trackedKeys);
     }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6"
-    @if ($loading) wire:init="loadWorkItems" @endif
+    @if ($loading) wire:init="loadIssues" @endif
 >
     <x-breadcrumbs :organization="$this->organization" :project="$project" />
 
@@ -97,7 +132,7 @@ new #[Title('Work Items')] #[Layout('layouts.app')] class extends Component {
             <flux:heading size="xl">{{ __('Work Items') }}</flux:heading>
             <flux:text class="mt-1">
                 @if ($this->providerName)
-                    {{ __('Work items from :provider for :project.', ['provider' => ucfirst($this->providerName), 'project' => $project->name]) }}
+                    {{ __('Track work items from :provider for :project.', ['provider' => ucfirst($this->providerName), 'project' => $project->name]) }}
                 @else
                     {{ __('Configure a work item provider to see issues here.') }}
                 @endif
@@ -131,20 +166,20 @@ new #[Title('Work Items')] #[Layout('layouts.app')] class extends Component {
     @else
         <div class="flex gap-3">
             <div class="flex-1">
-                <flux:input wire:model="search" placeholder="{{ __('Search work items...') }}" icon="magnifying-glass" wire:keydown.enter="searchWorkItems" />
+                <flux:input wire:model="search" placeholder="{{ __('Search issues...') }}" icon="magnifying-glass" wire:keydown.enter="searchIssues" />
             </div>
-            <flux:button wire:click="searchWorkItems">{{ __('Search') }}</flux:button>
+            <flux:button wire:click="searchIssues">{{ __('Search') }}</flux:button>
         </div>
 
-        @if (empty($workItems))
+        @if (empty($providerIssues))
             <div class="flex flex-1 items-center justify-center">
                 <div class="text-center">
-                    <flux:heading size="lg">{{ __('No Work Items') }}</flux:heading>
+                    <flux:heading size="lg">{{ __('No Issues Found') }}</flux:heading>
                     <flux:text class="mt-2">
                         @if ($search !== '')
-                            {{ __('No work items match your search.') }}
+                            {{ __('No issues match your search.') }}
                         @else
-                            {{ __('No work items found.') }}
+                            {{ __('No open issues found.') }}
                         @endif
                     </flux:text>
                 </div>
@@ -158,13 +193,16 @@ new #[Title('Work Items')] #[Layout('layouts.app')] class extends Component {
                             <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Title') }}</th>
                             <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Type') }}</th>
                             <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Status') }}</th>
-                            <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Priority') }}</th>
                             <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Assignee') }}</th>
+                            <th class="px-4 py-3 text-right font-medium text-zinc-500 dark:text-zinc-400">{{ __('Actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($workItems as $item)
-                            <tr class="border-b border-zinc-200 dark:border-zinc-700" wire:key="wi-{{ $item['key'] }}">
+                        @foreach ($providerIssues as $item)
+                            @php
+                                $isTracked = in_array($item['key'], $this->trackedKeys);
+                            @endphp
+                            <tr class="border-b border-zinc-200 dark:border-zinc-700 {{ $isTracked ? 'bg-green-50/50 dark:bg-green-900/10' : '' }}" wire:key="wi-{{ $item['key'] }}" data-test="work-item-row">
                                 <td class="px-4 py-3">
                                     <a href="{{ $item['url'] }}" target="_blank" rel="noopener" class="font-medium text-blue-600 hover:underline dark:text-blue-400">
                                         {{ $item['key'] }}
@@ -180,10 +218,18 @@ new #[Title('Work Items')] #[Layout('layouts.app')] class extends Component {
                                     <flux:badge size="sm" variant="outline">{{ $item['status'] }}</flux:badge>
                                 </td>
                                 <td class="px-4 py-3">
-                                    <flux:text>{{ $item['priority'] ?? '-' }}</flux:text>
-                                </td>
-                                <td class="px-4 py-3">
                                     <flux:text>{{ $item['assignee'] ?? __('Unassigned') }}</flux:text>
+                                </td>
+                                <td class="px-4 py-3 text-right">
+                                    @if ($isTracked)
+                                        <flux:button size="sm" variant="danger" wire:click="untrackIssue('{{ $item['key'] }}')" data-test="untrack-button">
+                                            {{ __('Untrack') }}
+                                        </flux:button>
+                                    @else
+                                        <flux:button size="sm" variant="primary" wire:click="trackIssue('{{ $item['key'] }}')" data-test="track-button">
+                                            {{ __('Track') }}
+                                        </flux:button>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach

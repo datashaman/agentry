@@ -23,6 +23,7 @@ Organization
 ├── Skill[]
 └── Project[]
     ├── Repo[]
+    ├── WorkItem[]
     └── OpsRequest[]
 ```
 
@@ -30,7 +31,7 @@ Organization
 
 **Team** groups agents together. Teams are assigned to projects, establishing which agents can work on which codebases.
 
-**Project** is the primary container for work. It holds repos and ops requests. Projects connect to external work item providers (Jira or GitHub Issues) for stories, bugs, and tasks.
+**Project** is the primary container for work. It holds repos, tracked work items, and ops requests. Projects connect to external work item providers (Jira or GitHub Issues) for stories, bugs, and tasks. Users selectively track specific issues as **WorkItems** for agents to work on.
 
 ---
 
