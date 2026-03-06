@@ -195,6 +195,7 @@ test('link repo creates a local repo from github data', function () {
     $this->actingAs($user);
 
     Livewire::test('pages::projects.repos.index', ['project' => $project])
+        ->call('loadGitHubRepos')
         ->call('linkRepo', 42);
 
     $this->assertDatabaseHas('repos', [
@@ -239,6 +240,7 @@ test('unlink repo removes the local repo', function () {
     $this->actingAs($user);
 
     Livewire::test('pages::projects.repos.index', ['project' => $project])
+        ->call('loadGitHubRepos')
         ->call('unlinkRepo', 99);
 
     $this->assertDatabaseMissing('repos', [
