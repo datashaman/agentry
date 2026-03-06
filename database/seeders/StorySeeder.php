@@ -18,7 +18,7 @@ class StorySeeder extends Seeder
         Story::factory()->create([
             'epic_id' => $epic->id,
             'title' => 'Implement Core Models',
-            'description' => 'Create all foundational domain models for the Pinky platform.',
+            'description' => 'Create all foundational domain models for the Agentry platform.',
             'status' => 'backlog',
             'priority' => 1,
             'story_points' => 8,

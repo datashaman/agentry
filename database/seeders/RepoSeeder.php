@@ -17,8 +17,8 @@ class RepoSeeder extends Seeder
 
         Repo::factory()->create([
             'project_id' => $project->id,
-            'name' => 'pinky-platform',
-            'url' => 'https://github.com/datashaman/pinky-platform.git',
+            'name' => 'agentry-platform',
+            'url' => 'https://github.com/datashaman/agentry-platform.git',
             'primary_language' => 'PHP',
             'default_branch' => 'main',
             'tags' => ['backend', 'api'],

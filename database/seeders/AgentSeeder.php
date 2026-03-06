@@ -26,16 +26,16 @@ class AgentSeeder extends Seeder
             ->keyBy('slug');
 
         $agents = [
-            ['name' => 'Pinky Monitor', 'role' => 'monitoring', 'team' => 'core-engineering', 'model' => 'claude-haiku-4-5', 'schedule' => 'every_5_minutes', 'scheduled_instructions' => 'Check system health. Scan recent error logs, monitor queue depths, and detect anomalies. File bugs for any issues found.'],
-            ['name' => 'Pinky Triager', 'role' => 'triage', 'team' => 'ops', 'model' => 'claude-haiku-4-5'],
-            ['name' => 'Pinky Planner', 'role' => 'planning', 'team' => 'core-engineering', 'model' => 'claude-opus-4-6'],
-            ['name' => 'Pinky Spec Critic', 'role' => 'spec-critic', 'team' => 'quality-gate', 'model' => 'claude-opus-4-6'],
-            ['name' => 'Pinky Design Critic', 'role' => 'design-critic', 'team' => 'quality-gate', 'model' => 'claude-opus-4-6'],
-            ['name' => 'Pinky Coder', 'role' => 'coding', 'team' => 'development', 'model' => 'claude-sonnet-4-6'],
-            ['name' => 'Pinky Reviewer', 'role' => 'review', 'team' => 'development', 'model' => 'claude-opus-4-6'],
-            ['name' => 'Pinky Tester', 'role' => 'test', 'team' => 'qa-release', 'model' => 'claude-haiku-4-5'],
-            ['name' => 'Pinky Releaser', 'role' => 'release', 'team' => 'qa-release', 'model' => 'claude-haiku-4-5'],
-            ['name' => 'Pinky Operator', 'role' => 'ops', 'team' => 'ops', 'model' => 'claude-sonnet-4-6'],
+            ['name' => 'Agentry Monitor', 'role' => 'monitoring', 'team' => 'core-engineering', 'model' => 'claude-haiku-4-5', 'schedule' => 'every_5_minutes', 'scheduled_instructions' => 'Check system health. Scan recent error logs, monitor queue depths, and detect anomalies. File bugs for any issues found.'],
+            ['name' => 'Agentry Triager', 'role' => 'triage', 'team' => 'ops', 'model' => 'claude-haiku-4-5'],
+            ['name' => 'Agentry Planner', 'role' => 'planning', 'team' => 'core-engineering', 'model' => 'claude-opus-4-6'],
+            ['name' => 'Agentry Spec Critic', 'role' => 'spec-critic', 'team' => 'quality-gate', 'model' => 'claude-opus-4-6'],
+            ['name' => 'Agentry Design Critic', 'role' => 'design-critic', 'team' => 'quality-gate', 'model' => 'claude-opus-4-6'],
+            ['name' => 'Agentry Coder', 'role' => 'coding', 'team' => 'development', 'model' => 'claude-sonnet-4-6'],
+            ['name' => 'Agentry Reviewer', 'role' => 'review', 'team' => 'development', 'model' => 'claude-opus-4-6'],
+            ['name' => 'Agentry Tester', 'role' => 'test', 'team' => 'qa-release', 'model' => 'claude-haiku-4-5'],
+            ['name' => 'Agentry Releaser', 'role' => 'release', 'team' => 'qa-release', 'model' => 'claude-haiku-4-5'],
+            ['name' => 'Agentry Operator', 'role' => 'ops', 'team' => 'ops', 'model' => 'claude-sonnet-4-6'],
         ];
 
         $created = [];

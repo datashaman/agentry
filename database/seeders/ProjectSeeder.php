@@ -14,14 +14,14 @@ class ProjectSeeder extends Seeder
     public function run(): void
     {
         $organization = Organization::firstOrCreate(
-            ['slug' => 'pinky-hq'],
-            ['name' => 'Pinky HQ'],
+            ['slug' => 'agentry-hq'],
+            ['name' => 'Agentry HQ'],
         );
 
         Project::factory()->create([
             'organization_id' => $organization->id,
-            'name' => 'Pinky Platform',
-            'slug' => 'pinky-platform',
+            'name' => 'Agentry Platform',
+            'slug' => 'agentry-platform',
         ]);
     }
 }

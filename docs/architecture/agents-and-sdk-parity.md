@@ -1,17 +1,17 @@
 # Agent System and Laravel AI SDK Parity
 
-This document defines the split between AgentType and Agent in Pinky and how it aligns with the [Laravel AI SDK](https://laravel.com/docs/12.x/ai-sdk) agent model.
+This document defines the split between AgentType and Agent in Agentry and how it aligns with the [Laravel AI SDK](https://laravel.com/docs/12.x/ai-sdk) agent model.
 
 ---
 
 ## Overview
 
-Pinky's agent system is designed for parity with the Laravel AI SDK. The SDK structures agents as:
+Agentry's agent system is designed for parity with the Laravel AI SDK. The SDK structures agents as:
 
 - **Agent class** — instructions, tools, schema, middleware, and default config (provider, model, temperature, max_steps, etc.)
 - **Prompt invocation** — overrides at runtime (provider, model, timeout)
 
-Pinky maps this to:
+Agentry maps this to:
 
 - **AgentType** — the specification (class) — stable, rarely changes
 - **Agent** — the instance — created per team, varies by model/provider
@@ -49,7 +49,7 @@ Agent represents a *runtime instance*. It inherits from its type and can overrid
 | `team_id` | Org structure | — |
 | `model` | Required — which model to use | `prompt(..., model: ...)` |
 | `provider` | Required — which provider (for tool filtering) | `prompt(..., provider: ...)` |
-| `confidence_threshold` | Pinky: when to escalate to human | — |
+| `confidence_threshold` | Agentry: when to escalate to human | — |
 | `status` | Runtime state (idle, active, error, busy) | — |
 | `temperature` | Optional override | — |
 | `max_steps` | Optional override | — |

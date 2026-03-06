@@ -1,4 +1,4 @@
-# Pinky - Agents & SDK Parity
+# Agentry - Agents & SDK Parity
 
 This PRD implements the agent system migration to align with the Laravel AI SDK. AgentType becomes the specification (instructions, tools, default config), org-scoped; Agent becomes the runtime instance (model, provider, optional overrides). See [agents-and-sdk-parity.md](../architecture/agents-and-sdk-parity.md).
 

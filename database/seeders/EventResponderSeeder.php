@@ -14,7 +14,7 @@ class EventResponderSeeder extends Seeder
      */
     public function run(): void
     {
-        $organization = Organization::where('slug', 'pinky-hq')->firstOrFail();
+        $organization = Organization::where('slug', 'agentry-hq')->firstOrFail();
 
         $roles = AgentRole::where('organization_id', $organization->id)
             ->get()

@@ -18,7 +18,7 @@ class EpicSeeder extends Seeder
         Epic::factory()->create([
             'project_id' => $project->id,
             'title' => 'Platform Foundation',
-            'description' => 'Core models and infrastructure for the Pinky platform.',
+            'description' => 'Core models and infrastructure for the Agentry platform.',
             'status' => 'open',
             'priority' => 1,
         ]);

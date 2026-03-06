@@ -1,4 +1,4 @@
-# Pinky Workflows
+# Agentry Workflows
 
 This document describes the lifecycle workflows for stories, bugs, and ops requests. Each workflow defines the states, transitions, agent responsibilities, and human-in-the-loop (HITL) escalation points.
 

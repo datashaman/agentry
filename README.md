@@ -1,4 +1,4 @@
-# Pinky
+# Agentry
 
 An AI-powered software engineering platform where autonomous agents collaborate to plan, build, review, test, and deploy code. Agents are organized into teams with configurable workflows (chain, parallel, evaluator-optimizer) and respond to work item status changes via event responders.
 

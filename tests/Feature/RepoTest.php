@@ -149,5 +149,5 @@ test('seeder creates expected repo', function () {
     $this->seed(\Database\Seeders\ProjectSeeder::class);
     $this->seed(\Database\Seeders\RepoSeeder::class);
 
-    expect(Repo::where('name', 'pinky-platform')->exists())->toBeTrue();
+    expect(Repo::where('name', 'agentry-platform')->exists())->toBeTrue();
 });

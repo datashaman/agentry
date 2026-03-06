@@ -14,8 +14,8 @@ class TeamSeeder extends Seeder
     public function run(): void
     {
         $organization = Organization::firstOrCreate(
-            ['slug' => 'pinky-hq'],
-            ['name' => 'Pinky HQ'],
+            ['slug' => 'agentry-hq'],
+            ['name' => 'Agentry HQ'],
         );
 
         $teams = [

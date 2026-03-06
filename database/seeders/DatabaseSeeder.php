@@ -35,7 +35,7 @@ class DatabaseSeeder extends Seeder
             RepoSeeder::class,
         ]);
 
-        $organization = Organization::where('slug', 'pinky-hq')->firstOrFail();
+        $organization = Organization::where('slug', 'agentry-hq')->firstOrFail();
         $user->organizations()->attach($organization, ['role' => 'owner']);
     }
 }

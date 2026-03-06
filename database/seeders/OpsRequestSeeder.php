@@ -18,7 +18,7 @@ class OpsRequestSeeder extends Seeder
         OpsRequest::factory()->create([
             'project_id' => $project->id,
             'title' => 'Deploy v1.0 to Production',
-            'description' => 'Initial production deployment of the Pinky platform.',
+            'description' => 'Initial production deployment of the Agentry platform.',
             'status' => 'new',
             'category' => 'deployment',
             'execution_type' => 'supervised',

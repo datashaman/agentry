@@ -1,12 +1,12 @@
-# Pinky Object Model
+# Agentry Object Model
 
-This document describes the domain object model for Pinky — a project management platform where AI agents perform software engineering work under human oversight.
+This document describes the domain object model for Agentry — a project management platform where AI agents perform software engineering work under human oversight.
 
 ---
 
 ## Domain Overview
 
-Pinky organizes work across **organizations**, **teams**, and **projects**. AI **agents** of various types are assigned to teams and carry out work items: **stories**, **bugs**, and **ops requests**. All code changes flow through **repos**, **branches**, **pull requests**, and **reviews**. A human-in-the-loop escalation system ensures agents can surface uncertainty, and a critique system enables iterative quality improvement.
+Agentry organizes work across **organizations**, **teams**, and **projects**. AI **agents** of various types are assigned to teams and carry out work items: **stories**, **bugs**, and **ops requests**. All code changes flow through **repos**, **branches**, **pull requests**, and **reviews**. A human-in-the-loop escalation system ensures agents can surface uncertainty, and a critique system enables iterative quality improvement.
 
 ---
 

@@ -13,8 +13,8 @@ class OrganizationSeeder extends Seeder
     public function run(): void
     {
         Organization::factory()->create([
-            'name' => 'Pinky HQ',
-            'slug' => 'pinky-hq',
+            'name' => 'Agentry HQ',
+            'slug' => 'agentry-hq',
         ]);
     }
 }
