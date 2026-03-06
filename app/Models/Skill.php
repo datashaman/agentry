@@ -33,11 +33,11 @@ class Skill extends Model
     }
 
     /**
-     * @return BelongsToMany<AgentType, $this>
+     * @return BelongsToMany<AgentRole, $this>
      */
-    public function agentTypes(): BelongsToMany
+    public function agentRoles(): BelongsToMany
     {
-        return $this->belongsToMany(AgentType::class, 'agent_type_skill')
+        return $this->belongsToMany(AgentRole::class, 'agent_role_skill')
             ->withPivot('position')
             ->withTimestamps()
             ->orderByPivot('position');

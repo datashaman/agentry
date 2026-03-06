@@ -33,8 +33,8 @@ class UpdateAgentRequest extends FormRequest
     {
         return [
             'name.required' => __('The agent name is required.'),
-            'agent_type_id.required' => __('Please select an agent type.'),
-            'agent_type_id.exists' => __('The selected agent type is invalid.'),
+            'agent_role_id.required' => __('Please select an agent role.'),
+            'agent_role_id.exists' => __('The selected agent role is invalid.'),
             'team_id.required' => __('Please select a team.'),
             'team_id.exists' => __('The selected team is invalid.'),
             'model.required' => __('The model is required.'),

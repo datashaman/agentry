@@ -29,11 +29,11 @@ class Organization extends Model
     }
 
     /**
-     * @return HasMany<AgentType, $this>
+     * @return HasMany<AgentRole, $this>
      */
-    public function agentTypes(): HasMany
+    public function agentRoles(): HasMany
     {
-        return $this->hasMany(AgentType::class);
+        return $this->hasMany(AgentRole::class);
     }
 
     /**

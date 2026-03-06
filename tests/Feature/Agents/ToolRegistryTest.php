@@ -1,7 +1,7 @@
 <?php
 
 use App\Agents\ToolRegistry;
-use App\Models\AgentType;
+use App\Models\AgentRole;
 use App\Models\Organization;
 
 beforeEach(function () {
@@ -10,22 +10,22 @@ beforeEach(function () {
 
 test('resolveTools returns provider tools when provider is supported', function () {
     $organization = Organization::factory()->create();
-    $agentType = AgentType::factory()
+    $agentRole = AgentRole::factory()
         ->forOrganization($organization)
         ->create(['tools' => ['web_search', 'web_fetch']]);
 
-    $resolved = $this->registry->resolveTools($agentType, 'anthropic');
+    $resolved = $this->registry->resolveTools($agentRole, 'anthropic');
 
     expect($resolved)->toBe(['web_search', 'web_fetch']);
 });
 
 test('resolveTools filters provider tools by provider', function () {
     $organization = Organization::factory()->create();
-    $agentType = AgentType::factory()
+    $agentRole = AgentRole::factory()
         ->forOrganization($organization)
         ->create(['tools' => ['web_search', 'web_fetch', 'file_search']]);
 
-    $resolved = $this->registry->resolveTools($agentType, 'openai');
+    $resolved = $this->registry->resolveTools($agentRole, 'openai');
 
     expect($resolved)->toContain('web_search')
         ->and($resolved)->not->toContain('web_fetch')
@@ -34,11 +34,11 @@ test('resolveTools filters provider tools by provider', function () {
 
 test('resolveTools filters out provider tools when provider unsupported', function () {
     $organization = Organization::factory()->create();
-    $agentType = AgentType::factory()
+    $agentRole = AgentRole::factory()
         ->forOrganization($organization)
         ->create(['tools' => ['web_search', 'web_fetch']]);
 
-    $resolved = $this->registry->resolveTools($agentType, 'gemini');
+    $resolved = $this->registry->resolveTools($agentRole, 'gemini');
 
     expect($resolved)->toBe(['web_search', 'web_fetch']);
 });
@@ -46,11 +46,11 @@ test('resolveTools filters out provider tools when provider unsupported', functi
 test('resolveTools includes custom tools regardless of provider', function () {
     $this->registry->registerCustomTool('my_tool', \stdClass::class);
     $organization = Organization::factory()->create();
-    $agentType = AgentType::factory()
+    $agentRole = AgentRole::factory()
         ->forOrganization($organization)
         ->create(['tools' => ['my_tool', 'web_search']]);
 
-    $resolved = $this->registry->resolveTools($agentType, 'anthropic');
+    $resolved = $this->registry->resolveTools($agentRole, 'anthropic');
 
     expect($resolved)->toContain('my_tool')
         ->and($resolved)->toContain('web_search');
@@ -59,11 +59,11 @@ test('resolveTools includes custom tools regardless of provider', function () {
 test('resolveTools includes custom tool even when provider tool filtered', function () {
     $this->registry->registerCustomTool('code_editor', \stdClass::class);
     $organization = Organization::factory()->create();
-    $agentType = AgentType::factory()
+    $agentRole = AgentRole::factory()
         ->forOrganization($organization)
         ->create(['tools' => ['code_editor', 'web_fetch']]);
 
-    $resolved = $this->registry->resolveTools($agentType, 'openai');
+    $resolved = $this->registry->resolveTools($agentRole, 'openai');
 
     expect($resolved)->toContain('code_editor')
         ->and($resolved)->not->toContain('web_fetch');
@@ -71,12 +71,12 @@ test('resolveTools includes custom tool even when provider tool filtered', funct
 
 test('resolveTools includes bash text_editor code_execution for anthropic only', function () {
     $organization = Organization::factory()->create();
-    $agentType = AgentType::factory()
+    $agentRole = AgentRole::factory()
         ->forOrganization($organization)
         ->create(['tools' => ['bash', 'text_editor', 'code_execution', 'web_search']]);
 
-    $anthropicResolved = $this->registry->resolveTools($agentType, 'anthropic');
-    $openaiResolved = $this->registry->resolveTools($agentType, 'openai');
+    $anthropicResolved = $this->registry->resolveTools($agentRole, 'anthropic');
+    $openaiResolved = $this->registry->resolveTools($agentRole, 'openai');
 
     expect($anthropicResolved)->toContain('bash')
         ->and($anthropicResolved)->toContain('text_editor')
@@ -90,46 +90,46 @@ test('resolveTools includes bash text_editor code_execution for anthropic only',
 
 test('resolveTools skips unknown tool ids', function () {
     $organization = Organization::factory()->create();
-    $agentType = AgentType::factory()
+    $agentRole = AgentRole::factory()
         ->forOrganization($organization)
         ->create(['tools' => ['unknown_tool', 'web_search']]);
 
-    $resolved = $this->registry->resolveTools($agentType, 'anthropic');
+    $resolved = $this->registry->resolveTools($agentRole, 'anthropic');
 
     expect($resolved)->not->toContain('unknown_tool')
         ->and($resolved)->toContain('web_search');
 });
 
-test('resolveTools returns empty array when agent type has no tools', function () {
+test('resolveTools returns empty array when agent role has no tools', function () {
     $organization = Organization::factory()->create();
-    $agentType = AgentType::factory()
+    $agentRole = AgentRole::factory()
         ->forOrganization($organization)
         ->create(['tools' => []]);
 
-    $resolved = $this->registry->resolveTools($agentType, 'anthropic');
+    $resolved = $this->registry->resolveTools($agentRole, 'anthropic');
 
     expect($resolved)->toBe([]);
 });
 
 test('resolveTools handles null tools as empty', function () {
     $organization = Organization::factory()->create();
-    $agentType = AgentType::factory()
+    $agentRole = AgentRole::factory()
         ->forOrganization($organization)
         ->create();
-    $agentType->tools = null;
+    $agentRole->tools = null;
 
-    $resolved = $this->registry->resolveTools($agentType, 'anthropic');
+    $resolved = $this->registry->resolveTools($agentRole, 'anthropic');
 
     expect($resolved)->toBe([]);
 });
 
 test('resolveTools is case insensitive for provider', function () {
     $organization = Organization::factory()->create();
-    $agentType = AgentType::factory()
+    $agentRole = AgentRole::factory()
         ->forOrganization($organization)
         ->create(['tools' => ['web_search']]);
 
-    $resolved = $this->registry->resolveTools($agentType, 'ANTHROPIC');
+    $resolved = $this->registry->resolveTools($agentRole, 'ANTHROPIC');
 
     expect($resolved)->toContain('web_search');
 });

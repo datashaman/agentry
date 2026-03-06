@@ -31,10 +31,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('projects/{project}/ops-requests', 'pages::projects.ops-requests.index')->name('projects.ops-requests.index');
     Route::livewire('projects/{project}/ops-requests/{opsRequest}', 'pages::projects.ops-requests.show')->name('projects.ops-requests.show');
     Route::livewire('projects/{project}/ops-requests/{opsRequest}/runbooks/{runbook}', 'pages::projects.ops-requests.runbooks.show')->name('projects.ops-requests.runbooks.show');
-    Route::livewire('agent-types', 'pages::agent-types.index')->name('agent-types.index');
-    Route::livewire('agent-types/create', 'pages::agent-types.create')->name('agent-types.create');
-    Route::livewire('agent-types/{agentType}', 'pages::agent-types.show')->name('agent-types.show');
-    Route::livewire('agent-types/{agentType}/edit', 'pages::agent-types.edit')->name('agent-types.edit');
+    Route::livewire('agent-roles', 'pages::agent-roles.index')->name('agent-roles.index');
+    Route::livewire('agent-roles/create', 'pages::agent-roles.create')->name('agent-roles.create');
+    Route::livewire('agent-roles/{agentRole}', 'pages::agent-roles.show')->name('agent-roles.show');
+    Route::livewire('agent-roles/{agentRole}/edit', 'pages::agent-roles.edit')->name('agent-roles.edit');
     Route::livewire('skills', 'pages::skills.index')->name('skills.index');
     Route::livewire('skills/create', 'pages::skills.create')->name('skills.create');
     Route::livewire('skills/{skill}', 'pages::skills.show')->name('skills.show');

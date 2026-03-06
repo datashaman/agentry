@@ -1,29 +1,29 @@
 <?php
 
-use App\Models\AgentType;
+use App\Models\AgentRole;
 use App\Models\Organization;
 use App\Models\Skill;
 use App\Models\User;
 use Livewire\Livewire;
 
-test('skill detail shows add agent type form when agent types available', function () {
+test('skill detail shows add agent role form when agent roles available', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create(['current_organization_id' => $organization->id]);
     $skill = Skill::factory()->create(['organization_id' => $organization->id]);
-    AgentType::factory()->create(['organization_id' => $organization->id, 'name' => 'Coding Agent']);
+    AgentRole::factory()->create(['organization_id' => $organization->id, 'name' => 'Coding Agent']);
 
     $this->actingAs($user);
 
     $response = $this->get(route('skills.show', $skill));
     $response->assertOk();
-    $response->assertSee('Add agent type');
+    $response->assertSee('Add agent role');
 });
 
-test('can attach agent type from skill detail', function () {
+test('can attach agent role from skill detail', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create(['current_organization_id' => $organization->id]);
     $skill = Skill::factory()->create(['organization_id' => $organization->id]);
-    $agentType = AgentType::factory()->create([
+    $agentRole = AgentRole::factory()->create([
         'organization_id' => $organization->id,
         'name' => 'Coding Agent',
         'slug' => 'coding-agent',
@@ -32,45 +32,45 @@ test('can attach agent type from skill detail', function () {
     $this->actingAs($user);
 
     Livewire::test('pages::skills.show', ['skill' => $skill])
-        ->set('selectedAgentTypeId', (string) $agentType->id)
-        ->call('attachAgentType');
+        ->set('selectedAgentRoleId', (string) $agentRole->id)
+        ->call('attachAgentRole');
 
     $skill->refresh();
-    $skill->load('agentTypes');
-    expect($skill->agentTypes()->count())->toBe(1);
-    expect($skill->agentTypes->first()->name)->toBe('Coding Agent');
+    $skill->load('agentRoles');
+    expect($skill->agentRoles()->count())->toBe(1);
+    expect($skill->agentRoles->first()->name)->toBe('Coding Agent');
 });
 
-test('can detach agent type from skill detail', function () {
+test('can detach agent role from skill detail', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create(['current_organization_id' => $organization->id]);
     $skill = Skill::factory()->create(['organization_id' => $organization->id]);
-    $agentType = AgentType::factory()->create(['organization_id' => $organization->id]);
-    $skill->agentTypes()->attach($agentType->id, ['position' => 0]);
+    $agentRole = AgentRole::factory()->create(['organization_id' => $organization->id]);
+    $skill->agentRoles()->attach($agentRole->id, ['position' => 0]);
 
     $this->actingAs($user);
 
     Livewire::test('pages::skills.show', ['skill' => $skill])
-        ->call('detachAgentType', $agentType->id);
+        ->call('detachAgentRole', $agentRole->id);
 
     $skill->refresh();
-    expect($skill->agentTypes()->count())->toBe(0);
+    expect($skill->agentRoles()->count())->toBe(0);
 });
 
-test('assigning from skill detail syncs with agent type view', function () {
+test('assigning from skill detail syncs with agent role view', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create(['current_organization_id' => $organization->id]);
     $skill = Skill::factory()->create(['organization_id' => $organization->id]);
-    $agentType = AgentType::factory()->create(['organization_id' => $organization->id]);
+    $agentRole = AgentRole::factory()->create(['organization_id' => $organization->id]);
 
     $this->actingAs($user);
 
     Livewire::test('pages::skills.show', ['skill' => $skill])
-        ->set('selectedAgentTypeId', (string) $agentType->id)
-        ->call('attachAgentType');
+        ->set('selectedAgentRoleId', (string) $agentRole->id)
+        ->call('attachAgentRole');
 
-    $agentType->refresh();
-    $agentType->load('skills');
-    expect($agentType->skills()->count())->toBe(1);
-    expect($agentType->skills->first()->id)->toBe($skill->id);
+    $agentRole->refresh();
+    $agentRole->load('skills');
+    expect($agentRole->skills()->count())->toBe(1);
+    expect($agentRole->skills->first()->id)->toBe($skill->id);
 });

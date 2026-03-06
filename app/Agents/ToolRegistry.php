@@ -2,7 +2,7 @@
 
 namespace App\Agents;
 
-use App\Models\AgentType;
+use App\Models\AgentRole;
 
 class ToolRegistry
 {
@@ -31,7 +31,7 @@ class ToolRegistry
     protected array $customTools = [];
 
     /**
-     * Resolve tools for an agent type filtered by provider.
+     * Resolve tools for an agent role filtered by provider.
      * Returns tool IDs valid for the given provider:
      * - Custom tools: always included
      * - Provider tools: included only if provider is in supported list
@@ -39,9 +39,9 @@ class ToolRegistry
      *
      * @return list<string>
      */
-    public function resolveTools(AgentType $agentType, string $provider): array
+    public function resolveTools(AgentRole $agentRole, string $provider): array
     {
-        $toolIds = $agentType->tools ?? [];
+        $toolIds = $agentRole->tools ?? [];
         $provider = strtolower($provider);
         $resolved = [];
 

@@ -22,7 +22,7 @@ new #[Title('Teams & Agents')] #[Layout('layouts.app')] class extends Component 
 
         return $this->organization->teams()
             ->withCount('agents')
-            ->with(['agents.agentType'])
+            ->with(['agents.agentRole'])
             ->get();
     }
 }; ?>
@@ -90,7 +90,7 @@ new #[Title('Teams & Agents')] #[Layout('layouts.app')] class extends Component 
                                                 <a href="{{ route('agents.show', $agent) }}" wire:navigate class="hover:underline">{{ $agent->name }}</a>
                                             </td>
                                             <td class="px-6 py-3">
-                                                <flux:badge size="sm" variant="pill">{{ $agent->agentType?->name ?? '-' }}</flux:badge>
+                                                <flux:badge size="sm" variant="pill">{{ $agent->agentRole?->name ?? '-' }}</flux:badge>
                                             </td>
                                             <td class="px-6 py-3">
                                                 <flux:text>{{ $agent->model }}</flux:text>

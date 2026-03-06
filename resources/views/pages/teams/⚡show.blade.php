@@ -15,7 +15,7 @@ new #[Title('Team')] #[Layout('layouts.app')] class extends Component {
 
     public function mount(): void
     {
-        $this->team->load(['agents.agentType', 'projects']);
+        $this->team->load(['agents.agentRole', 'projects']);
     }
 
     public function attachProject(): void
@@ -130,6 +130,94 @@ new #[Title('Team')] #[Layout('layouts.app')] class extends Component {
         </div>
     </flux:modal>
 
+    {{-- Workflow --}}
+    <div data-test="team-workflow">
+        <flux:heading size="lg">{{ __('Workflow') }}</flux:heading>
+        <div class="mt-2">
+            <flux:badge size="sm" variant="pill" :color="$team->workflow_type === 'none' ? 'zinc' : 'blue'" data-test="workflow-type-badge">
+                {{ match($team->workflow_type) {
+                    'none' => __('None'),
+                    'chain' => __('Chain'),
+                    'parallel' => __('Parallel'),
+                    'router' => __('Router'),
+                    'orchestrator' => __('Orchestrator'),
+                    'evaluator_optimizer' => __('Evaluator-Optimizer'),
+                    default => ucfirst($team->workflow_type),
+                } }}
+            </flux:badge>
+        </div>
+        @if ($team->workflow_type !== 'none' && $team->workflow_config)
+            <div class="mt-2 rounded-lg border border-zinc-200 p-4 text-sm dark:border-zinc-700" data-test="workflow-config">
+                @if (in_array($team->workflow_type, ['chain', 'parallel', 'router', 'orchestrator']))
+                    @php
+                        $configAgentIds = $team->workflow_config['agents'] ?? [];
+                        $configAgents = $team->agents->whereIn('id', $configAgentIds);
+                    @endphp
+                    <div class="mb-2">
+                        <span class="font-medium text-zinc-500 dark:text-zinc-400">
+                            {{ match($team->workflow_type) {
+                                'chain' => __('Execution Order:'),
+                                'parallel' => __('Parallel Agents:'),
+                                'router' => __('Routable Agents:'),
+                                'orchestrator' => __('Worker Agents:'),
+                            } }}
+                        </span>
+                        {{ $configAgents->pluck('name')->join(', ') ?: __('None configured') }}
+                    </div>
+                @endif
+                @if ($team->workflow_type === 'chain')
+                    <div>
+                        <span class="font-medium text-zinc-500 dark:text-zinc-400">{{ __('Cumulative:') }}</span>
+                        {{ ($team->workflow_config['cumulative'] ?? false) ? __('Yes') : __('No') }}
+                    </div>
+                @elseif ($team->workflow_type === 'parallel' && isset($team->workflow_config['fan_in_agent_id']))
+                    @php $fanInAgent = $team->agents->firstWhere('id', $team->workflow_config['fan_in_agent_id']); @endphp
+                    <div>
+                        <span class="font-medium text-zinc-500 dark:text-zinc-400">{{ __('Fan-in Agent:') }}</span>
+                        {{ $fanInAgent?->name ?? __('Not found') }}
+                    </div>
+                @elseif ($team->workflow_type === 'router')
+                    @php $routerAgent = $team->agents->firstWhere('id', $team->workflow_config['router_agent_id'] ?? null); @endphp
+                    <div>
+                        <span class="font-medium text-zinc-500 dark:text-zinc-400">{{ __('Router Agent:') }}</span>
+                        {{ $routerAgent?->name ?? __('Not found') }}
+                    </div>
+                @elseif ($team->workflow_type === 'orchestrator')
+                    @php $plannerAgent = $team->agents->firstWhere('id', $team->workflow_config['planner_agent_id'] ?? null); @endphp
+                    <div class="mb-2">
+                        <span class="font-medium text-zinc-500 dark:text-zinc-400">{{ __('Planner Agent:') }}</span>
+                        {{ $plannerAgent?->name ?? __('Not found') }}
+                    </div>
+                    <div>
+                        <span class="font-medium text-zinc-500 dark:text-zinc-400">{{ __('Max Iterations:') }}</span>
+                        {{ $team->workflow_config['max_iterations'] ?? 10 }}
+                    </div>
+                @elseif ($team->workflow_type === 'evaluator_optimizer')
+                    @php
+                        $generatorAgent = $team->agents->firstWhere('id', $team->workflow_config['generator_agent_id'] ?? null);
+                        $evaluatorAgent = $team->agents->firstWhere('id', $team->workflow_config['evaluator_agent_id'] ?? null);
+                    @endphp
+                    <div class="mb-2">
+                        <span class="font-medium text-zinc-500 dark:text-zinc-400">{{ __('Generator Agent:') }}</span>
+                        {{ $generatorAgent?->name ?? __('Not found') }}
+                    </div>
+                    <div class="mb-2">
+                        <span class="font-medium text-zinc-500 dark:text-zinc-400">{{ __('Evaluator Agent:') }}</span>
+                        {{ $evaluatorAgent?->name ?? __('Not found') }}
+                    </div>
+                    <div class="mb-2">
+                        <span class="font-medium text-zinc-500 dark:text-zinc-400">{{ __('Max Refinements:') }}</span>
+                        {{ $team->workflow_config['max_refinements'] ?? 3 }}
+                    </div>
+                    <div>
+                        <span class="font-medium text-zinc-500 dark:text-zinc-400">{{ __('Min Rating:') }}</span>
+                        {{ ucfirst($team->workflow_config['min_rating'] ?? 'good') }}
+                    </div>
+                @endif
+            </div>
+        @endif
+    </div>
+
     {{-- Project Assignments --}}
     <div data-test="team-project-assignments">
         <flux:heading size="lg">{{ __('Project Assignments') }}</flux:heading>
@@ -181,7 +269,7 @@ new #[Title('Team')] #[Layout('layouts.app')] class extends Component {
                                     <a href="{{ route('agents.show', $agent) }}" wire:navigate class="font-medium text-zinc-900 hover:underline dark:text-zinc-100">{{ $agent->name }}</a>
                                 </td>
                                 <td class="px-4 py-3">
-                                    <flux:badge size="sm" variant="pill">{{ $agent->agentType?->name ?? '-' }}</flux:badge>
+                                    <flux:badge size="sm" variant="pill">{{ $agent->agentRole?->name ?? '-' }}</flux:badge>
                                 </td>
                                 <td class="px-4 py-3">
                                     <flux:text>{{ $agent->model }}</flux:text>

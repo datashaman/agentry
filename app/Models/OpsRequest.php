@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Events\OpsRequestTransitioned;
 use App\Exceptions\InvalidStatusTransitionException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -165,6 +166,8 @@ class OpsRequest extends Model
 
         $this->status = $newStatus;
         $this->save();
+
+        OpsRequestTransitioned::dispatch($this, $currentStatus, $newStatus);
 
         return $this;
     }

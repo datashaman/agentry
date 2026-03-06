@@ -4,7 +4,7 @@ use App\Models\Organization;
 use App\Models\Skill;
 use App\Models\User;
 
-test('skills list page displays skills with agent type count', function () {
+test('skills list page displays skills with agent role count', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create(['current_organization_id' => $organization->id]);
 

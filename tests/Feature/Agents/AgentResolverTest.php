@@ -3,7 +3,7 @@
 use App\Agents\AgentResolver;
 use App\Agents\ToolRegistry;
 use App\Models\Agent;
-use App\Models\AgentType;
+use App\Models\AgentRole;
 use App\Models\Bug;
 use App\Models\Organization;
 use App\Models\Project;
@@ -17,7 +17,7 @@ beforeEach(function () {
 
 test('resolver returns merged config with agent overrides taking precedence', function () {
     $organization = Organization::factory()->create();
-    $agentType = AgentType::factory()
+    $agentRole = AgentRole::factory()
         ->forOrganization($organization)
         ->create([
             'instructions' => 'You are a helpful assistant.',
@@ -31,7 +31,7 @@ test('resolver returns merged config with agent overrides taking precedence', fu
         ]);
     $team = Team::factory()->create(['organization_id' => $organization->id]);
     $agent = Agent::factory()->create([
-        'agent_type_id' => $agentType->id,
+        'agent_role_id' => $agentRole->id,
         'team_id' => $team->id,
         'model' => 'claude-opus-4-6',
         'provider' => 'anthropic',
@@ -55,7 +55,7 @@ test('resolver returns merged config with agent overrides taking precedence', fu
 
 test('resolver falls back to type defaults when agent overrides are null', function () {
     $organization = Organization::factory()->create();
-    $agentType = AgentType::factory()
+    $agentRole = AgentRole::factory()
         ->forOrganization($organization)
         ->create([
             'instructions' => 'Default instructions.',
@@ -69,7 +69,7 @@ test('resolver falls back to type defaults when agent overrides are null', funct
         ]);
     $team = Team::factory()->create(['organization_id' => $organization->id]);
     $agent = Agent::factory()->create([
-        'agent_type_id' => $agentType->id,
+        'agent_role_id' => $agentRole->id,
         'team_id' => $team->id,
         'model' => 'claude-opus-4-6',
         'provider' => 'anthropic',
@@ -92,14 +92,14 @@ test('resolver falls back to type defaults when agent overrides are null', funct
 
 test('resolver filters tools by agent provider', function () {
     $organization = Organization::factory()->create();
-    $agentType = AgentType::factory()
+    $agentRole = AgentRole::factory()
         ->forOrganization($organization)
         ->create([
             'tools' => ['web_search', 'web_fetch', 'file_search'],
         ]);
     $team = Team::factory()->create(['organization_id' => $organization->id]);
     $agent = Agent::factory()->create([
-        'agent_type_id' => $agentType->id,
+        'agent_role_id' => $agentRole->id,
         'team_id' => $team->id,
         'provider' => 'openai',
     ]);
@@ -113,7 +113,7 @@ test('resolver filters tools by agent provider', function () {
 
 test('resolver returns null instructions when type has none', function () {
     $organization = Organization::factory()->create();
-    $agentType = AgentType::factory()
+    $agentRole = AgentRole::factory()
         ->forOrganization($organization)
         ->create([
             'instructions' => null,
@@ -121,7 +121,7 @@ test('resolver returns null instructions when type has none', function () {
         ]);
     $team = Team::factory()->create(['organization_id' => $organization->id]);
     $agent = Agent::factory()->create([
-        'agent_type_id' => $agentType->id,
+        'agent_role_id' => $agentRole->id,
         'team_id' => $team->id,
     ]);
 
@@ -131,9 +131,9 @@ test('resolver returns null instructions when type has none', function () {
         ->and($config['tools'])->toBe([]);
 });
 
-test('resolver merges agent type instructions with assigned skill content', function () {
+test('resolver merges agent role instructions with assigned skill content', function () {
     $organization = Organization::factory()->create();
-    $agentType = AgentType::factory()
+    $agentRole = AgentRole::factory()
         ->forOrganization($organization)
         ->create([
             'instructions' => 'You are a coding agent.',
@@ -149,12 +149,12 @@ test('resolver merges agent type instructions with assigned skill content', func
         'name' => 'Flux UI',
         'content' => 'Use Flux UI components for forms.',
     ]);
-    $agentType->skills()->attach($skillLaravel->id, ['position' => 0]);
-    $agentType->skills()->attach($skillFlux->id, ['position' => 1]);
+    $agentRole->skills()->attach($skillLaravel->id, ['position' => 0]);
+    $agentRole->skills()->attach($skillFlux->id, ['position' => 1]);
 
     $team = Team::factory()->create(['organization_id' => $organization->id]);
     $agent = Agent::factory()->create([
-        'agent_type_id' => $agentType->id,
+        'agent_role_id' => $agentRole->id,
         'team_id' => $team->id,
     ]);
 
@@ -169,7 +169,7 @@ test('resolver merges agent type instructions with assigned skill content', func
 
 test('resolver skips skills with empty or null content', function () {
     $organization = Organization::factory()->create();
-    $agentType = AgentType::factory()
+    $agentRole = AgentRole::factory()
         ->forOrganization($organization)
         ->create([
             'instructions' => 'Base instructions.',
@@ -190,13 +190,13 @@ test('resolver skips skills with empty or null content', function () {
         'name' => 'Null',
         'content' => null,
     ]);
-    $agentType->skills()->attach($skillWithContent->id, ['position' => 0]);
-    $agentType->skills()->attach($skillEmpty->id, ['position' => 1]);
-    $agentType->skills()->attach($skillNull->id, ['position' => 2]);
+    $agentRole->skills()->attach($skillWithContent->id, ['position' => 0]);
+    $agentRole->skills()->attach($skillEmpty->id, ['position' => 1]);
+    $agentRole->skills()->attach($skillNull->id, ['position' => 2]);
 
     $team = Team::factory()->create(['organization_id' => $organization->id]);
     $agent = Agent::factory()->create([
-        'agent_type_id' => $agentType->id,
+        'agent_role_id' => $agentRole->id,
         'team_id' => $team->id,
     ]);
 
@@ -220,7 +220,7 @@ test('resolver merges context-matched skills when work item context matches', fu
     ]);
     $bug = Bug::factory()->create(['project_id' => $project->id]);
 
-    $agentType = AgentType::factory()
+    $agentRole = AgentRole::factory()
         ->forOrganization($organization)
         ->create([
             'instructions' => 'You are a coder.',
@@ -235,7 +235,7 @@ test('resolver merges context-matched skills when work item context matches', fu
 
     $team = Team::factory()->create(['organization_id' => $organization->id]);
     $agent = Agent::factory()->create([
-        'agent_type_id' => $agentType->id,
+        'agent_role_id' => $agentRole->id,
         'team_id' => $team->id,
     ]);
 
@@ -256,7 +256,7 @@ test('resolver deduplicates context skills with assigned skills', function () {
     ]);
     $bug = Bug::factory()->create(['project_id' => $project->id]);
 
-    $agentType = AgentType::factory()
+    $agentRole = AgentRole::factory()
         ->forOrganization($organization)
         ->create([
             'instructions' => 'Base.',
@@ -268,11 +268,11 @@ test('resolver deduplicates context skills with assigned skills', function () {
         'content' => 'Laravel stuff.',
         'context_triggers' => ['repo.primary_language' => ['php']],
     ]);
-    $agentType->skills()->attach($skill->id, ['position' => 0]);
+    $agentRole->skills()->attach($skill->id, ['position' => 0]);
 
     $team = Team::factory()->create(['organization_id' => $organization->id]);
     $agent = Agent::factory()->create([
-        'agent_type_id' => $agentType->id,
+        'agent_role_id' => $agentRole->id,
         'team_id' => $team->id,
     ]);
 
@@ -293,7 +293,7 @@ test('resolver skips context matching when disabled', function () {
     ]);
     $bug = Bug::factory()->create(['project_id' => $project->id]);
 
-    $agentType = AgentType::factory()
+    $agentRole = AgentRole::factory()
         ->forOrganization($organization)
         ->create([
             'instructions' => 'Base.',
@@ -308,7 +308,7 @@ test('resolver skips context matching when disabled', function () {
 
     $team = Team::factory()->create(['organization_id' => $organization->id]);
     $agent = Agent::factory()->create([
-        'agent_type_id' => $agentType->id,
+        'agent_role_id' => $agentRole->id,
         'team_id' => $team->id,
     ]);
 

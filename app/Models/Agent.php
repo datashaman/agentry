@@ -16,7 +16,7 @@ class Agent extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'agent_type_id',
+        'agent_role_id',
         'team_id',
         'name',
         'model',
@@ -41,11 +41,11 @@ class Agent extends Model
     }
 
     /**
-     * @return BelongsTo<AgentType, $this>
+     * @return BelongsTo<AgentRole, $this>
      */
-    public function agentType(): BelongsTo
+    public function agentRole(): BelongsTo
     {
-        return $this->belongsTo(AgentType::class);
+        return $this->belongsTo(AgentRole::class);
     }
 
     /**

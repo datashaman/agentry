@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\AgentType;
+use App\Models\AgentRole;
 use App\Models\Skill;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
@@ -11,7 +11,7 @@ use Livewire\Component;
 new #[Title('Skill')] #[Layout('layouts.app')] class extends Component {
     public Skill $skill;
 
-    public ?string $selectedAgentTypeId = null;
+    public ?string $selectedAgentRoleId = null;
 
     public function mount(): void
     {
@@ -20,46 +20,46 @@ new #[Title('Skill')] #[Layout('layouts.app')] class extends Component {
             abort(403);
         }
 
-        $this->skill->loadCount('agentTypes');
-        $this->skill->load('agentTypes');
+        $this->skill->loadCount('agentRoles');
+        $this->skill->load('agentRoles');
     }
 
-    public function attachAgentType(): void
+    public function attachAgentRole(): void
     {
         $validated = $this->validate([
-            'selectedAgentTypeId' => ['required', 'exists:agent_types,id'],
+            'selectedAgentRoleId' => ['required', 'exists:agent_roles,id'],
         ]);
 
-        $agentType = AgentType::findOrFail($validated['selectedAgentTypeId']);
+        $agentRole = AgentRole::findOrFail($validated['selectedAgentRoleId']);
 
-        if ($agentType->organization_id !== $this->skill->organization_id) {
-            $this->addError('selectedAgentTypeId', __('Agent type must belong to the same organization.'));
-
-            return;
-        }
-
-        if ($this->skill->agentTypes()->where('agent_types.id', $agentType->id)->exists()) {
-            $this->addError('selectedAgentTypeId', __('Agent type is already assigned.'));
+        if ($agentRole->organization_id !== $this->skill->organization_id) {
+            $this->addError('selectedAgentRoleId', __('Agent type must belong to the same organization.'));
 
             return;
         }
 
-        $maxPosition = $this->skill->agentTypes()->max('position') ?? -1;
-        $this->skill->agentTypes()->attach($agentType->id, ['position' => $maxPosition + 1]);
-        $this->selectedAgentTypeId = null;
-        $this->skill->load('agentTypes');
-        unset($this->availableAgentTypes);
+        if ($this->skill->agentRoles()->where('agent_roles.id', $agentRole->id)->exists()) {
+            $this->addError('selectedAgentRoleId', __('Agent type is already assigned.'));
+
+            return;
+        }
+
+        $maxPosition = $this->skill->agentRoles()->max('position') ?? -1;
+        $this->skill->agentRoles()->attach($agentRole->id, ['position' => $maxPosition + 1]);
+        $this->selectedAgentRoleId = null;
+        $this->skill->load('agentRoles');
+        unset($this->availableAgentRoles);
     }
 
-    public function detachAgentType(int $agentTypeId): void
+    public function detachAgentRole(int $agentRoleId): void
     {
-        $this->skill->agentTypes()->detach($agentTypeId);
-        $this->skill->load('agentTypes');
-        unset($this->availableAgentTypes);
+        $this->skill->agentRoles()->detach($agentRoleId);
+        $this->skill->load('agentRoles');
+        unset($this->availableAgentRoles);
     }
 
     #[Computed]
-    public function availableAgentTypes(): \Illuminate\Database\Eloquent\Collection
+    public function availableAgentRoles(): \Illuminate\Database\Eloquent\Collection
     {
         $org = $this->skill->organization;
 
@@ -67,9 +67,9 @@ new #[Title('Skill')] #[Layout('layouts.app')] class extends Component {
             return collect();
         }
 
-        $assignedIds = $this->skill->agentTypes->pluck('id')->toArray();
+        $assignedIds = $this->skill->agentRoles->pluck('id')->toArray();
 
-        return AgentType::query()
+        return AgentRole::query()
             ->where('organization_id', $org->id)
             ->whereNotIn('id', $assignedIds)
             ->orderBy('name')
@@ -78,7 +78,7 @@ new #[Title('Skill')] #[Layout('layouts.app')] class extends Component {
 
     public function deleteSkill(): void
     {
-        if ($this->skill->agentTypes()->count() > 0) {
+        if ($this->skill->agentRoles()->count() > 0) {
             return;
         }
 
@@ -105,7 +105,7 @@ new #[Title('Skill')] #[Layout('layouts.app')] class extends Component {
             <flux:heading size="xl">{{ $skill->name }}</flux:heading>
             <div class="mt-2 flex items-center gap-3">
                 <flux:badge size="sm" variant="pill">{{ $skill->slug }}</flux:badge>
-                <flux:text class="text-sm">{{ $skill->agent_types_count }} {{ Str::plural('agent type', $skill->agent_types_count) }}</flux:text>
+                <flux:text class="text-sm">{{ $skill->agent_roles_count }} {{ Str::plural('agent role', $skill->agent_roles_count) }}</flux:text>
             </div>
             @if ($skill->description)
                 <flux:text class="mt-2">{{ $skill->description }}</flux:text>
@@ -141,22 +141,22 @@ new #[Title('Skill')] #[Layout('layouts.app')] class extends Component {
         @endif
     </div>
 
-    {{-- Assigned Agent Types --}}
-    <div data-test="skill-agent-types">
-        <flux:heading size="lg">{{ __('Assigned Agent Types') }} ({{ $skill->agent_types_count }})</flux:heading>
-        @if ($this->availableAgentTypes->isNotEmpty())
-            <form wire:submit.prevent="attachAgentType" class="mt-2 flex gap-2">
-                <flux:select wire:model="selectedAgentTypeId" :placeholder="__('Add agent type...')" data-test="agent-type-select" class="min-w-[200px]">
-                    @foreach ($this->availableAgentTypes as $agentType)
-                        <flux:select.option :value="(string) $agentType->id">{{ $agentType->name }}</flux:select.option>
+    {{-- Assigned Agent Roles --}}
+    <div data-test="skill-agent-roles">
+        <flux:heading size="lg">{{ __('Assigned Agent Roles') }} ({{ $skill->agent_roles_count }})</flux:heading>
+        @if ($this->availableAgentRoles->isNotEmpty())
+            <form wire:submit.prevent="attachAgentRole" class="mt-2 flex gap-2">
+                <flux:select wire:model="selectedAgentRoleId" :placeholder="__('Add agent role...')" data-test="agent-role-select" class="min-w-[200px]">
+                    @foreach ($this->availableAgentRoles as $agentRole)
+                        <flux:select.option :value="(string) $agentRole->id">{{ $agentRole->name }}</flux:select.option>
                     @endforeach
                 </flux:select>
-                <flux:button type="submit" size="sm" variant="primary" data-test="attach-agent-type-button">{{ __('Add') }}</flux:button>
+                <flux:button type="submit" size="sm" variant="primary" data-test="attach-agent-role-button">{{ __('Add') }}</flux:button>
             </form>
-            <flux:error name="selectedAgentTypeId" class="mt-1" />
+            <flux:error name="selectedAgentRoleId" class="mt-1" />
         @endif
-        @if ($skill->agentTypes->isEmpty())
-            <flux:text class="mt-2">{{ __('No agent types use this skill.') }}</flux:text>
+        @if ($skill->agentRoles->isEmpty())
+            <flux:text class="mt-2">{{ __('No agent roles use this skill.') }}</flux:text>
         @else
             <div class="mt-2 overflow-x-auto">
                 <table class="w-full text-left text-sm">
@@ -168,16 +168,16 @@ new #[Title('Skill')] #[Layout('layouts.app')] class extends Component {
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($skill->agentTypes as $agentType)
-                            <tr class="border-b border-zinc-200 dark:border-zinc-700" wire:key="agent-type-{{ $agentType->id }}" data-test="agent-type-row">
+                        @foreach ($skill->agentRoles as $agentRole)
+                            <tr class="border-b border-zinc-200 dark:border-zinc-700" wire:key="agent-role-{{ $agentRole->id }}" data-test="agent-role-row">
                                 <td class="px-4 py-3">
-                                    <a href="{{ route('agent-types.show', $agentType) }}" wire:navigate class="font-medium text-zinc-900 hover:underline dark:text-zinc-100">{{ $agentType->name }}</a>
+                                    <a href="{{ route('agent-roles.show', $agentRole) }}" wire:navigate class="font-medium text-zinc-900 hover:underline dark:text-zinc-100">{{ $agentRole->name }}</a>
                                 </td>
                                 <td class="px-4 py-3">
-                                    <flux:badge size="sm" variant="pill">{{ $agentType->slug }}</flux:badge>
+                                    <flux:badge size="sm" variant="pill">{{ $agentRole->slug }}</flux:badge>
                                 </td>
                                 <td class="px-4 py-3">
-                                    <flux:button size="xs" variant="ghost" wire:click="detachAgentType({{ $agentType->id }})" wire:loading.attr="disabled" data-test="detach-agent-type-{{ $agentType->id }}">×</flux:button>
+                                    <flux:button size="xs" variant="ghost" wire:click="detachAgentRole({{ $agentRole->id }})" wire:loading.attr="disabled" data-test="detach-agent-role-{{ $agentRole->id }}">×</flux:button>
                                 </td>
                             </tr>
                         @endforeach
@@ -192,8 +192,8 @@ new #[Title('Skill')] #[Layout('layouts.app')] class extends Component {
         <div class="space-y-6">
             <div>
                 <flux:heading size="lg">{{ __('Are you sure you want to delete this skill?') }}</flux:heading>
-                @if ($skill->agent_types_count > 0)
-                    <flux:text class="mt-2 text-red-600">{{ __('This skill is assigned to agent types and cannot be deleted.') }}</flux:text>
+                @if ($skill->agent_roles_count > 0)
+                    <flux:text class="mt-2 text-red-600">{{ __('This skill is assigned to agent roles and cannot be deleted.') }}</flux:text>
                 @else
                     <flux:text class="mt-2">{{ __('This action cannot be undone. The skill ":name" will be permanently deleted.', ['name' => $skill->name]) }}</flux:text>
                 @endif
@@ -202,7 +202,7 @@ new #[Title('Skill')] #[Layout('layouts.app')] class extends Component {
                 <flux:modal.close>
                     <flux:button variant="filled">{{ __('Cancel') }}</flux:button>
                 </flux:modal.close>
-                @if ($skill->agent_types_count === 0)
+                @if ($skill->agent_roles_count === 0)
                     <flux:button variant="danger" wire:click="deleteSkill" data-test="confirm-delete-skill-button">
                         {{ __('Delete Skill') }}
                     </flux:button>

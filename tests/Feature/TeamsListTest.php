@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\Agent;
-use App\Models\AgentType;
+use App\Models\AgentRole;
 use App\Models\Organization;
 use App\Models\Team;
 use App\Models\User;
@@ -65,10 +65,10 @@ test('teams page displays agent details', function () {
     $org = $user->currentOrganization();
 
     $team = Team::factory()->create(['organization_id' => $org->id]);
-    $agentType = AgentType::factory()->create(['organization_id' => $org->id, 'name' => 'Developer']);
+    $agentRole = AgentRole::factory()->create(['organization_id' => $org->id, 'name' => 'Developer']);
     $agent = Agent::factory()->create([
         'team_id' => $team->id,
-        'agent_type_id' => $agentType->id,
+        'agent_role_id' => $agentRole->id,
         'name' => 'Claude Agent',
         'model' => 'claude-opus-4-6',
         'status' => 'active',

@@ -36,13 +36,13 @@ class StoreAgentRequest extends FormRequest
             ? ['required', Rule::exists('teams', 'id')->where('organization_id', $organizationId)]
             : ['required', 'exists:teams,id'];
 
-        $agentTypeRule = $organizationId
-            ? ['required', Rule::exists('agent_types', 'id')->where('organization_id', $organizationId)]
-            : ['required', 'exists:agent_types,id'];
+        $agentRoleRule = $organizationId
+            ? ['required', Rule::exists('agent_roles', 'id')->where('organization_id', $organizationId)]
+            : ['required', 'exists:agent_roles,id'];
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'agent_type_id' => $agentTypeRule,
+            'agent_role_id' => $agentRoleRule,
             'team_id' => $teamRule,
             'model' => ['required', 'string', 'max:255'],
             'provider' => ['required', 'string', 'max:255'],
@@ -63,8 +63,8 @@ class StoreAgentRequest extends FormRequest
     {
         return [
             'name.required' => __('The agent name is required.'),
-            'agent_type_id.required' => __('Please select an agent type.'),
-            'agent_type_id.exists' => __('The selected agent type is invalid.'),
+            'agent_role_id.required' => __('Please select an agent role.'),
+            'agent_role_id.exists' => __('The selected agent role is invalid.'),
             'team_id.required' => __('Please select a team.'),
             'team_id.exists' => __('The selected team is invalid.'),
             'model.required' => __('The model is required.'),

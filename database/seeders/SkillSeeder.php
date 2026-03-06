@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\AgentType;
+use App\Models\AgentRole;
 use App\Models\Organization;
 use App\Models\Skill;
 use Illuminate\Database\Seeder;
@@ -45,8 +45,8 @@ class SkillSeeder extends Seeder
             ]));
         }
 
-        $coding = AgentType::where('slug', 'coding')->where('organization_id', $organization->id)->first();
-        $review = AgentType::where('slug', 'review')->where('organization_id', $organization->id)->first();
+        $coding = AgentRole::where('slug', 'coding')->where('organization_id', $organization->id)->first();
+        $review = AgentRole::where('slug', 'review')->where('organization_id', $organization->id)->first();
 
         if ($coding) {
             $coding->skills()->attach($created['laravel']->id, ['position' => 0]);

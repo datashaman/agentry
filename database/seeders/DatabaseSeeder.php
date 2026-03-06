@@ -22,7 +22,7 @@ class DatabaseSeeder extends Seeder
             OrganizationSeeder::class,
             TeamSeeder::class,
             ProjectSeeder::class,
-            AgentTypeSeeder::class,
+            AgentRoleSeeder::class,
             SkillSeeder::class,
             AgentSeeder::class,
             EpicSeeder::class,

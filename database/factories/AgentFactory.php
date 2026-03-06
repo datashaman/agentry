@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\AgentType;
+use App\Models\AgentRole;
 use App\Models\Team;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -19,7 +19,7 @@ class AgentFactory extends Factory
     public function definition(): array
     {
         return [
-            'agent_type_id' => AgentType::factory(),
+            'agent_role_id' => AgentRole::factory(),
             'team_id' => Team::factory(),
             'name' => fake()->unique()->words(2, true),
             'model' => fake()->randomElement(['claude-sonnet-4-6', 'claude-opus-4-6', 'claude-haiku-4-5']),

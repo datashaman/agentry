@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\Agent;
-use App\Models\AgentType;
+use App\Models\AgentRole;
 use App\Models\Team;
 
 test('can create an agent', function () {
@@ -20,12 +20,12 @@ test('can create an agent', function () {
     ]);
 });
 
-test('agent belongs to agent type', function () {
-    $agentType = AgentType::factory()->create();
-    $agent = Agent::factory()->create(['agent_type_id' => $agentType->id]);
+test('agent belongs to agent role', function () {
+    $agentRole = AgentRole::factory()->create();
+    $agent = Agent::factory()->create(['agent_role_id' => $agentRole->id]);
 
-    expect($agent->agentType)->toBeInstanceOf(AgentType::class)
-        ->and($agent->agentType->id)->toBe($agentType->id);
+    expect($agent->agentRole)->toBeInstanceOf(AgentRole::class)
+        ->and($agent->agentRole->id)->toBe($agentRole->id);
 });
 
 test('agent belongs to team', function () {
@@ -36,11 +36,11 @@ test('agent belongs to team', function () {
         ->and($agent->team->id)->toBe($team->id);
 });
 
-test('agent type has many agents', function () {
-    $agentType = AgentType::factory()->create();
-    Agent::factory()->count(3)->create(['agent_type_id' => $agentType->id]);
+test('agent role has many agents', function () {
+    $agentRole = AgentRole::factory()->create();
+    Agent::factory()->count(3)->create(['agent_role_id' => $agentRole->id]);
 
-    expect($agentType->agents)->toHaveCount(3);
+    expect($agentRole->agents)->toHaveCount(3);
 });
 
 test('team has many agents', function () {
@@ -99,11 +99,11 @@ test('can delete an agent', function () {
     $this->assertDatabaseMissing('agents', ['id' => $agent->id]);
 });
 
-test('cascade deletes agents when agent type deleted', function () {
-    $agentType = AgentType::factory()->create();
-    $agent = Agent::factory()->create(['agent_type_id' => $agentType->id]);
+test('cascade deletes agents when agent role deleted', function () {
+    $agentRole = AgentRole::factory()->create();
+    $agent = Agent::factory()->create(['agent_role_id' => $agentRole->id]);
 
-    $agentType->delete();
+    $agentRole->delete();
 
     $this->assertDatabaseMissing('agents', ['id' => $agent->id]);
 });

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Events\StoryTransitioned;
 use App\Exceptions\InvalidStatusTransitionException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -96,6 +97,8 @@ class Story extends Model
 
         $this->status = $newStatus;
         $this->save();
+
+        StoryTransitioned::dispatch($this, $currentStatus, $newStatus);
 
         return $this;
     }

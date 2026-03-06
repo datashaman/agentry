@@ -12,7 +12,7 @@ new #[Title('Agent')] #[Layout('layouts.app')] class extends Component {
 
     public function mount(): void
     {
-        $this->agent->load(['agentType', 'team']);
+        $this->agent->load(['agentRole', 'team']);
         $this->agent->load([
             'assignedStories.epic.project',
             'assignedBugs.project',
@@ -71,7 +71,7 @@ new #[Title('Agent')] #[Layout('layouts.app')] class extends Component {
         <div>
             <flux:heading size="xl">{{ $agent->name }}</flux:heading>
             <div class="mt-2 flex flex-wrap items-center gap-3">
-                <flux:badge size="sm" variant="pill">{{ $agent->agentType?->name ?? '-' }}</flux:badge>
+                <flux:badge size="sm" variant="pill">{{ $agent->agentRole?->name ?? '-' }}</flux:badge>
                 <flux:text class="text-sm">{{ $agent->team?->name ?? __('No team') }}</flux:text>
                 <flux:text class="text-sm">{{ $agent->model }}</flux:text>
                 <flux:text class="text-sm">{{ $agent->provider }}</flux:text>

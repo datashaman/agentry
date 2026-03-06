@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Requests\StoreAgentRequest;
-use App\Models\AgentType;
+use App\Models\AgentRole;
 use App\Models\Team;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
@@ -12,7 +12,7 @@ use Livewire\Component;
 new #[Title('New Agent')] #[Layout('layouts.app')] class extends Component {
     public string $name = '';
 
-    public ?string $agent_type_id = null;
+    public ?string $agent_role_id = null;
 
     public ?string $team_id = null;
 
@@ -32,10 +32,10 @@ new #[Title('New Agent')] #[Layout('layouts.app')] class extends Component {
 
     public function mount(): void
     {
-        $agentTypeId = request()->query('agent_type');
+        $agentRoleId = request()->query('agent_role');
         $teamId = request()->query('team');
-        if ($agentTypeId) {
-            $this->agent_type_id = $agentTypeId;
+        if ($agentRoleId) {
+            $this->agent_role_id = $agentRoleId;
         }
         if ($teamId) {
             $this->team_id = $teamId;
@@ -52,7 +52,7 @@ new #[Title('New Agent')] #[Layout('layouts.app')] class extends Component {
 
         $agent = \App\Models\Agent::create([
             'name' => $validated['name'],
-            'agent_type_id' => $validated['agent_type_id'],
+            'agent_role_id' => $validated['agent_role_id'],
             'team_id' => $validated['team_id'],
             'model' => $validated['model'],
             'provider' => $validated['provider'],
@@ -74,12 +74,12 @@ new #[Title('New Agent')] #[Layout('layouts.app')] class extends Component {
     }
 
     #[Computed]
-    public function agentTypes(): \Illuminate\Database\Eloquent\Collection
+    public function agentRoles(): \Illuminate\Database\Eloquent\Collection
     {
         $org = $this->organization;
 
         return $org
-            ? AgentType::query()->where('organization_id', $org->id)->orderBy('name')->get()
+            ? AgentRole::query()->where('organization_id', $org->id)->orderBy('name')->get()
             : collect();
     }
 
@@ -112,13 +112,13 @@ new #[Title('New Agent')] #[Layout('layouts.app')] class extends Component {
         </flux:field>
 
         <flux:field>
-            <flux:label>{{ __('Agent Type') }}</flux:label>
-            <flux:select wire:model="agent_type_id" :placeholder="__('Select agent type...')" data-test="agent-type-input" required>
-                @foreach ($this->agentTypes as $type)
+            <flux:label>{{ __('Agent Role') }}</flux:label>
+            <flux:select wire:model="agent_role_id" :placeholder="__('Select agent role...')" data-test="agent-role-input" required>
+                @foreach ($this->agentRoles as $type)
                     <flux:select.option :value="$type->id">{{ $type->name }}</flux:select.option>
                 @endforeach
             </flux:select>
-            <flux:error name="agent_type_id" />
+            <flux:error name="agent_role_id" />
         </flux:field>
 
         <flux:field>
@@ -152,7 +152,7 @@ new #[Title('New Agent')] #[Layout('layouts.app')] class extends Component {
         </flux:field>
 
         <flux:heading size="md" class="mt-6">{{ __('Optional Overrides') }}</flux:heading>
-        <flux:text class="mb-4 block text-sm text-zinc-500 dark:text-zinc-400">{{ __('Override agent type defaults (temperature, max steps, etc.).') }}</flux:text>
+        <flux:text class="mb-4 block text-sm text-zinc-500 dark:text-zinc-400">{{ __('Override agent role defaults (temperature, max steps, etc.).') }}</flux:text>
 
         <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             <flux:field>

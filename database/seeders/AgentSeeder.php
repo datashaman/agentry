@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Agent;
-use App\Models\AgentType;
+use App\Models\AgentRole;
 use App\Models\Team;
 use Illuminate\Database\Seeder;
 
@@ -15,10 +15,10 @@ class AgentSeeder extends Seeder
     public function run(): void
     {
         $team = Team::firstOrFail();
-        $codingType = AgentType::where('slug', 'coding')->where('organization_id', $team->organization_id)->firstOrFail();
+        $codingRole = AgentRole::where('slug', 'coding')->where('organization_id', $team->organization_id)->firstOrFail();
 
         Agent::factory()->create([
-            'agent_type_id' => $codingType->id,
+            'agent_role_id' => $codingRole->id,
             'team_id' => $team->id,
             'name' => 'Pinky Coder',
             'model' => 'claude-sonnet-4-6',

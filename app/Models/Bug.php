@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Events\BugTransitioned;
 use App\Exceptions\InvalidStatusTransitionException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -106,6 +107,8 @@ class Bug extends Model
 
         $this->status = $newStatus;
         $this->save();
+
+        BugTransitioned::dispatch($this, $currentStatus, $newStatus);
 
         return $this;
     }

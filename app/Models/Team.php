@@ -20,7 +20,19 @@ class Team extends Model
         'organization_id',
         'name',
         'slug',
+        'workflow_type',
+        'workflow_config',
     ];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'workflow_config' => 'array',
+        ];
+    }
 
     /**
      * @return BelongsTo<Organization, $this>

@@ -2,7 +2,7 @@
 
 use App\Models\ActionLog;
 use App\Models\Agent;
-use App\Models\AgentType;
+use App\Models\AgentRole;
 use App\Models\Bug;
 use App\Models\Epic;
 use App\Models\OpsRequest;
@@ -23,10 +23,10 @@ test('agent detail displays all sections', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $team = Team::factory()->create(['organization_id' => $organization->id, 'name' => 'Dev Team']);
-    $agentType = AgentType::factory()->create(['organization_id' => $organization->id, 'name' => 'Code Writer', 'slug' => 'code-writer']);
+    $agentRole = AgentRole::factory()->create(['organization_id' => $organization->id, 'name' => 'Code Writer', 'slug' => 'code-writer']);
     $agent = Agent::factory()->create([
         'team_id' => $team->id,
-        'agent_type_id' => $agentType->id,
+        'agent_role_id' => $agentRole->id,
         'name' => 'Alpha Agent',
         'model' => 'claude-opus-4-6',
         'provider' => 'anthropic',
@@ -59,10 +59,10 @@ test('agent detail shows overrides when set', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $team = Team::factory()->create(['organization_id' => $organization->id]);
-    $agentType = AgentType::factory()->create(['organization_id' => $organization->id]);
+    $agentRole = AgentRole::factory()->create(['organization_id' => $organization->id]);
     $agent = Agent::factory()->create([
         'team_id' => $team->id,
-        'agent_type_id' => $agentType->id,
+        'agent_role_id' => $agentRole->id,
         'name' => 'Override Agent',
         'temperature' => 0.7,
         'max_steps' => 15,

@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\AgentType;
+use App\Models\AgentRole;
 use App\Models\Organization;
 use App\Models\Skill;
 use App\Models\User;
@@ -92,7 +92,7 @@ test('edit skill form updates a skill', function () {
         ->and($skill->content)->toBe('New content.');
 });
 
-test('delete skill works when no agent types assigned', function () {
+test('delete skill works when no agent roles assigned', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create(['current_organization_id' => $organization->id]);
     $skill = Skill::factory()->create(['organization_id' => $organization->id]);
@@ -106,12 +106,12 @@ test('delete skill works when no agent types assigned', function () {
     $this->assertDatabaseMissing('skills', ['id' => $skill->id]);
 });
 
-test('delete skill is prevented when agent types assigned', function () {
+test('delete skill is prevented when agent roles assigned', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create(['current_organization_id' => $organization->id]);
     $skill = Skill::factory()->create(['organization_id' => $organization->id]);
-    $agentType = AgentType::factory()->create(['organization_id' => $organization->id]);
-    $skill->agentTypes()->attach($agentType->id, ['position' => 0]);
+    $agentRole = AgentRole::factory()->create(['organization_id' => $organization->id]);
+    $skill->agentRoles()->attach($agentRole->id, ['position' => 0]);
 
     $this->actingAs($user);
 

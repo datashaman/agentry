@@ -16,11 +16,11 @@ class AgentResolver
     ) {}
 
     /**
-     * Resolve Agent + AgentType into SDK-ready config.
+     * Resolve Agent + AgentRole into SDK-ready config.
      * When workItem is provided and context-aware is enabled, merges skills
      * whose context_triggers match the work item's project/repo context.
      *
-     * @param  Story|Bug|OpsRequest|null  $workItem
+     *
      * @return array{
      *     instructions: ?string,
      *     tools: list<string>,
@@ -34,8 +34,8 @@ class AgentResolver
      */
     public function resolve(Agent $agent, Story|Bug|OpsRequest|null $workItem = null): array
     {
-        $agent->loadMissing(['agentType', 'agentType.skills', 'agentType.organization']);
-        $type = $agent->agentType;
+        $agent->loadMissing(['agentRole', 'agentRole.skills', 'agentRole.organization']);
+        $type = $agent->agentRole;
 
         $tools = $type
             ? $this->toolRegistry->resolveTools($type, $agent->provider)
@@ -57,10 +57,9 @@ class AgentResolver
     }
 
     /**
-     * @param  Story|Bug|OpsRequest|null  $workItem
      * @return \Illuminate\Support\Collection<int, Skill>
      */
-    protected function getContextMatchedSkills(?\App\Models\AgentType $type, Story|Bug|OpsRequest|null $workItem): \Illuminate\Support\Collection
+    protected function getContextMatchedSkills(?\App\Models\AgentRole $type, Story|Bug|OpsRequest|null $workItem): \Illuminate\Support\Collection
     {
         if ($type === null || $workItem === null || ! config('skills.context_aware_enabled', true)) {
             return collect();
@@ -142,7 +141,7 @@ class AgentResolver
     /**
      * @param  \Illuminate\Support\Collection<int, Skill>  $contextSkills
      */
-    protected function buildInstructions(?\App\Models\AgentType $type, \Illuminate\Support\Collection $contextSkills = new \Illuminate\Support\Collection): ?string
+    protected function buildInstructions(?\App\Models\AgentRole $type, \Illuminate\Support\Collection $contextSkills = new \Illuminate\Support\Collection): ?string
     {
         if ($type === null) {
             return null;

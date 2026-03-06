@@ -23,7 +23,7 @@ new #[Title('Skills')] #[Layout('layouts.app')] class extends Component {
 
         return Skill::query()
             ->where('organization_id', $this->organization->id)
-            ->withCount('agentTypes')
+            ->withCount('agentRoles')
             ->orderBy('name')
             ->get();
     }
@@ -58,7 +58,7 @@ new #[Title('Skills')] #[Layout('layouts.app')] class extends Component {
                         <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Name') }}</th>
                         <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Slug') }}</th>
                         <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Description') }}</th>
-                        <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Agent Types') }}</th>
+                        <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Agent Roles') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -76,7 +76,7 @@ new #[Title('Skills')] #[Layout('layouts.app')] class extends Component {
                                 <flux:text class="truncate">{{ Str::limit($skill->description, 60) }}</flux:text>
                             </td>
                             <td class="px-4 py-3">
-                                <flux:text>{{ $skill->agent_types_count }}</flux:text>
+                                <flux:text>{{ $skill->agent_roles_count }}</flux:text>
                             </td>
                         </tr>
                     @endforeach

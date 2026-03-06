@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\Agent;
-use App\Models\AgentType;
+use App\Models\AgentRole;
 use App\Models\Organization;
 use App\Models\Team;
 use App\Models\User;
@@ -16,7 +16,7 @@ test('agent create form displays and creates an agent', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $team = Team::factory()->create(['organization_id' => $organization->id, 'name' => 'Dev Team']);
-    $agentType = AgentType::factory()->create(['organization_id' => $organization->id, 'name' => 'Code Writer', 'slug' => 'code-writer']);
+    $agentRole = AgentRole::factory()->create(['organization_id' => $organization->id, 'name' => 'Code Writer', 'slug' => 'code-writer']);
 
     $this->actingAs($user);
 
@@ -26,7 +26,7 @@ test('agent create form displays and creates an agent', function () {
 
     Livewire::test('pages::agents.create')
         ->set('name', 'Test Agent')
-        ->set('agent_type_id', (string) $agentType->id)
+        ->set('agent_role_id', (string) $agentRole->id)
         ->set('team_id', (string) $team->id)
         ->set('model', 'claude-opus-4-6')
         ->set('provider', 'anthropic')
@@ -43,7 +43,7 @@ test('agent create form displays and creates an agent', function () {
 
     $agent = Agent::where('name', 'Test Agent')->first();
     expect($agent->confidence_threshold)->toBe(0.85)
-        ->and($agent->agent_type_id)->toBe($agentType->id)
+        ->and($agent->agent_role_id)->toBe($agentRole->id)
         ->and($agent->team_id)->toBe($team->id);
 });
 
@@ -51,30 +51,30 @@ test('agent create validates required fields', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $team = Team::factory()->create(['organization_id' => $organization->id]);
-    $agentType = AgentType::factory()->create(['organization_id' => $organization->id]);
+    $agentRole = AgentRole::factory()->create(['organization_id' => $organization->id]);
 
     $this->actingAs($user);
 
     Livewire::test('pages::agents.create')
         ->set('name', '')
-        ->set('agent_type_id', '')
+        ->set('agent_role_id', '')
         ->set('team_id', '')
         ->set('model', '')
         ->set('provider', '')
         ->set('confidence_threshold', '')
         ->call('createAgent')
-        ->assertHasErrors(['name', 'agent_type_id', 'team_id', 'model', 'provider', 'confidence_threshold']);
+        ->assertHasErrors(['name', 'agent_role_id', 'team_id', 'model', 'provider', 'confidence_threshold']);
 });
 
-test('agent create pre-fills agent type when passed as query param', function () {
+test('agent create pre-fills agent role when passed as query param', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     Team::factory()->create(['organization_id' => $organization->id]);
-    $agentType = AgentType::factory()->create(['organization_id' => $organization->id, 'name' => 'PreSelected Type']);
+    $agentRole = AgentRole::factory()->create(['organization_id' => $organization->id, 'name' => 'PreSelected Type']);
 
     $this->actingAs($user);
 
-    $response = $this->get(route('agents.create', ['agent_type' => $agentType->id]));
+    $response = $this->get(route('agents.create', ['agent_role' => $agentRole->id]));
     $response->assertOk();
     $response->assertSee('PreSelected Type');
 });
@@ -90,13 +90,13 @@ test('agent create with overrides saves temperature max_steps max_tokens timeout
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $team = Team::factory()->create(['organization_id' => $organization->id]);
-    $agentType = AgentType::factory()->create(['organization_id' => $organization->id]);
+    $agentRole = AgentRole::factory()->create(['organization_id' => $organization->id]);
 
     $this->actingAs($user);
 
     Livewire::test('pages::agents.create')
         ->set('name', 'Override Agent')
-        ->set('agent_type_id', (string) $agentType->id)
+        ->set('agent_role_id', (string) $agentRole->id)
         ->set('team_id', (string) $team->id)
         ->set('model', 'claude-sonnet-4')
         ->set('provider', 'anthropic')
@@ -119,10 +119,10 @@ test('agent edit form displays pre-populated values and updates', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $team = Team::factory()->create(['organization_id' => $organization->id]);
-    $agentType = AgentType::factory()->create(['organization_id' => $organization->id, 'name' => 'Writer']);
+    $agentRole = AgentRole::factory()->create(['organization_id' => $organization->id, 'name' => 'Writer']);
     $agent = Agent::factory()->create([
         'team_id' => $team->id,
-        'agent_type_id' => $agentType->id,
+        'agent_role_id' => $agentRole->id,
         'name' => 'Old Name',
         'model' => 'claude-sonnet-4-6',
         'provider' => 'anthropic',
