@@ -77,13 +77,18 @@ new #[Title('Project')] #[Layout('layouts.app')] class extends Component {
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <x-breadcrumbs :organization="$this->organization" :project="$project" />
 
-    <div>
-        <flux:heading size="xl">{{ $project->name }}</flux:heading>
-        @if ($project->description)
-            <flux:text class="mt-1">{{ $project->description }}</flux:text>
-        @else
-            <flux:text class="mt-1">{{ $project->slug }}</flux:text>
-        @endif
+    <div class="flex items-center justify-between">
+        <div>
+            <flux:heading size="xl">{{ $project->name }}</flux:heading>
+            @if ($project->description)
+                <flux:text class="mt-1">{{ $project->description }}</flux:text>
+            @else
+                <flux:text class="mt-1">{{ $project->slug }}</flux:text>
+            @endif
+        </div>
+        <a href="{{ route('projects.edit', $project) }}" wire:navigate>
+            <flux:button icon="pencil" data-test="edit-project-button">{{ __('Edit') }}</flux:button>
+        </a>
     </div>
 
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4" data-test="summary-stats">

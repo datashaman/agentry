@@ -21,6 +21,8 @@ class Project extends Model
         'organization_id',
         'name',
         'slug',
+        'description',
+        'instructions',
     ];
 
     /**

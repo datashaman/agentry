@@ -1,74 +1,60 @@
 <?php
 
 use App\Models\Project;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('New Project')] #[Layout('layouts.app')] class extends Component {
+new #[Title('Edit Project')] #[Layout('layouts.app')] class extends Component {
+    public Project $project;
+
     public string $name = '';
 
     public string $description = '';
 
     public string $instructions = '';
 
-    public function createProject(): void
+    public function mount(): void
     {
-        $org = Auth::user()->currentOrganization();
+        $this->name = $this->project->name;
+        $this->description = $this->project->description ?? '';
+        $this->instructions = $this->project->instructions ?? '';
+    }
 
-        if (! $org) {
-            $this->addError('organization', __('Please select an organization first.'));
-            return;
-        }
-
+    public function updateProject(): void
+    {
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
             'instructions' => ['nullable', 'string', 'max:5000'],
         ]);
 
-        $baseSlug = Str::slug($validated['name']);
-        $slug = $baseSlug;
-        $i = 1;
-        while (Project::where('organization_id', $org->id)->where('slug', $slug)->exists()) {
-            $slug = $baseSlug.'-'.$i++;
-        }
-
-        $project = Project::create([
-            'organization_id' => $org->id,
+        $this->project->update([
             'name' => $validated['name'],
-            'slug' => $slug,
             'description' => $validated['description'] ?: null,
             'instructions' => $validated['instructions'] ?: null,
         ]);
 
-        $this->redirect(route('projects.show', $project), navigate: true);
+        $this->redirect(route('projects.show', $this->project), navigate: true);
     }
 
     #[Computed]
     public function organization(): ?\App\Models\Organization
     {
-        return Auth::user()->currentOrganization();
+        return $this->project->organization;
     }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
-    @if ($this->organization)
-        <x-breadcrumbs :organization="$this->organization" />
-    @endif
+    <x-breadcrumbs :organization="$this->organization" :project="$project" />
 
     <div>
-        <flux:heading size="xl">{{ __('New Project') }}</flux:heading>
-        <flux:text class="mt-1">{{ __('Create a new project for your organization.') }}</flux:text>
-        @if ($this->organization)
-            <flux:text class="mt-1 block text-sm text-zinc-500 dark:text-zinc-400">{{ __('Organization: :name', ['name' => $this->organization->name]) }}</flux:text>
-        @endif
+        <flux:heading size="xl">{{ __('Edit Project') }}</flux:heading>
+        <flux:text class="mt-1">{{ __('Update project ":name".', ['name' => $project->name]) }}</flux:text>
     </div>
 
-    <form wire:submit="createProject" class="max-w-xl space-y-6" data-test="create-project-form">
+    <form wire:submit="updateProject" class="max-w-xl space-y-6" data-test="edit-project-form">
         <flux:field>
             <flux:label>{{ __('Name') }}</flux:label>
             <flux:input wire:model="name" data-test="project-name-input" required />
@@ -90,8 +76,8 @@ new #[Title('New Project')] #[Layout('layouts.app')] class extends Component {
         </flux:field>
 
         <div class="flex items-center gap-2">
-            <flux:button type="submit" variant="primary" data-test="save-project-button">{{ __('Create Project') }}</flux:button>
-            <a href="{{ route('projects.index') }}" wire:navigate>
+            <flux:button type="submit" variant="primary" data-test="save-project-button">{{ __('Update Project') }}</flux:button>
+            <a href="{{ route('projects.show', $project) }}" wire:navigate>
                 <flux:button>{{ __('Cancel') }}</flux:button>
             </a>
         </div>

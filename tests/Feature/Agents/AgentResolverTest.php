@@ -4,8 +4,12 @@ use App\Agents\AgentResolver;
 use App\Agents\ToolRegistry;
 use App\Models\Agent;
 use App\Models\AgentRole;
+use App\Models\Bug;
+use App\Models\Epic;
 use App\Models\Organization;
+use App\Models\Project;
 use App\Models\Skill;
+use App\Models\Story;
 use App\Models\Team;
 
 beforeEach(function () {
@@ -162,6 +166,86 @@ test('resolver merges agent role instructions with assigned skill content', func
         ->and($config['instructions'])->toContain('Use Laravel conventions and Eloquent.')
         ->and($config['instructions'])->toContain('## Skill: Flux UI')
         ->and($config['instructions'])->toContain('Use Flux UI components for forms.');
+});
+
+test('resolver includes project instructions when work item is a bug', function () {
+    $organization = Organization::factory()->create();
+    $project = Project::factory()->create([
+        'organization_id' => $organization->id,
+        'instructions' => 'Always write tests first.',
+    ]);
+    $bug = Bug::factory()->create(['project_id' => $project->id]);
+
+    $agentRole = AgentRole::factory()
+        ->forOrganization($organization)
+        ->create([
+            'instructions' => 'You fix bugs.',
+            'tools' => [],
+        ]);
+    $team = Team::factory()->create(['organization_id' => $organization->id]);
+    $agent = Agent::factory()->create([
+        'agent_role_id' => $agentRole->id,
+        'team_id' => $team->id,
+    ]);
+
+    $config = $this->resolver->resolve($agent, $bug);
+
+    expect($config['instructions'])->toContain('## Project: '.$project->name)
+        ->and($config['instructions'])->toContain('Always write tests first.')
+        ->and($config['instructions'])->toContain('You fix bugs.');
+});
+
+test('resolver includes project instructions when work item is a story', function () {
+    $organization = Organization::factory()->create();
+    $project = Project::factory()->create([
+        'organization_id' => $organization->id,
+        'instructions' => 'Use PHP 8.5 features.',
+    ]);
+    $epic = Epic::factory()->create(['project_id' => $project->id]);
+    $story = Story::factory()->create(['epic_id' => $epic->id]);
+
+    $agentRole = AgentRole::factory()
+        ->forOrganization($organization)
+        ->create([
+            'instructions' => 'You build features.',
+            'tools' => [],
+        ]);
+    $team = Team::factory()->create(['organization_id' => $organization->id]);
+    $agent = Agent::factory()->create([
+        'agent_role_id' => $agentRole->id,
+        'team_id' => $team->id,
+    ]);
+
+    $config = $this->resolver->resolve($agent, $story);
+
+    expect($config['instructions'])->toContain('Use PHP 8.5 features.')
+        ->and($config['instructions'])->toContain('You build features.');
+});
+
+test('resolver omits project instructions when project has none', function () {
+    $organization = Organization::factory()->create();
+    $project = Project::factory()->create([
+        'organization_id' => $organization->id,
+        'instructions' => null,
+    ]);
+    $bug = Bug::factory()->create(['project_id' => $project->id]);
+
+    $agentRole = AgentRole::factory()
+        ->forOrganization($organization)
+        ->create([
+            'instructions' => 'You fix bugs.',
+            'tools' => [],
+        ]);
+    $team = Team::factory()->create(['organization_id' => $organization->id]);
+    $agent = Agent::factory()->create([
+        'agent_role_id' => $agentRole->id,
+        'team_id' => $team->id,
+    ]);
+
+    $config = $this->resolver->resolve($agent, $bug);
+
+    expect($config['instructions'])->toBe('You fix bugs.')
+        ->and($config['instructions'])->not->toContain('## Project:');
 });
 
 test('resolver skips skills with empty or null content', function () {
