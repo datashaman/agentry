@@ -26,6 +26,9 @@ class User extends Authenticatable
         'email',
         'password',
         'current_organization_id',
+        'github_id',
+        'github_token',
+        'github_nickname',
     ];
 
     /**
@@ -38,6 +41,7 @@ class User extends Authenticatable
         'two_factor_secret',
         'two_factor_recovery_codes',
         'remember_token',
+        'github_token',
     ];
 
     /**
@@ -50,6 +54,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'github_token' => 'encrypted',
         ];
     }
 
@@ -97,5 +102,10 @@ class User extends Authenticatable
         if ($this->organizations()->where('organizations.id', $organization->id)->exists()) {
             $this->update(['current_organization_id' => $organization->id]);
         }
+    }
+
+    public function hasGitHub(): bool
+    {
+        return $this->github_id !== null;
     }
 }
