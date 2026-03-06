@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DownloadAttachmentController;
+use App\Http\Controllers\GitHubAppSetupController;
 use App\Http\Controllers\GitHubController;
 use App\Http\Controllers\SwitchOrganizationController;
 use Illuminate\Support\Facades\Route;
@@ -10,6 +11,7 @@ Route::view('/', 'welcome')->name('home');
 Route::middleware(['auth'])->group(function () {
     Route::get('auth/github/redirect', [GitHubController::class, 'redirect'])->name('github.redirect');
     Route::get('auth/github/callback', [GitHubController::class, 'callback'])->name('github.callback');
+    Route::get('github/setup', GitHubAppSetupController::class)->name('github.app.setup');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {

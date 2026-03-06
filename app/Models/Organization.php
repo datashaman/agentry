@@ -18,7 +18,15 @@ class Organization extends Model
     protected $fillable = [
         'name',
         'slug',
+        'github_installation_id',
+        'github_account_login',
+        'github_account_type',
     ];
+
+    public function hasGitHubApp(): bool
+    {
+        return $this->github_installation_id !== null;
+    }
 
     /**
      * @return HasMany<Team, $this>
