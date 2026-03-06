@@ -28,4 +28,15 @@ class AgentFactory extends Factory
             'status' => 'idle',
         ];
     }
+
+    /**
+     * Configure the agent with a schedule.
+     */
+    public function scheduled(string $schedule = 'every_5_minutes', string $instructions = 'Perform scheduled check.'): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'schedule' => $schedule,
+            'scheduled_instructions' => $instructions,
+        ]);
+    }
 }

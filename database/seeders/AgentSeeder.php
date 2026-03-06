@@ -26,7 +26,7 @@ class AgentSeeder extends Seeder
             ->keyBy('slug');
 
         $agents = [
-            ['name' => 'Pinky Monitor', 'role' => 'monitoring', 'team' => 'core-engineering', 'model' => 'claude-haiku-4-5'],
+            ['name' => 'Pinky Monitor', 'role' => 'monitoring', 'team' => 'core-engineering', 'model' => 'claude-haiku-4-5', 'schedule' => 'every_5_minutes', 'scheduled_instructions' => 'Check system health. Scan recent error logs, monitor queue depths, and detect anomalies. File bugs for any issues found.'],
             ['name' => 'Pinky Triager', 'role' => 'triage', 'team' => 'ops', 'model' => 'claude-haiku-4-5'],
             ['name' => 'Pinky Planner', 'role' => 'planning', 'team' => 'core-engineering', 'model' => 'claude-opus-4-6'],
             ['name' => 'Pinky Spec Critic', 'role' => 'spec-critic', 'team' => 'quality-gate', 'model' => 'claude-opus-4-6'],
@@ -41,7 +41,7 @@ class AgentSeeder extends Seeder
         $created = [];
 
         foreach ($agents as $agent) {
-            $created[$agent['role']] = Agent::factory()->create([
+            $created[$agent['role']] = Agent::factory()->create(array_filter([
                 'agent_role_id' => $roles[$agent['role']]->id,
                 'team_id' => $teams[$agent['team']]->id,
                 'name' => $agent['name'],
@@ -49,7 +49,9 @@ class AgentSeeder extends Seeder
                 'provider' => 'anthropic',
                 'confidence_threshold' => 0.8,
                 'status' => 'idle',
-            ]);
+                'schedule' => $agent['schedule'] ?? null,
+                'scheduled_instructions' => $agent['scheduled_instructions'] ?? null,
+            ]));
         }
 
         $teams['quality-gate']->update(['workflow_config' => [

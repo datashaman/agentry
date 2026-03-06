@@ -107,6 +107,30 @@ new #[Title('Agent')] #[Layout('layouts.app')] class extends Component {
         </div>
     </flux:modal>
 
+    {{-- Schedule --}}
+    @if ($agent->schedule)
+        <div data-test="agent-schedule">
+            <flux:heading size="lg">{{ __('Schedule') }}</flux:heading>
+            <div class="mt-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div>
+                    <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('Frequency') }}</flux:text>
+                    <flux:text class="block">{{ str_replace('_', ' ', ucfirst($agent->schedule)) }}</flux:text>
+                </div>
+                @if ($agent->last_scheduled_at)
+                    <div>
+                        <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('Last Run') }}</flux:text>
+                        <flux:text class="block">{{ $agent->last_scheduled_at->diffForHumans() }}</flux:text>
+                    </div>
+                @endif
+            </div>
+            @if ($agent->scheduled_instructions)
+                <div class="mt-3 whitespace-pre-wrap rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-900">
+                    <flux:text class="whitespace-pre-wrap">{{ $agent->scheduled_instructions }}</flux:text>
+                </div>
+            @endif
+        </div>
+    @endif
+
     {{-- Overrides --}}
     @if ($agent->temperature !== null || $agent->max_steps || $agent->max_tokens || $agent->timeout)
         <div data-test="agent-overrides">

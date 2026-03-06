@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Console\Commands\RunScheduledAgents;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -51,6 +52,8 @@ class StoreAgentRequest extends FormRequest
             'max_steps' => ['nullable', 'integer', 'min:1'],
             'max_tokens' => ['nullable', 'integer', 'min:1'],
             'timeout' => ['nullable', 'integer', 'min:1'],
+            'schedule' => ['nullable', 'string', Rule::in(array_keys(RunScheduledAgents::SCHEDULES))],
+            'scheduled_instructions' => ['nullable', 'string', 'max:65535'],
         ];
     }
 

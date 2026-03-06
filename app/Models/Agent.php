@@ -27,6 +27,9 @@ class Agent extends Model
         'max_tokens',
         'timeout',
         'status',
+        'schedule',
+        'scheduled_instructions',
+        'last_scheduled_at',
     ];
 
     /**
@@ -37,6 +40,7 @@ class Agent extends Model
         return [
             'confidence_threshold' => 'float',
             'temperature' => 'float',
+            'last_scheduled_at' => 'datetime',
         ];
     }
 

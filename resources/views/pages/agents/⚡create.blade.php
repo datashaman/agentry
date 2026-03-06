@@ -30,6 +30,10 @@ new #[Title('New Agent')] #[Layout('layouts.app')] class extends Component {
 
     public string $timeout = '';
 
+    public string $schedule = '';
+
+    public string $scheduled_instructions = '';
+
     public function mount(): void
     {
         $agentRoleId = request()->query('agent_role');
@@ -62,6 +66,8 @@ new #[Title('New Agent')] #[Layout('layouts.app')] class extends Component {
             'max_tokens' => $validated['max_tokens'] !== '' ? (int) $validated['max_tokens'] : null,
             'timeout' => $validated['timeout'] !== '' ? (int) $validated['timeout'] : null,
             'status' => 'idle',
+            'schedule' => $validated['schedule'] ?: null,
+            'scheduled_instructions' => $validated['scheduled_instructions'] ?: null,
         ]);
 
         $this->redirect(route('agents.show', $agent), navigate: true);
@@ -219,6 +225,28 @@ new #[Title('New Agent')] #[Layout('layouts.app')] class extends Component {
                 <flux:error name="timeout" />
             </flux:field>
         </div>
+
+        <flux:heading size="md" class="mt-6">{{ __('Schedule') }}</flux:heading>
+        <flux:text class="mb-4 block text-sm text-zinc-500 dark:text-zinc-400">{{ __('Run this agent on a recurring schedule instead of (or in addition to) event triggers.') }}</flux:text>
+
+        <div class="grid gap-6 sm:grid-cols-2">
+            <flux:field>
+                <flux:label>{{ __('Schedule') }}</flux:label>
+                <flux:select wire:model="schedule" :placeholder="__('No schedule')" data-test="agent-schedule-input">
+                    @foreach (\App\Console\Commands\RunScheduledAgents::SCHEDULES as $preset => $minutes)
+                        <flux:select.option :value="$preset">{{ str_replace('_', ' ', ucfirst($preset)) }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+                <flux:error name="schedule" />
+            </flux:field>
+        </div>
+
+        <flux:field>
+            <flux:label>{{ __('Scheduled Instructions') }}</flux:label>
+            <flux:textarea wire:model="scheduled_instructions" data-test="agent-scheduled-instructions-input" rows="4" placeholder="{{ __('Instructions for the agent when triggered by schedule...') }}" />
+            <flux:description>{{ __('What the agent should do each time the schedule fires.') }}</flux:description>
+            <flux:error name="scheduled_instructions" />
+        </flux:field>
 
         <div class="flex items-center gap-2">
             <flux:button type="submit" variant="primary" data-test="save-agent-button">{{ __('Create Agent') }}</flux:button>
