@@ -32,7 +32,7 @@ test('add event responder creates a responder on the agent role', function () {
 
     $this->actingAs($user);
 
-    Livewire::test('pages::agent-roles.show', ['agentRole' => $agentRole])
+    Livewire::test('pages::agent-roles.edit', ['agentRole' => $agentRole])
         ->set('responderWorkItemType', 'story')
         ->set('responderStatus', 'in_development')
         ->set('responderInstructions', 'Implement the feature')
@@ -54,7 +54,7 @@ test('add event responder validates required fields', function () {
 
     $this->actingAs($user);
 
-    Livewire::test('pages::agent-roles.show', ['agentRole' => $agentRole])
+    Livewire::test('pages::agent-roles.edit', ['agentRole' => $agentRole])
         ->set('responderWorkItemType', '')
         ->set('responderStatus', '')
         ->set('responderInstructions', '')
@@ -73,7 +73,7 @@ test('add event responder prevents duplicate work_item_type and status', functio
 
     $this->actingAs($user);
 
-    Livewire::test('pages::agent-roles.show', ['agentRole' => $agentRole])
+    Livewire::test('pages::agent-roles.edit', ['agentRole' => $agentRole])
         ->set('responderWorkItemType', 'bug')
         ->set('responderStatus', 'triaged')
         ->set('responderInstructions', 'Duplicate attempt')
@@ -91,7 +91,7 @@ test('remove event responder deletes the responder', function () {
 
     $this->actingAs($user);
 
-    Livewire::test('pages::agent-roles.show', ['agentRole' => $agentRole])
+    Livewire::test('pages::agent-roles.edit', ['agentRole' => $agentRole])
         ->call('removeEventResponder', $responder->id);
 
     $this->assertDatabaseMissing('event_responders', ['id' => $responder->id]);
@@ -104,7 +104,7 @@ test('changing work item type resets status selection', function () {
 
     $this->actingAs($user);
 
-    Livewire::test('pages::agent-roles.show', ['agentRole' => $agentRole])
+    Livewire::test('pages::agent-roles.edit', ['agentRole' => $agentRole])
         ->set('responderWorkItemType', 'story')
         ->set('responderStatus', 'spec_critique')
         ->set('responderWorkItemType', 'bug')

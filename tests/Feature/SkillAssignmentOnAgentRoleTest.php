@@ -30,7 +30,7 @@ test('can attach skill to agent role', function () {
 
     $this->actingAs($user);
 
-    Livewire::test('pages::agent-roles.show', ['agentRole' => $agentRole])
+    Livewire::test('pages::agent-roles.edit', ['agentRole' => $agentRole])
         ->set('selectedSkillId', (string) $skill->id)
         ->call('attachSkill');
 
@@ -49,30 +49,9 @@ test('can detach skill from agent role', function () {
 
     $this->actingAs($user);
 
-    Livewire::test('pages::agent-roles.show', ['agentRole' => $agentRole])
+    Livewire::test('pages::agent-roles.edit', ['agentRole' => $agentRole])
         ->call('detachSkill', $skill->id);
 
     $agentRole->refresh();
     expect($agentRole->skills()->count())->toBe(0);
-});
-
-test('can reorder skills on agent role', function () {
-    $organization = Organization::factory()->create();
-    $user = User::factory()->withOrganization($organization)->create(['current_organization_id' => $organization->id]);
-    $agentRole = AgentRole::factory()->create(['organization_id' => $organization->id]);
-    $skillA = Skill::factory()->create(['organization_id' => $organization->id, 'name' => 'A']);
-    $skillB = Skill::factory()->create(['organization_id' => $organization->id, 'name' => 'B']);
-    $skillC = Skill::factory()->create(['organization_id' => $organization->id, 'name' => 'C']);
-    $agentRole->skills()->attach($skillA->id, ['position' => 0]);
-    $agentRole->skills()->attach($skillB->id, ['position' => 1]);
-    $agentRole->skills()->attach($skillC->id, ['position' => 2]);
-
-    $this->actingAs($user);
-
-    Livewire::test('pages::agent-roles.show', ['agentRole' => $agentRole])
-        ->call('moveSkillDown', $skillA->id);
-
-    $agentRole->refresh();
-    $order = $agentRole->skills()->orderByPivot('position')->pluck('name')->toArray();
-    expect($order)->toBe(['B', 'A', 'C']);
 });

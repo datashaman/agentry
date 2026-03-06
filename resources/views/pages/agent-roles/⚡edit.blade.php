@@ -2,6 +2,8 @@
 
 use App\Http\Requests\UpdateAgentRoleRequest;
 use App\Models\AgentRole;
+use App\Models\EventResponder;
+use App\Models\Skill;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -33,12 +35,22 @@ new #[Title('Edit Agent Role')] #[Layout('layouts.app')] class extends Component
 
     public string $default_timeout = '';
 
+    public ?string $selectedSkillId = null;
+
+    public string $responderWorkItemType = '';
+
+    public string $responderStatus = '';
+
+    public string $responderInstructions = '';
+
     public function mount(): void
     {
         $org = Auth::user()->currentOrganization();
         if (! $org || $this->agentRole->organization_id !== $org->id) {
             abort(403);
         }
+
+        $this->agentRole->load(['skills' => fn ($q) => $q->orderByPivot('position'), 'eventResponders']);
 
         $this->name = $this->agentRole->name;
         $this->slug = $this->agentRole->slug;
@@ -77,6 +89,111 @@ new #[Title('Edit Agent Role')] #[Layout('layouts.app')] class extends Component
         ]);
 
         $this->redirect(route('agent-roles.show', $this->agentRole), navigate: true);
+    }
+
+    public function attachSkill(): void
+    {
+        $validated = $this->validate([
+            'selectedSkillId' => ['required', 'exists:skills,id'],
+        ]);
+
+        $skill = Skill::findOrFail($validated['selectedSkillId']);
+
+        if ($skill->organization_id !== $this->agentRole->organization_id) {
+            $this->addError('selectedSkillId', __('Skill must belong to the same organization.'));
+
+            return;
+        }
+
+        if ($this->agentRole->skills()->where('skill_id', $skill->id)->exists()) {
+            $this->addError('selectedSkillId', __('Skill is already assigned.'));
+
+            return;
+        }
+
+        $maxPosition = $this->agentRole->skills()->max('position') ?? -1;
+        $this->agentRole->skills()->attach($skill->id, ['position' => $maxPosition + 1]);
+        $this->selectedSkillId = null;
+        $this->agentRole->load(['skills' => fn ($q) => $q->orderByPivot('position')]);
+        unset($this->availableSkills);
+    }
+
+    public function detachSkill(int $skillId): void
+    {
+        $this->agentRole->skills()->detach($skillId);
+        $this->agentRole->load('skills');
+        unset($this->availableSkills);
+    }
+
+    #[Computed]
+    public function availableSkills(): \Illuminate\Database\Eloquent\Collection
+    {
+        $org = $this->agentRole->organization;
+
+        if (! $org) {
+            return collect();
+        }
+
+        $assignedIds = $this->agentRole->skills->pluck('id')->toArray();
+
+        return Skill::query()
+            ->where('organization_id', $org->id)
+            ->whereNotIn('id', $assignedIds)
+            ->orderBy('name')
+            ->get();
+    }
+
+    #[Computed]
+    public function availableStatuses(): array
+    {
+        if (empty($this->responderWorkItemType)) {
+            return [];
+        }
+
+        return EventResponder::AVAILABLE_STATUSES[$this->responderWorkItemType] ?? [];
+    }
+
+    public function updatedResponderWorkItemType(): void
+    {
+        $this->responderStatus = '';
+        unset($this->availableStatuses);
+    }
+
+    public function addEventResponder(): void
+    {
+        $this->validate([
+            'responderWorkItemType' => ['required', 'in:story,bug,ops_request'],
+            'responderStatus' => ['required', 'string'],
+            'responderInstructions' => ['required', 'string'],
+        ]);
+
+        $exists = $this->agentRole->eventResponders()
+            ->where('work_item_type', $this->responderWorkItemType)
+            ->where('status', $this->responderStatus)
+            ->exists();
+
+        if ($exists) {
+            $this->addError('responderStatus', __('A responder for this work item type and status already exists.'));
+
+            return;
+        }
+
+        $this->agentRole->eventResponders()->create([
+            'work_item_type' => $this->responderWorkItemType,
+            'status' => $this->responderStatus,
+            'instructions' => $this->responderInstructions,
+        ]);
+
+        $this->responderWorkItemType = '';
+        $this->responderStatus = '';
+        $this->responderInstructions = '';
+        $this->agentRole->load('eventResponders');
+    }
+
+    public function removeEventResponder(int $responderId): void
+    {
+        $this->agentRole->eventResponders()->where('id', $responderId)->delete();
+        $this->agentRole->load('eventResponders');
     }
 
     public function updatedDefaultProvider(): void
@@ -220,4 +337,93 @@ new #[Title('Edit Agent Role')] #[Layout('layouts.app')] class extends Component
             </a>
         </div>
     </form>
+
+    {{-- Assigned Skills --}}
+    <div class="max-w-xl" data-test="agent-role-skills">
+        <flux:heading size="lg">{{ __('Assigned Skills') }} ({{ $agentRole->skills->count() }})</flux:heading>
+        @if ($this->availableSkills->isNotEmpty())
+            <form wire:submit.prevent="attachSkill" class="mt-2 flex gap-2">
+                <flux:select wire:model="selectedSkillId" :placeholder="__('Add skill...')" data-test="skill-select" class="min-w-[200px]">
+                    @foreach ($this->availableSkills as $skill)
+                        <flux:select.option :value="(string) $skill->id">{{ $skill->name }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+                <flux:button type="submit" size="sm" variant="primary" data-test="attach-skill-button">{{ __('Add') }}</flux:button>
+            </form>
+            <flux:error name="selectedSkillId" class="mt-1" />
+        @endif
+        @if ($agentRole->skills->isEmpty())
+            <flux:text class="mt-2">{{ __('No skills assigned. Add skills to extend agent instructions.') }}</flux:text>
+        @else
+            <div class="mt-2 space-y-2">
+                @foreach ($agentRole->skills as $skill)
+                    <div class="flex items-center justify-between gap-2 rounded-lg border border-zinc-200 px-3 py-2 dark:border-zinc-700" wire:key="skill-{{ $skill->id }}" data-test="assigned-skill-row">
+                        <div class="min-w-0 flex-1">
+                            <flux:text class="font-medium">{{ $skill->name }}</flux:text>
+                            @if ($skill->description)
+                                <flux:text class="mt-0.5 block truncate text-sm text-zinc-500 dark:text-zinc-400">{{ Str::limit($skill->description, 60) }}</flux:text>
+                            @endif
+                        </div>
+                        <flux:button size="xs" variant="ghost" wire:click="detachSkill({{ $skill->id }})" wire:loading.attr="disabled" data-test="detach-skill-{{ $skill->id }}">×</flux:button>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    </div>
+
+    {{-- Event Responders --}}
+    <div class="max-w-xl" data-test="agent-role-event-responders">
+        <flux:heading size="lg">{{ __('Event Responders') }} ({{ $agentRole->eventResponders->count() }})</flux:heading>
+        <form wire:submit.prevent="addEventResponder" class="mt-2 flex flex-wrap items-end gap-2">
+            <flux:select wire:model.live="responderWorkItemType" :placeholder="__('Work item type...')" data-test="responder-work-item-type" class="min-w-[160px]">
+                @foreach (array_keys(\App\Models\EventResponder::WORK_ITEM_TYPES) as $type)
+                    <flux:select.option :value="$type">{{ str_replace('_', ' ', ucfirst($type)) }}</flux:select.option>
+                @endforeach
+            </flux:select>
+            <flux:select wire:model="responderStatus" :placeholder="__('Status...')" data-test="responder-status" class="min-w-[160px]">
+                @foreach ($this->availableStatuses as $status)
+                    <flux:select.option :value="$status">{{ str_replace('_', ' ', $status) }}</flux:select.option>
+                @endforeach
+            </flux:select>
+            <flux:textarea wire:model="responderInstructions" :placeholder="__('Instructions...')" data-test="responder-instructions" rows="2" class="min-w-[200px] flex-1" />
+            <flux:button type="submit" size="sm" variant="primary" data-test="add-responder-button">{{ __('Add') }}</flux:button>
+        </form>
+        <flux:error name="responderStatus" class="mt-1" />
+        <flux:error name="responderWorkItemType" class="mt-1" />
+        <flux:error name="responderInstructions" class="mt-1" />
+        @if ($agentRole->eventResponders->isEmpty())
+            <flux:text class="mt-2">{{ __('No event responders configured.') }}</flux:text>
+        @else
+            <div class="mt-2 overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b border-zinc-200 dark:border-zinc-700">
+                            <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Work Item Type') }}</th>
+                            <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Status') }}</th>
+                            <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400">{{ __('Instructions') }}</th>
+                            <th class="px-4 py-3 font-medium text-zinc-500 dark:text-zinc-400"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($agentRole->eventResponders as $responder)
+                            <tr class="border-b border-zinc-200 dark:border-zinc-700" wire:key="responder-{{ $responder->id }}" data-test="responder-row">
+                                <td class="px-4 py-3">
+                                    <flux:text>{{ str_replace('_', ' ', ucfirst($responder->work_item_type)) }}</flux:text>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <flux:badge size="sm" variant="pill">{{ str_replace('_', ' ', $responder->status) }}</flux:badge>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <flux:text class="truncate">{{ Str::limit($responder->instructions, 80) }}</flux:text>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <flux:button size="xs" variant="danger" wire:click="removeEventResponder({{ $responder->id }})" data-test="remove-responder-{{ $responder->id }}">{{ __('Remove') }}</flux:button>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+    </div>
 </div>
