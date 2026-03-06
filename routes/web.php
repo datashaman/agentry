@@ -11,9 +11,10 @@ Route::view('/', 'welcome')->name('home');
 
 Route::post('github/webhook', GitHubWebhookController::class)->name('github.webhook');
 
+Route::get('auth/github/redirect', [GitHubController::class, 'redirect'])->name('github.redirect');
+Route::get('auth/github/callback', [GitHubController::class, 'callback'])->name('github.callback');
+
 Route::middleware(['auth'])->group(function () {
-    Route::get('auth/github/redirect', [GitHubController::class, 'redirect'])->name('github.redirect');
-    Route::get('auth/github/callback', [GitHubController::class, 'callback'])->name('github.callback');
     Route::get('github/setup', GitHubAppSetupController::class)->name('github.app.setup');
 });
 

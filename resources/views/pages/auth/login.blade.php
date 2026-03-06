@@ -5,6 +5,14 @@
         <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
 
+        <div>
+            <flux:button variant="primary" class="w-full" icon="github" :href="route('github.redirect')">
+                {{ __('Continue with GitHub') }}
+            </flux:button>
+        </div>
+
+        <flux:separator text="or" />
+
         <form method="POST" action="{{ route('login.store') }}" class="flex flex-col gap-6">
             @csrf
 
