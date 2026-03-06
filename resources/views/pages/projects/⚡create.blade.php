@@ -3,6 +3,7 @@
 use App\Models\Project;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -11,9 +12,18 @@ use Livewire\Component;
 new #[Title('New Project')] #[Layout('layouts.app')] class extends Component {
     public string $name = '';
 
+    public string $slug = '';
+
     public string $description = '';
 
     public string $instructions = '';
+
+    public function updatedName(string $value): void
+    {
+        if ($this->slug === '' || $this->slug === Str::slug($this->name)) {
+            $this->slug = Str::slug($value);
+        }
+    }
 
     public function createProject(): void
     {
@@ -26,21 +36,15 @@ new #[Title('New Project')] #[Layout('layouts.app')] class extends Component {
 
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
+            'slug' => ['required', 'string', 'max:255', Rule::unique('projects', 'slug')->where('organization_id', $org->id)],
             'description' => ['nullable', 'string', 'max:1000'],
             'instructions' => ['nullable', 'string', 'max:5000'],
         ]);
 
-        $baseSlug = Str::slug($validated['name']);
-        $slug = $baseSlug;
-        $i = 1;
-        while (Project::where('organization_id', $org->id)->where('slug', $slug)->exists()) {
-            $slug = $baseSlug.'-'.$i++;
-        }
-
         $project = Project::create([
             'organization_id' => $org->id,
             'name' => $validated['name'],
-            'slug' => $slug,
+            'slug' => $validated['slug'],
             'description' => $validated['description'] ?: null,
             'instructions' => $validated['instructions'] ?: null,
         ]);
@@ -71,8 +75,14 @@ new #[Title('New Project')] #[Layout('layouts.app')] class extends Component {
     <form wire:submit="createProject" class="max-w-xl space-y-6" data-test="create-project-form">
         <flux:field>
             <flux:label>{{ __('Name') }}</flux:label>
-            <flux:input wire:model="name" data-test="project-name-input" required />
+            <flux:input wire:model.live="name" data-test="project-name-input" required />
             <flux:error name="name" />
+        </flux:field>
+
+        <flux:field>
+            <flux:label>{{ __('Slug') }}</flux:label>
+            <flux:input wire:model="slug" data-test="project-slug-input" required />
+            <flux:error name="slug" />
         </flux:field>
 
         <flux:field>

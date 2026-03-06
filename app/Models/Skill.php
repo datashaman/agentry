@@ -12,6 +12,11 @@ class Skill extends Model
     /** @use HasFactory<\Database\Factories\SkillFactory> */
     use HasFactory;
 
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
     /**
      * @var list<string>
      */

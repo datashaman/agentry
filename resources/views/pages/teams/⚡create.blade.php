@@ -12,7 +12,16 @@ use Livewire\Component;
 new #[Title('New Team')] #[Layout('layouts.app')] class extends Component {
     public string $name = '';
 
+    public string $slug = '';
+
     public string $workflow_type = 'none';
+
+    public function updatedName(string $value): void
+    {
+        if ($this->slug === '' || $this->slug === Str::slug($this->name)) {
+            $this->slug = Str::slug($value);
+        }
+    }
 
     public function createTeam(): void
     {
@@ -25,20 +34,14 @@ new #[Title('New Team')] #[Layout('layouts.app')] class extends Component {
 
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
+            'slug' => ['required', 'string', 'max:255', Rule::unique('teams', 'slug')->where('organization_id', $org->id)],
             'workflow_type' => ['required', Rule::in(['none', 'chain', 'parallel', 'router', 'orchestrator', 'evaluator_optimizer'])],
         ]);
-
-        $baseSlug = Str::slug($validated['name']);
-        $slug = $baseSlug;
-        $i = 1;
-        while (Team::where('organization_id', $org->id)->where('slug', $slug)->exists()) {
-            $slug = $baseSlug.'-'.$i++;
-        }
 
         $team = Team::create([
             'organization_id' => $org->id,
             'name' => $validated['name'],
-            'slug' => $slug,
+            'slug' => $validated['slug'],
             'workflow_type' => $validated['workflow_type'],
         ]);
 
@@ -68,8 +71,14 @@ new #[Title('New Team')] #[Layout('layouts.app')] class extends Component {
     <form wire:submit="createTeam" class="max-w-xl space-y-6" data-test="create-team-form">
         <flux:field>
             <flux:label>{{ __('Name') }}</flux:label>
-            <flux:input wire:model="name" data-test="team-name-input" required />
+            <flux:input wire:model.live="name" data-test="team-name-input" required />
             <flux:error name="name" />
+        </flux:field>
+
+        <flux:field>
+            <flux:label>{{ __('Slug') }}</flux:label>
+            <flux:input wire:model="slug" data-test="team-slug-input" required />
+            <flux:error name="slug" />
         </flux:field>
 
         <flux:field>

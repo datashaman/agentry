@@ -22,6 +22,7 @@ test('project create form displays and creates a project', function () {
 
     Livewire::test('pages::projects.create')
         ->set('name', 'My App')
+        ->set('slug', 'my-app')
         ->call('createProject')
         ->assertRedirect();
 
@@ -44,6 +45,7 @@ test('project create with description and instructions', function () {
 
     Livewire::test('pages::projects.create')
         ->set('name', 'My App')
+        ->set('slug', 'my-app')
         ->set('description', 'A cool project')
         ->set('instructions', 'Always use PHP 8.5 features')
         ->call('createProject')
@@ -66,13 +68,12 @@ test('project create validates required name', function () {
         ->assertHasErrors(['name']);
 });
 
-test('project create generates unique slug within organization', function () {
+test('project create validates unique slug within organization', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
 
     Project::factory()->create([
         'organization_id' => $organization->id,
-        'name' => 'My App',
         'slug' => 'my-app',
     ]);
 
@@ -80,12 +81,30 @@ test('project create generates unique slug within organization', function () {
 
     Livewire::test('pages::projects.create')
         ->set('name', 'My App')
+        ->set('slug', 'my-app')
+        ->call('createProject')
+        ->assertHasErrors(['slug']);
+});
+
+test('project create allows same slug in different organization', function () {
+    $org1 = Organization::factory()->create();
+    $org2 = Organization::factory()->create();
+    $user = User::factory()->withOrganization($org2)->create();
+
+    Project::factory()->create([
+        'organization_id' => $org1->id,
+        'slug' => 'my-app',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::projects.create')
+        ->set('name', 'My App')
+        ->set('slug', 'my-app')
         ->call('createProject')
         ->assertRedirect();
 
-    $project = Project::where('slug', 'my-app-1')->first();
-    expect($project)->not->toBeNull();
-    expect($project->name)->toBe('My App');
+    expect(Project::where('organization_id', $org2->id)->where('slug', 'my-app')->exists())->toBeTrue();
 });
 
 test('projects index shows new project button', function () {
