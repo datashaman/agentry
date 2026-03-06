@@ -503,6 +503,125 @@ class GitHubAppService
     }
 
     /**
+     * Get the file tree of a repo.
+     *
+     * @return array<int, array{path: string, mode: string, type: string, sha: string, size?: int}>|null
+     */
+    public function getTree(Repo $repo, string $sha = 'HEAD', bool $recursive = true): ?array
+    {
+        $organization = $repo->project->organization;
+        $token = $this->getInstallationToken($organization);
+
+        if (! $token) {
+            return null;
+        }
+
+        $ownerRepo = $repo->gitHubOwnerAndRepo();
+
+        if (! $ownerRepo) {
+            return null;
+        }
+
+        if ($sha === 'HEAD') {
+            $sha = $repo->default_branch ?? 'main';
+        }
+
+        $query = $recursive ? ['recursive' => '1'] : [];
+
+        $response = Http::withToken($token)
+            ->accept('application/vnd.github+json')
+            ->get("https://api.github.com/repos/{$ownerRepo['owner']}/{$ownerRepo['repo']}/git/trees/{$sha}", $query);
+
+        if (! $response->successful()) {
+            Log::warning('GitHub: failed to get tree', [
+                'repo_id' => $repo->id,
+                'sha' => $sha,
+                'status' => $response->status(),
+            ]);
+
+            return null;
+        }
+
+        return $response->json('tree');
+    }
+
+    /**
+     * Get the content of a single file from a repo (base64-decoded).
+     */
+    public function getFileContent(Repo $repo, string $path, ?string $ref = null): ?string
+    {
+        $organization = $repo->project->organization;
+        $token = $this->getInstallationToken($organization);
+
+        if (! $token) {
+            return null;
+        }
+
+        $ownerRepo = $repo->gitHubOwnerAndRepo();
+
+        if (! $ownerRepo) {
+            return null;
+        }
+
+        $query = $ref ? ['ref' => $ref] : [];
+
+        $response = Http::withToken($token)
+            ->accept('application/vnd.github+json')
+            ->get("https://api.github.com/repos/{$ownerRepo['owner']}/{$ownerRepo['repo']}/contents/{$path}", $query);
+
+        if (! $response->successful()) {
+            return null;
+        }
+
+        $data = $response->json();
+
+        if (($data['type'] ?? '') !== 'file' || ! isset($data['content'])) {
+            return null;
+        }
+
+        return base64_decode($data['content']);
+    }
+
+    /**
+     * Get a directory listing from a repo.
+     *
+     * @return array<int, array{name: string, path: string, type: string, sha: string, size: int}>|null
+     */
+    public function getDirectoryListing(Repo $repo, string $path, ?string $ref = null): ?array
+    {
+        $organization = $repo->project->organization;
+        $token = $this->getInstallationToken($organization);
+
+        if (! $token) {
+            return null;
+        }
+
+        $ownerRepo = $repo->gitHubOwnerAndRepo();
+
+        if (! $ownerRepo) {
+            return null;
+        }
+
+        $query = $ref ? ['ref' => $ref] : [];
+
+        $response = Http::withToken($token)
+            ->accept('application/vnd.github+json')
+            ->get("https://api.github.com/repos/{$ownerRepo['owner']}/{$ownerRepo['repo']}/contents/{$path}", $query);
+
+        if (! $response->successful()) {
+            return null;
+        }
+
+        $data = $response->json();
+
+        if (! is_array($data) || ! isset($data[0])) {
+            return null;
+        }
+
+        return $data;
+    }
+
+    /**
      * Update an existing check run.
      *
      * @param  array{title: string, summary: string, text?: string}|null  $output

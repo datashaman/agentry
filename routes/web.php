@@ -4,6 +4,7 @@ use App\Http\Controllers\DownloadAttachmentController;
 use App\Http\Controllers\GitHubAppSetupController;
 use App\Http\Controllers\GitHubController;
 use App\Http\Controllers\GitHubWebhookController;
+use App\Http\Controllers\SkillExportController;
 use App\Http\Controllers\SwitchOrganizationController;
 use Illuminate\Support\Facades\Route;
 
@@ -49,6 +50,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('agent-roles/{agentRole}/edit', 'pages::agent-roles.edit')->name('agent-roles.edit');
     Route::livewire('skills', 'pages::skills.index')->name('skills.index');
     Route::livewire('skills/create', 'pages::skills.create')->name('skills.create');
+    Route::livewire('skills/import', 'pages::skills.import')->name('skills.import');
+    Route::get('skills/{skill}/export', SkillExportController::class)->name('skills.export');
     Route::livewire('skills/{skill}', 'pages::skills.show')->name('skills.show');
     Route::livewire('skills/{skill}/edit', 'pages::skills.edit')->name('skills.edit');
     Route::livewire('agents/create', 'pages::agents.create')->name('agents.create');

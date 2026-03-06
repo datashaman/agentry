@@ -21,7 +21,29 @@ new #[Title('Skill')] #[Layout('layouts.app')] class extends Component {
         }
 
         $this->skill->loadCount('agentRoles');
-        $this->skill->load('agentRoles');
+        $this->skill->load(['agentRoles', 'sourceRepo']);
+    }
+
+    public function resyncSkill(): void
+    {
+        if (! $this->skill->isImported() || ! $this->skill->sourceRepo) {
+            return;
+        }
+
+        $org = Auth::user()->currentOrganization();
+        if (! $org) {
+            return;
+        }
+
+        $service = app(\App\Services\SkillImportService::class);
+        $discovered = $service->discoverSkillsInRepo($this->skill->sourceRepo);
+
+        $match = $discovered->first(fn ($item) => $item['path'] === $this->skill->source_path);
+
+        if ($match && $match['parsed']['valid']) {
+            $service->importSkill($org, $match, $this->skill->sourceRepo);
+            $this->skill->refresh();
+        }
     }
 
     public function attachAgentRole(): void
@@ -112,6 +134,9 @@ new #[Title('Skill')] #[Layout('layouts.app')] class extends Component {
             @endif
         </div>
         <div class="flex items-center gap-2">
+            <a href="{{ route('skills.export', $skill) }}" data-test="export-skill-button">
+                <flux:button>{{ __('Export SKILL.md') }}</flux:button>
+            </a>
             <a href="{{ route('skills.edit', $skill) }}" wire:navigate data-test="edit-skill-button">
                 <flux:button>{{ __('Edit') }}</flux:button>
             </a>
@@ -120,6 +145,28 @@ new #[Title('Skill')] #[Layout('layouts.app')] class extends Component {
             </flux:modal.trigger>
         </div>
     </div>
+
+    {{-- Provenance (imported skills) --}}
+    @if ($skill->isImported())
+        <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-900" data-test="skill-provenance">
+            <flux:heading size="sm">{{ __('Imported from Repository') }}</flux:heading>
+            <div class="mt-2 space-y-1">
+                @if ($skill->sourceRepo)
+                    <flux:text><span class="font-medium">{{ __('Repo:') }}</span> {{ $skill->sourceRepo->name }}</flux:text>
+                @endif
+                <flux:text><span class="font-medium">{{ __('Path:') }}</span> {{ $skill->source_path }}</flux:text>
+                @if ($skill->source_sha)
+                    <flux:text><span class="font-medium">{{ __('SHA:') }}</span> <code class="text-xs">{{ Str::limit($skill->source_sha, 12) }}</code></flux:text>
+                @endif
+            </div>
+            <div class="mt-3">
+                <flux:button size="sm" wire:click="resyncSkill" wire:loading.attr="disabled" data-test="resync-skill-button">
+                    <span wire:loading.remove wire:target="resyncSkill">{{ __('Re-sync') }}</span>
+                    <span wire:loading wire:target="resyncSkill">{{ __('Syncing...') }}</span>
+                </flux:button>
+            </div>
+        </div>
+    @endif
 
     {{-- Content --}}
     <div data-test="skill-content">
