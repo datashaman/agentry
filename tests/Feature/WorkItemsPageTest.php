@@ -1,11 +1,14 @@
 <?php
 
 use App\Contracts\WorkItemProvider;
+use App\Events\WorkItemTracked;
+use App\Events\WorkItemUntracked;
 use App\Models\Organization;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\WorkItem;
 use App\Services\WorkItemProviderManager;
+use Illuminate\Support\Facades\Event;
 use Livewire\Livewire;
 
 test('guests are redirected from work items page', function () {
@@ -73,29 +76,34 @@ test('work items page shows error when project key is missing', function () {
         ->assertSet('error', 'No project key configured. Edit the project to set a project key (e.g. owner/repo for GitHub).');
 });
 
-test('tracking an issue creates a work item record', function () {
+test('tracking an issue creates a work item record and dispatches event', function () {
+    Event::fake([WorkItemTracked::class]);
+
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $project = Project::factory()->create([
         'organization_id' => $organization->id,
         'work_item_provider' => 'github',
         'work_item_provider_config' => ['project_key' => 'owner/repo'],
+        'instructions' => 'You are a helpful assistant for this project.',
     ]);
 
+    $issueData = [
+        'key' => '#42',
+        'title' => 'Fix the widget',
+        'description' => 'The widget is broken and needs fixing.',
+        'type' => 'bug',
+        'status' => 'open',
+        'priority' => null,
+        'assignee' => 'dev1',
+        'url' => 'https://github.com/owner/repo/issues/42',
+        'created_at' => '2026-01-01T00:00:00Z',
+        'updated_at' => '2026-01-01T00:00:00Z',
+    ];
+
     $fakeProvider = Mockery::mock(WorkItemProvider::class);
-    $fakeProvider->allows('listIssues')->andReturn([
-        [
-            'key' => '#42',
-            'title' => 'Fix the widget',
-            'type' => 'bug',
-            'status' => 'open',
-            'priority' => null,
-            'assignee' => 'dev1',
-            'url' => 'https://github.com/owner/repo/issues/42',
-            'created_at' => '2026-01-01T00:00:00Z',
-            'updated_at' => '2026-01-01T00:00:00Z',
-        ],
-    ]);
+    $fakeProvider->allows('listIssues')->andReturn([$issueData]);
+    $fakeProvider->allows('getIssue')->andReturn($issueData);
 
     $fakeManager = Mockery::mock(WorkItemProviderManager::class);
     $fakeManager->allows('resolve')->andReturn($fakeProvider);
@@ -108,10 +116,25 @@ test('tracking an issue creates a work item record', function () {
         ->assertSee('Fix the widget')
         ->call('trackIssue', '#42');
 
-    expect($project->workItems()->where('provider_key', '#42')->exists())->toBeTrue();
+    $workItem = $project->workItems()->where('provider_key', '#42')->first();
+    expect($workItem)->not->toBeNull();
+    expect($workItem->description)->toBe('The widget is broken and needs fixing.');
+    expect($workItem->conversation)->not->toBeNull();
+    expect($workItem->conversation->messages)->toHaveCount(2);
+    expect($workItem->conversation->messages[0]->role)->toBe('system');
+    expect($workItem->conversation->messages[0]->content)->toBe($project->instructions);
+    expect($workItem->conversation->messages[1]->role)->toBe('user');
+    expect($workItem->conversation->messages[1]->content)->toContain('Fix the widget');
+    expect($workItem->conversation->messages[1]->content)->toContain('The widget is broken and needs fixing.');
+
+    Event::assertDispatched(WorkItemTracked::class, function (WorkItemTracked $event) use ($workItem) {
+        return $event->workItem->is($workItem);
+    });
 });
 
-test('untracking an issue deletes the work item record', function () {
+test('untracking an issue deletes the work item record and dispatches event', function () {
+    Event::fake([WorkItemUntracked::class]);
+
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $project = Project::factory()->create([
@@ -133,6 +156,7 @@ test('untracking an issue deletes the work item record', function () {
         [
             'key' => '#42',
             'title' => 'Fix the widget',
+            'description' => null,
             'type' => 'bug',
             'status' => 'open',
             'priority' => null,
@@ -154,6 +178,10 @@ test('untracking an issue deletes the work item record', function () {
         ->call('untrackIssue', '#42');
 
     expect($project->workItems()->where('provider_key', '#42')->exists())->toBeFalse();
+
+    Event::assertDispatched(WorkItemUntracked::class, function (WorkItemUntracked $event) use ($project) {
+        return $event->project->is($project) && $event->providerKey === '#42';
+    });
 });
 
 test('project edit page shows work item provider fields', function () {
