@@ -1,4 +1,4 @@
-name: linter
+name: lint
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  quality:
+  lint:
     runs-on: ubuntu-latest
     environment: Testing
     steps:
