@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 
@@ -12,7 +15,7 @@ class GitHubController extends Controller
 {
     public function redirect(): RedirectResponse
     {
-        return Socialite::driver('github')->scopes(['repo', 'read:user'])->redirect();
+        return Socialite::driver('github')->scopes(['repo', 'read:org'])->redirect();
     }
 
     public function callback(): RedirectResponse
@@ -34,6 +37,8 @@ class GitHubController extends Controller
             'github_nickname' => $githubUser->getNickname(),
         ]);
 
+        $this->syncGitHubOrganizations(Auth::user(), $githubUser->token);
+
         session()->flash('status', 'github-connected');
 
         return redirect()->route('github.edit');
@@ -49,6 +54,8 @@ class GitHubController extends Controller
                 'github_nickname' => $githubUser->getNickname(),
             ]);
 
+            $this->syncGitHubOrganizations($user, $githubUser->token);
+
             Auth::login($user, remember: true);
 
             return redirect()->route('dashboard');
@@ -62,6 +69,8 @@ class GitHubController extends Controller
                 'github_token' => $githubUser->token,
                 'github_nickname' => $githubUser->getNickname(),
             ]);
+
+            $this->syncGitHubOrganizations($user, $githubUser->token);
 
             Auth::login($user, remember: true);
 
@@ -78,9 +87,54 @@ class GitHubController extends Controller
         ]);
 
         $user->createPersonalOrganization();
+        $this->syncGitHubOrganizations($user, $githubUser->token);
 
         Auth::login($user, remember: true);
 
         return redirect()->route('dashboard');
+    }
+
+    protected function syncGitHubOrganizations(User $user, string $token): void
+    {
+        $response = Http::withToken($token)
+            ->accept('application/vnd.github+json')
+            ->get('https://api.github.com/user/orgs');
+
+        if (! $response->successful()) {
+            Log::warning('GitHub: failed to fetch user organizations', [
+                'user_id' => $user->id,
+                'status' => $response->status(),
+            ]);
+
+            return;
+        }
+
+        foreach ($response->json() as $githubOrg) {
+            $organization = Organization::query()
+                ->where('provider', 'github')
+                ->where('provider_id', (string) $githubOrg['id'])
+                ->first();
+
+            if (! $organization) {
+                $slug = Str::slug($githubOrg['login']);
+                $baseSlug = $slug;
+                $counter = 1;
+                while (Organization::query()->where('slug', $slug)->exists()) {
+                    $slug = $baseSlug.'-'.$counter;
+                    $counter++;
+                }
+
+                $organization = Organization::create([
+                    'name' => $githubOrg['login'],
+                    'slug' => $slug,
+                    'provider' => 'github',
+                    'provider_id' => (string) $githubOrg['id'],
+                ]);
+            }
+
+            if (! $user->organizations()->where('organizations.id', $organization->id)->exists()) {
+                $user->organizations()->attach($organization, ['role' => 'member']);
+            }
+        }
     }
 }

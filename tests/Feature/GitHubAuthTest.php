@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\Organization;
 use App\Models\User;
+use Illuminate\Support\Facades\Http;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
 use Laravel\Socialite\Facades\Socialite;
 
@@ -26,6 +28,11 @@ function mockSocialiteUser(
     Socialite::shouldReceive('driver')->with('github')->andReturn($driver);
 }
 
+function fakeEmptyOrgs(): void
+{
+    Http::fake(['api.github.com/user/orgs' => Http::response([])]);
+}
+
 test('github redirect sends user to github', function () {
     mockSocialiteUser();
 
@@ -34,6 +41,7 @@ test('github redirect sends user to github', function () {
 });
 
 test('github callback creates new user and logs in', function () {
+    fakeEmptyOrgs();
     mockSocialiteUser();
 
     $this->get(route('github.callback'))
@@ -49,7 +57,89 @@ test('github callback creates new user and logs in', function () {
     expect(auth()->id())->toBe($user->id);
 });
 
+test('github callback creates personal organization for new user', function () {
+    fakeEmptyOrgs();
+    mockSocialiteUser();
+
+    $this->get(route('github.callback'));
+
+    $user = User::query()->where('github_id', 12345)->first();
+
+    expect($user->organizations)->toHaveCount(1);
+    expect($user->currentOrganization())->not->toBeNull();
+    expect($user->currentOrganization()->provider)->toBe('agentry');
+});
+
+test('github callback syncs github organizations', function () {
+    Http::fake([
+        'api.github.com/user/orgs' => Http::response([
+            ['id' => 111, 'login' => 'acme-corp'],
+            ['id' => 222, 'login' => 'widgets-inc'],
+        ]),
+    ]);
+
+    mockSocialiteUser();
+
+    $this->get(route('github.callback'));
+
+    $user = User::query()->where('github_id', 12345)->first();
+
+    // Personal org + 2 GitHub orgs
+    expect($user->organizations)->toHaveCount(3);
+
+    $githubOrgs = $user->organizations->where('provider', 'github');
+    expect($githubOrgs)->toHaveCount(2);
+    expect($githubOrgs->pluck('name')->sort()->values()->all())->toBe(['acme-corp', 'widgets-inc']);
+});
+
+test('github callback does not duplicate existing github organizations', function () {
+    Http::fake([
+        'api.github.com/user/orgs' => Http::response([
+            ['id' => 111, 'login' => 'acme-corp'],
+        ]),
+    ]);
+
+    Organization::factory()->create([
+        'name' => 'acme-corp',
+        'slug' => 'acme-corp',
+        'provider' => 'github',
+        'provider_id' => '111',
+    ]);
+
+    mockSocialiteUser();
+
+    $this->get(route('github.callback'));
+
+    expect(Organization::query()->where('provider', 'github')->where('provider_id', '111')->count())->toBe(1);
+});
+
+test('github callback attaches existing user to existing github org', function () {
+    Http::fake([
+        'api.github.com/user/orgs' => Http::response([
+            ['id' => 111, 'login' => 'acme-corp'],
+        ]),
+    ]);
+
+    $existingOrg = Organization::factory()->create([
+        'provider' => 'github',
+        'provider_id' => '111',
+    ]);
+
+    $user = User::factory()->create([
+        'github_id' => 12345,
+        'github_nickname' => 'testuser',
+    ]);
+
+    mockSocialiteUser();
+
+    $this->get(route('github.callback'));
+
+    expect($user->fresh()->organizations->pluck('id'))->toContain($existingOrg->id);
+});
+
 test('github callback logs in existing user by github id', function () {
+    fakeEmptyOrgs();
+
     $user = User::factory()->create([
         'github_id' => 12345,
         'github_nickname' => 'oldnickname',
@@ -65,6 +155,8 @@ test('github callback logs in existing user by github id', function () {
 });
 
 test('github callback links existing user by email', function () {
+    fakeEmptyOrgs();
+
     $user = User::factory()->create([
         'email' => 'test@example.com',
         'github_id' => null,
@@ -80,6 +172,8 @@ test('github callback links existing user by email', function () {
 });
 
 test('github callback connects account when already authenticated', function () {
+    fakeEmptyOrgs();
+
     $user = User::factory()->create(['github_id' => null]);
 
     mockSocialiteUser();
