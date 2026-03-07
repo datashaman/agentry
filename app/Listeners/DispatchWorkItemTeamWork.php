@@ -2,14 +2,12 @@
 
 namespace App\Listeners;
 
-use App\Events\BugReported;
-use App\Events\OpsRequestCreated;
-use App\Events\StoryCreated;
+use App\Events\WorkItemClassified;
 use App\Jobs\RunTeamWork;
 
 class DispatchWorkItemTeamWork
 {
-    public function handle(BugReported|StoryCreated|OpsRequestCreated $event): void
+    public function handle(WorkItemClassified $event): void
     {
         $workItem = $event->workItem;
         $workItem->loadMissing('project.teams');

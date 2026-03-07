@@ -1,15 +1,13 @@
 <?php
 
-use App\Events\BugReported;
-use App\Events\OpsRequestCreated;
-use App\Events\StoryCreated;
+use App\Events\WorkItemClassified;
 use App\Events\WorkItemTracked;
 use App\Listeners\DispatchWorkItemAgentWork;
 use App\Models\WorkItem;
 use Illuminate\Support\Facades\Event;
 
-test('classifies bug type and fires BugReported', function () {
-    Event::fake([BugReported::class, StoryCreated::class, OpsRequestCreated::class]);
+test('classifies bug type and fires WorkItemClassified', function () {
+    Event::fake([WorkItemClassified::class]);
 
     $workItem = WorkItem::factory()->create(['type' => 'bug']);
 
@@ -18,16 +16,13 @@ test('classifies bug type and fires BugReported', function () {
 
     expect($workItem->fresh()->classified_type)->toBe('bug');
 
-    Event::assertDispatched(BugReported::class, function (BugReported $event) use ($workItem) {
+    Event::assertDispatched(WorkItemClassified::class, function (WorkItemClassified $event) use ($workItem) {
         return $event->workItem->is($workItem);
     });
-
-    Event::assertNotDispatched(StoryCreated::class);
-    Event::assertNotDispatched(OpsRequestCreated::class);
 });
 
-test('classifies story type and fires StoryCreated', function () {
-    Event::fake([BugReported::class, StoryCreated::class, OpsRequestCreated::class]);
+test('classifies story type and fires WorkItemClassified', function () {
+    Event::fake([WorkItemClassified::class]);
 
     $workItem = WorkItem::factory()->create(['type' => 'enhancement']);
 
@@ -36,16 +31,13 @@ test('classifies story type and fires StoryCreated', function () {
 
     expect($workItem->fresh()->classified_type)->toBe('story');
 
-    Event::assertDispatched(StoryCreated::class, function (StoryCreated $event) use ($workItem) {
+    Event::assertDispatched(WorkItemClassified::class, function (WorkItemClassified $event) use ($workItem) {
         return $event->workItem->is($workItem);
     });
-
-    Event::assertNotDispatched(BugReported::class);
-    Event::assertNotDispatched(OpsRequestCreated::class);
 });
 
-test('classifies ops type and fires OpsRequestCreated', function () {
-    Event::fake([BugReported::class, StoryCreated::class, OpsRequestCreated::class]);
+test('classifies ops type and fires WorkItemClassified', function () {
+    Event::fake([WorkItemClassified::class]);
 
     $workItem = WorkItem::factory()->create(['type' => 'deployment']);
 
@@ -54,16 +46,13 @@ test('classifies ops type and fires OpsRequestCreated', function () {
 
     expect($workItem->fresh()->classified_type)->toBe('ops_request');
 
-    Event::assertDispatched(OpsRequestCreated::class, function (OpsRequestCreated $event) use ($workItem) {
+    Event::assertDispatched(WorkItemClassified::class, function (WorkItemClassified $event) use ($workItem) {
         return $event->workItem->is($workItem);
     });
-
-    Event::assertNotDispatched(BugReported::class);
-    Event::assertNotDispatched(StoryCreated::class);
 });
 
 test('classifies work item with no type as story', function () {
-    Event::fake([BugReported::class, StoryCreated::class, OpsRequestCreated::class]);
+    Event::fake([WorkItemClassified::class]);
 
     $workItem = WorkItem::factory()->create(['type' => null]);
 
@@ -72,5 +61,5 @@ test('classifies work item with no type as story', function () {
 
     expect($workItem->fresh()->classified_type)->toBe('story');
 
-    Event::assertDispatched(StoryCreated::class);
+    Event::assertDispatched(WorkItemClassified::class);
 });

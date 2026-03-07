@@ -6,7 +6,7 @@ use App\Models\WorkItem;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class BugReported
+class WorkItemClassified
 {
     use Dispatchable, SerializesModels;
 
