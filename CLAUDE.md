@@ -276,3 +276,10 @@ protected function isAccessible(User $user, ?string $path = null): bool
 - IMPORTANT: Activate `developing-with-fortify` skill when working with Fortify authentication features.
 
 </laravel-boost-guidelines>
+
+# Deployment
+
+- This application is deployed to production using **Laravel Forge**.
+- The Laravel Forge CLI is installed and authenticated locally.
+- Use `forge` CLI commands for deployment tasks (e.g., `forge deploy`, `forge ssh`) when appropriate.
+- Do not trigger deployments without user approval.

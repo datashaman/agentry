@@ -1,15 +1,46 @@
 <?php
 
 use App\Events\WorkItemClassified;
-use App\Models\Conversation;
+use App\Models\AgentConversation;
+use App\Models\AgentConversationMessage;
 use App\Models\HitlEscalation;
-use App\Models\Message;
 use App\Models\Organization;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\WorkItem;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
+use Laravel\Ai\AnonymousAgent;
 use Livewire\Livewire;
+
+function createConversationWithMessages(WorkItem $workItem, array $messages): AgentConversation
+{
+    $conversation = AgentConversation::create([
+        'id' => (string) Str::uuid7(),
+        'user_id' => null,
+        'title' => 'Test conversation',
+    ]);
+
+    $workItem->agentConversations()->attach($conversation);
+
+    foreach ($messages as $msg) {
+        AgentConversationMessage::create([
+            'id' => (string) Str::uuid7(),
+            'conversation_id' => $conversation->id,
+            'user_id' => null,
+            'agent' => 'anonymous',
+            'role' => $msg['role'],
+            'content' => $msg['content'],
+            'attachments' => [],
+            'tool_calls' => [],
+            'tool_results' => [],
+            'usage' => [],
+            'meta' => [],
+        ]);
+    }
+
+    return $conversation;
+}
 
 test('guests are redirected from work item show page', function () {
     $project = Project::factory()->create();
@@ -60,16 +91,9 @@ test('work item show page displays conversation messages', function () {
     $project = Project::factory()->create(['organization_id' => $organization->id]);
     $workItem = WorkItem::factory()->create(['project_id' => $project->id]);
 
-    $conversation = Conversation::factory()->create(['work_item_id' => $workItem->id]);
-    Message::factory()->create([
-        'conversation_id' => $conversation->id,
-        'role' => 'user',
-        'content' => 'Can you investigate this issue?',
-    ]);
-    Message::factory()->create([
-        'conversation_id' => $conversation->id,
-        'role' => 'assistant',
-        'content' => 'I will look into the root cause.',
+    createConversationWithMessages($workItem, [
+        ['role' => 'user', 'content' => 'Can you investigate this issue?'],
+        ['role' => 'assistant', 'content' => 'I will look into the root cause.'],
     ]);
 
     $this->actingAs($user)
@@ -85,16 +109,9 @@ test('system messages are hidden from conversation', function () {
     $project = Project::factory()->create(['organization_id' => $organization->id]);
     $workItem = WorkItem::factory()->create(['project_id' => $project->id]);
 
-    $conversation = Conversation::factory()->create(['work_item_id' => $workItem->id]);
-    Message::factory()->create([
-        'conversation_id' => $conversation->id,
-        'role' => 'system',
-        'content' => 'You are a helpful assistant.',
-    ]);
-    Message::factory()->create([
-        'conversation_id' => $conversation->id,
-        'role' => 'user',
-        'content' => 'Hello agent!',
+    createConversationWithMessages($workItem, [
+        ['role' => 'system', 'content' => 'You are a helpful assistant.'],
+        ['role' => 'user', 'content' => 'Hello agent!'],
     ]);
 
     $this->actingAs($user)
@@ -105,11 +122,14 @@ test('system messages are hidden from conversation', function () {
 });
 
 test('user can send a message', function () {
+    AnonymousAgent::fake(['This is the agent response.']);
+
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $project = Project::factory()->create(['organization_id' => $organization->id]);
     $workItem = WorkItem::factory()->create(['project_id' => $project->id]);
-    Conversation::factory()->create(['work_item_id' => $workItem->id]);
+
+    createConversationWithMessages($workItem, []);
 
     Livewire::actingAs($user)
         ->test('pages::projects.work-items.show', ['project' => $project, 'workItem' => $workItem])
@@ -117,7 +137,9 @@ test('user can send a message', function () {
         ->call('sendMessage')
         ->assertSet('newMessage', '');
 
-    expect($workItem->conversation->messages()->where('role', 'user')->where('content', 'Please prioritize this fix.')->exists())->toBeTrue();
+    $conversation = $workItem->latestConversation();
+    expect($conversation->messages()->where('role', 'user')->where('content', 'Please prioritize this fix.')->exists())->toBeTrue();
+    expect($conversation->messages()->where('role', 'assistant')->where('content', 'This is the agent response.')->exists())->toBeTrue();
 });
 
 test('empty message is rejected', function () {
@@ -125,7 +147,6 @@ test('empty message is rejected', function () {
     $user = User::factory()->withOrganization($organization)->create();
     $project = Project::factory()->create(['organization_id' => $organization->id]);
     $workItem = WorkItem::factory()->create(['project_id' => $project->id]);
-    Conversation::factory()->create(['work_item_id' => $workItem->id]);
 
     Livewire::actingAs($user)
         ->test('pages::projects.work-items.show', ['project' => $project, 'workItem' => $workItem])
@@ -135,12 +156,14 @@ test('empty message is rejected', function () {
 });
 
 test('sending a message creates conversation if none exists', function () {
+    AnonymousAgent::fake(['Agent reply here.']);
+
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
     $project = Project::factory()->create(['organization_id' => $organization->id]);
     $workItem = WorkItem::factory()->create(['project_id' => $project->id]);
 
-    expect($workItem->conversation)->toBeNull();
+    expect($workItem->latestConversation())->toBeNull();
 
     Livewire::actingAs($user)
         ->test('pages::projects.work-items.show', ['project' => $project, 'workItem' => $workItem])
@@ -148,8 +171,10 @@ test('sending a message creates conversation if none exists', function () {
         ->call('sendMessage');
 
     $workItem->refresh();
-    expect($workItem->conversation)->not->toBeNull();
-    expect($workItem->conversation->messages()->where('content', 'Starting a new conversation.')->exists())->toBeTrue();
+    $conversation = $workItem->latestConversation();
+    expect($conversation)->not->toBeNull();
+    expect($conversation->messages()->where('content', 'Starting a new conversation.')->exists())->toBeTrue();
+    expect($conversation->messages()->where('role', 'assistant')->exists())->toBeTrue();
 });
 
 test('displays HITL escalations on work item show page', function () {

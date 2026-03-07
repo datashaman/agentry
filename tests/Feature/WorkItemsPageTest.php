@@ -120,13 +120,15 @@ test('tracking an issue creates a work item record and dispatches event', functi
     $workItem = $project->workItems()->where('provider_key', '#42')->first();
     expect($workItem)->not->toBeNull();
     expect($workItem->description)->toBe('The widget is broken and needs fixing.');
-    expect($workItem->conversation)->not->toBeNull();
-    expect($workItem->conversation->messages)->toHaveCount(2);
-    expect($workItem->conversation->messages[0]->role)->toBe('system');
-    expect($workItem->conversation->messages[0]->content)->toBe($project->instructions);
-    expect($workItem->conversation->messages[1]->role)->toBe('user');
-    expect($workItem->conversation->messages[1]->content)->toContain('Fix the widget');
-    expect($workItem->conversation->messages[1]->content)->toContain('The widget is broken and needs fixing.');
+    $conversation = $workItem->latestConversation();
+    expect($conversation)->not->toBeNull();
+    $messages = $conversation->messages()->oldest()->get();
+    expect($messages)->toHaveCount(2);
+    expect($messages[0]->role)->toBe('system');
+    expect($messages[0]->content)->toBe($project->instructions);
+    expect($messages[1]->role)->toBe('user');
+    expect($messages[1]->content)->toContain('Fix the widget');
+    expect($messages[1]->content)->toContain('The widget is broken and needs fixing.');
 
     Event::assertDispatched(WorkItemTracked::class, function (WorkItemTracked $event) use ($workItem) {
         return $event->workItem->is($workItem);

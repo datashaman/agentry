@@ -3,10 +3,11 @@
 use App\Agents\Workflows\WorkflowResult;
 use App\Agents\Workflows\WorkflowRunner;
 use App\Jobs\RunTeamWork;
-use App\Models\Conversation;
-use App\Models\Message;
+use App\Models\AgentConversation;
+use App\Models\AgentConversationMessage;
 use App\Models\Team;
 use App\Models\WorkItem;
+use Illuminate\Support\Str;
 
 test('runs workflow with work item content as request', function () {
     $team = Team::factory()->chain()->create();
@@ -38,11 +39,26 @@ test('includes conversation messages in request', function () {
         'title' => 'Add dark mode',
         'classified_type' => 'story',
     ]);
-    $conversation = Conversation::factory()->create(['work_item_id' => $workItem->id]);
-    Message::factory()->create([
+
+    $conversation = AgentConversation::create([
+        'id' => (string) Str::uuid7(),
+        'user_id' => null,
+        'title' => 'Dark mode conversation',
+    ]);
+    $workItem->agentConversations()->attach($conversation);
+
+    AgentConversationMessage::create([
+        'id' => (string) Str::uuid7(),
         'conversation_id' => $conversation->id,
+        'user_id' => null,
+        'agent' => 'anonymous',
         'role' => 'user',
         'content' => 'Please prioritize this',
+        'attachments' => [],
+        'tool_calls' => [],
+        'tool_results' => [],
+        'usage' => [],
+        'meta' => [],
     ]);
 
     $workflowRunner = Mockery::mock(WorkflowRunner::class);

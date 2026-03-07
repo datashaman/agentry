@@ -3,8 +3,11 @@
 use App\Events\WorkItemTracked;
 use App\Events\WorkItemUntracked;
 use App\Exceptions\GitHubTokenExpiredException;
+use App\Models\AgentConversation;
+use App\Models\AgentConversationMessage;
 use App\Models\Project;
 use App\Services\WorkItemProviderManager;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Session;
@@ -131,12 +134,27 @@ new #[Title('Work Items')] #[Layout('layouts.app')] class extends Component {
             'url' => $issue['url'],
         ]);
 
-        $conversation = $workItem->conversation()->create();
+        $conversation = AgentConversation::create([
+            'id' => (string) Str::uuid7(),
+            'user_id' => auth()->id(),
+            'title' => Str::limit($issue['title'], 100),
+        ]);
+
+        $workItem->agentConversations()->attach($conversation);
 
         if ($this->project->instructions) {
-            $conversation->messages()->create([
+            AgentConversationMessage::create([
+                'id' => (string) Str::uuid7(),
+                'conversation_id' => $conversation->id,
+                'user_id' => auth()->id(),
+                'agent' => 'anonymous',
                 'role' => 'system',
                 'content' => $this->project->instructions,
+                'attachments' => [],
+                'tool_calls' => [],
+                'tool_results' => [],
+                'usage' => [],
+                'meta' => [],
             ]);
         }
 
@@ -154,9 +172,18 @@ new #[Title('Work Items')] #[Layout('layouts.app')] class extends Component {
             $lines[] = "Description:\n{$description}";
         }
 
-        $conversation->messages()->create([
+        AgentConversationMessage::create([
+            'id' => (string) Str::uuid7(),
+            'conversation_id' => $conversation->id,
+            'user_id' => auth()->id(),
+            'agent' => 'anonymous',
             'role' => 'user',
             'content' => implode("\n", $lines),
+            'attachments' => [],
+            'tool_calls' => [],
+            'tool_results' => [],
+            'usage' => [],
+            'meta' => [],
         ]);
 
         WorkItemTracked::dispatch($workItem);

@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class WorkItem extends Model
@@ -39,11 +39,16 @@ class WorkItem extends Model
     }
 
     /**
-     * @return HasOne<Conversation, $this>
+     * @return BelongsToMany<AgentConversation, $this>
      */
-    public function conversation(): HasOne
+    public function agentConversations(): BelongsToMany
     {
-        return $this->hasOne(Conversation::class);
+        return $this->belongsToMany(AgentConversation::class, 'agent_conversation_work_item');
+    }
+
+    public function latestConversation(): ?AgentConversation
+    {
+        return $this->agentConversations()->latest('agent_conversations.updated_at')->first();
     }
 
     /**

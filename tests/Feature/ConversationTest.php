@@ -1,54 +1,153 @@
 <?php
 
-use App\Models\Conversation;
-use App\Models\Message;
+use App\Models\AgentConversation;
+use App\Models\AgentConversationMessage;
+use App\Models\User;
 use App\Models\WorkItem;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
-test('conversation belongs to a work item', function () {
-    $workItem = WorkItem::factory()->create();
-    $conversation = Conversation::factory()->create(['work_item_id' => $workItem->id]);
+test('agent conversation belongs to a user', function () {
+    $user = User::factory()->create();
+    $conversation = AgentConversation::create([
+        'id' => (string) Str::uuid7(),
+        'user_id' => $user->id,
+        'title' => 'Test conversation',
+    ]);
 
-    expect($conversation->workItem->id)->toBe($workItem->id);
+    expect($conversation->user->id)->toBe($user->id);
 });
 
-test('conversation has many messages', function () {
-    $conversation = Conversation::factory()->create();
+test('agent conversation has many messages', function () {
+    $conversation = AgentConversation::create([
+        'id' => (string) Str::uuid7(),
+        'user_id' => null,
+        'title' => 'Test conversation',
+    ]);
 
-    Message::factory()->count(3)->create(['conversation_id' => $conversation->id]);
+    foreach (range(1, 3) as $i) {
+        AgentConversationMessage::create([
+            'id' => (string) Str::uuid7(),
+            'conversation_id' => $conversation->id,
+            'user_id' => null,
+            'agent' => 'anonymous',
+            'role' => 'user',
+            'content' => "Message $i",
+            'attachments' => [],
+            'tool_calls' => [],
+            'tool_results' => [],
+            'usage' => [],
+            'meta' => [],
+        ]);
+    }
 
     expect($conversation->messages)->toHaveCount(3);
 });
 
-test('work item has one conversation', function () {
+test('agent conversation message belongs to a conversation', function () {
+    $conversation = AgentConversation::create([
+        'id' => (string) Str::uuid7(),
+        'user_id' => null,
+        'title' => 'Test conversation',
+    ]);
+
+    $message = AgentConversationMessage::create([
+        'id' => (string) Str::uuid7(),
+        'conversation_id' => $conversation->id,
+        'user_id' => null,
+        'agent' => 'anonymous',
+        'role' => 'user',
+        'content' => 'Hello',
+        'attachments' => [],
+        'tool_calls' => [],
+        'tool_results' => [],
+        'usage' => [],
+        'meta' => [],
+    ]);
+
+    expect($message->conversation->id)->toBe($conversation->id);
+});
+
+test('work item belongs to many agent conversations via pivot', function () {
     $workItem = WorkItem::factory()->create();
-    $conversation = Conversation::factory()->create(['work_item_id' => $workItem->id]);
+    $conversation = AgentConversation::create([
+        'id' => (string) Str::uuid7(),
+        'user_id' => null,
+        'title' => 'Work item conversation',
+    ]);
 
-    expect($workItem->conversation->id)->toBe($conversation->id);
+    $workItem->agentConversations()->attach($conversation);
+
+    expect($workItem->agentConversations)->toHaveCount(1);
+    expect($workItem->agentConversations->first()->id)->toBe($conversation->id);
 });
 
-test('deleting a work item cascade deletes its conversation and messages', function () {
+test('agent conversation belongs to many work items via pivot', function () {
+    $conversation = AgentConversation::create([
+        'id' => (string) Str::uuid7(),
+        'user_id' => null,
+        'title' => 'Shared conversation',
+    ]);
+
+    $workItem1 = WorkItem::factory()->create();
+    $workItem2 = WorkItem::factory()->create();
+
+    $conversation->workItems()->attach([$workItem1->id, $workItem2->id]);
+
+    expect($conversation->workItems)->toHaveCount(2);
+});
+
+test('work item latestConversation returns most recent', function () {
     $workItem = WorkItem::factory()->create();
-    $conversation = Conversation::factory()->create(['work_item_id' => $workItem->id]);
-    Message::factory()->count(2)->create(['conversation_id' => $conversation->id]);
 
-    $workItem->delete();
+    $olderId = (string) Str::uuid7();
+    $newerId = (string) Str::uuid7();
 
-    expect(Conversation::query()->where('id', $conversation->id)->exists())->toBeFalse();
-    expect(Message::query()->where('conversation_id', $conversation->id)->exists())->toBeFalse();
+    $yesterday = now()->subDay();
+    $today = now();
+
+    DB::table('agent_conversations')->insert([
+        ['id' => $olderId, 'user_id' => null, 'title' => 'Older', 'created_at' => $yesterday, 'updated_at' => $yesterday],
+        ['id' => $newerId, 'user_id' => null, 'title' => 'Newer', 'created_at' => $today, 'updated_at' => $today],
+    ]);
+
+    $workItem->agentConversations()->attach([$olderId, $newerId]);
+
+    expect($workItem->latestConversation()->id)->toBe($newerId);
 });
 
-test('deleting a conversation cascade deletes its messages', function () {
-    $conversation = Conversation::factory()->create();
-    Message::factory()->count(2)->create(['conversation_id' => $conversation->id]);
+test('work item latestConversation returns null when no conversations', function () {
+    $workItem = WorkItem::factory()->create();
 
-    $conversation->delete();
-
-    expect(Message::query()->where('conversation_id', $conversation->id)->exists())->toBeFalse();
+    expect($workItem->latestConversation())->toBeNull();
 });
 
-test('message factory creates valid messages with expected roles', function () {
-    $message = Message::factory()->create();
+test('agent conversation message casts JSON fields to arrays', function () {
+    $conversation = AgentConversation::create([
+        'id' => (string) Str::uuid7(),
+        'user_id' => null,
+        'title' => 'Test',
+    ]);
 
-    expect($message->role)->toBeIn(['system', 'user', 'assistant']);
-    expect($message->content)->toBeString()->not->toBeEmpty();
+    $message = AgentConversationMessage::create([
+        'id' => (string) Str::uuid7(),
+        'conversation_id' => $conversation->id,
+        'user_id' => null,
+        'agent' => 'anonymous',
+        'role' => 'assistant',
+        'content' => 'Hello',
+        'attachments' => ['file.pdf'],
+        'tool_calls' => [['name' => 'search', 'args' => []]],
+        'tool_results' => [['result' => 'found']],
+        'usage' => ['tokens' => 100],
+        'meta' => ['key' => 'value'],
+    ]);
+
+    $message->refresh();
+
+    expect($message->attachments)->toBe(['file.pdf']);
+    expect($message->tool_calls)->toBe([['name' => 'search', 'args' => []]]);
+    expect($message->tool_results)->toBe([['result' => 'found']]);
+    expect($message->usage)->toBe(['tokens' => 100]);
+    expect($message->meta)->toBe(['key' => 'value']);
 });

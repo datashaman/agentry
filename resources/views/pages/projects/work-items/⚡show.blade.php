@@ -1,14 +1,20 @@
 <?php
 
 use App\Events\WorkItemClassified;
+use App\Models\AgentConversation;
+use App\Models\AgentConversationMessage;
 use App\Models\HitlEscalation;
 use App\Models\Project;
 use App\Models\WorkItem;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
+use Laravel\Ai\Contracts\ConversationStore;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+
+use function Laravel\Ai\agent;
 
 new #[Title('Work Item Detail')] #[Layout('layouts.app')] class extends Component {
     public Project $project;
@@ -20,7 +26,7 @@ new #[Title('Work Item Detail')] #[Layout('layouts.app')] class extends Componen
     public function mount(): void
     {
         $this->workItem->loadMissing([
-            'conversation.messages',
+            'agentConversations',
             'hitlEscalations.raisedByAgent',
         ]);
     }
@@ -34,11 +40,13 @@ new #[Title('Work Item Detail')] #[Layout('layouts.app')] class extends Componen
     #[Computed]
     public function chatMessages(): \Illuminate\Database\Eloquent\Collection
     {
-        if (! $this->workItem->conversation) {
+        $conversation = $this->workItem->latestConversation();
+
+        if (! $conversation) {
             return new \Illuminate\Database\Eloquent\Collection;
         }
 
-        return $this->workItem->conversation->messages()
+        return $conversation->messages()
             ->where('role', '!=', 'system')
             ->oldest()
             ->get();
@@ -50,18 +58,77 @@ new #[Title('Work Item Detail')] #[Layout('layouts.app')] class extends Componen
             'newMessage' => 'required|string|min:1',
         ]);
 
-        if (! $this->workItem->conversation) {
-            $this->workItem->conversation()->create();
-            $this->workItem->load('conversation');
+        $user = Auth::user();
+        $conversation = $this->workItem->latestConversation();
+
+        if (! $conversation) {
+            $store = app(ConversationStore::class);
+            $conversationId = $store->storeConversation(
+                $user->id,
+                Str::limit($this->workItem->title, 100),
+            );
+            $conversation = AgentConversation::find($conversationId);
+            $this->workItem->agentConversations()->attach($conversation);
         }
 
-        $this->workItem->conversation->messages()->create([
+        $userMessageId = (string) Str::uuid7();
+        AgentConversationMessage::create([
+            'id' => $userMessageId,
+            'conversation_id' => $conversation->id,
+            'user_id' => $user->id,
+            'agent' => 'anonymous',
             'role' => 'user',
             'content' => $this->newMessage,
+            'attachments' => [],
+            'tool_calls' => [],
+            'tool_results' => [],
+            'usage' => [],
+            'meta' => [],
+        ]);
+
+        $context = $this->buildAgentContext();
+        $prompt = $this->newMessage;
+
+        $response = agent('You are a helpful assistant working on a software project work item. '.$context)
+            ->prompt(
+                $prompt,
+                provider: config('ai.chat.provider'),
+                model: config('ai.chat.model'),
+            );
+
+        $assistantMessageId = (string) Str::uuid7();
+        AgentConversationMessage::create([
+            'id' => $assistantMessageId,
+            'conversation_id' => $conversation->id,
+            'user_id' => $user->id,
+            'agent' => 'anonymous',
+            'role' => 'assistant',
+            'content' => $response->text,
+            'attachments' => [],
+            'tool_calls' => $response->toolCalls ?? [],
+            'tool_results' => $response->toolResults ?? [],
+            'usage' => $response->usage ?? [],
+            'meta' => $response->meta ?? [],
         ]);
 
         $this->newMessage = '';
         unset($this->chatMessages);
+    }
+
+    protected function buildAgentContext(): string
+    {
+        $parts = [];
+        $parts[] = "Work Item: {$this->workItem->title}";
+
+        if ($this->workItem->description) {
+            $parts[] = "Description: {$this->workItem->description}";
+        }
+
+        if ($this->workItem->classified_type) {
+            $parts[] = "Type: {$this->workItem->classified_type}";
+        }
+
+        return implode("\n", $parts);
     }
 
     public function confirmReclassification(int $escalationId): void
