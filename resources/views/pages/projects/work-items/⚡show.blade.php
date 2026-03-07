@@ -1,20 +1,15 @@
 <?php
 
+use App\Agents\ChatAgent;
 use App\Events\WorkItemClassified;
-use App\Models\AgentConversation;
-use App\Models\AgentConversationMessage;
 use App\Models\HitlEscalation;
 use App\Models\Project;
 use App\Models\WorkItem;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
-use Laravel\Ai\Contracts\ConversationStore;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
-
-use function Laravel\Ai\agent;
 
 new #[Title('Work Item Detail')] #[Layout('layouts.app')] class extends Component {
     public Project $project;
@@ -61,55 +56,26 @@ new #[Title('Work Item Detail')] #[Layout('layouts.app')] class extends Componen
         $user = Auth::user();
         $conversation = $this->workItem->latestConversation();
 
-        if (! $conversation) {
-            $store = app(ConversationStore::class);
-            $conversationId = $store->storeConversation(
-                $user->id,
-                Str::limit($this->workItem->title, 100),
-            );
-            $conversation = AgentConversation::find($conversationId);
-            $this->workItem->agentConversations()->attach($conversation);
+        $context = $this->buildAgentContext();
+        $agent = ChatAgent::make(
+            instructions: 'You are a helpful assistant working on a software project work item. '.$context,
+        );
+
+        if ($conversation) {
+            $agent->continue($conversation->id, $user);
+        } else {
+            $agent->forUser($user);
         }
 
-        $userMessageId = (string) Str::uuid7();
-        AgentConversationMessage::create([
-            'id' => $userMessageId,
-            'conversation_id' => $conversation->id,
-            'user_id' => $user->id,
-            'agent' => 'anonymous',
-            'role' => 'user',
-            'content' => $this->newMessage,
-            'attachments' => [],
-            'tool_calls' => [],
-            'tool_results' => [],
-            'usage' => [],
-            'meta' => [],
-        ]);
+        $response = $agent->prompt(
+            $this->newMessage,
+            provider: config('ai.chat.provider'),
+            model: config('ai.chat.model'),
+        );
 
-        $context = $this->buildAgentContext();
-        $prompt = $this->newMessage;
-
-        $response = agent('You are a helpful assistant working on a software project work item. '.$context)
-            ->prompt(
-                $prompt,
-                provider: config('ai.chat.provider'),
-                model: config('ai.chat.model'),
-            );
-
-        $assistantMessageId = (string) Str::uuid7();
-        AgentConversationMessage::create([
-            'id' => $assistantMessageId,
-            'conversation_id' => $conversation->id,
-            'user_id' => $user->id,
-            'agent' => 'anonymous',
-            'role' => 'assistant',
-            'content' => $response->text,
-            'attachments' => [],
-            'tool_calls' => $response->toolCalls ?? [],
-            'tool_results' => $response->toolResults ?? [],
-            'usage' => $response->usage ?? [],
-            'meta' => $response->meta ?? [],
-        ]);
+        if (! $conversation && $response->conversationId) {
+            $this->workItem->agentConversations()->attach($response->conversationId);
+        }
 
         $this->newMessage = '';
         unset($this->chatMessages);

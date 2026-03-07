@@ -1,16 +1,16 @@
 <?php
 
+use App\Agents\ChatAgent;
 use App\Events\WorkItemClassified;
 use App\Events\WorkItemTracked;
 use App\Listeners\DispatchWorkItemAgentWork;
 use App\Models\Project;
 use App\Models\WorkItem;
 use Illuminate\Support\Facades\Event;
-use Laravel\Ai\AnonymousAgent;
 
 test('creates HITL escalation for type label suggestions when none configured', function () {
     Event::fake([WorkItemClassified::class]);
-    AnonymousAgent::fake(['["Bug", "Story", "Task"]']);
+    ChatAgent::fake(['["Bug", "Story", "Task"]']);
 
     $project = Project::factory()->create([
         'work_item_provider' => 'jira',
@@ -107,7 +107,7 @@ test('does not dispatch WorkItemClassified when escalation is pending', function
 
 test('does not create duplicate escalation when pending escalation exists', function () {
     Event::fake([WorkItemClassified::class]);
-    AnonymousAgent::fake(['["Bug", "Story", "Task"]', '["Bug", "Story", "Task"]']);
+    ChatAgent::fake(['["Bug", "Story", "Task"]', '["Bug", "Story", "Task"]']);
 
     $project = Project::factory()->create([
         'work_item_provider' => 'jira',

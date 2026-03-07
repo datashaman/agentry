@@ -1,12 +1,12 @@
 <?php
 
+use App\Agents\ChatAgent;
 use App\Models\Project;
 use App\Models\WorkItem;
 use App\Services\TypeSuggestionService;
-use Laravel\Ai\AnonymousAgent;
 
 test('suggests type labels for a project', function () {
-    AnonymousAgent::fake(['["Bug", "Story", "Task", "Epic"]']);
+    ChatAgent::fake(['["Bug", "Story", "Task", "Epic"]']);
 
     $project = Project::factory()->create([
         'work_item_provider' => 'jira',
@@ -20,7 +20,7 @@ test('suggests type labels for a project', function () {
 });
 
 test('suggests classification for a work item', function () {
-    AnonymousAgent::fake(['Bug']);
+    ChatAgent::fake(['Bug']);
 
     $project = Project::factory()->create([
         'work_item_provider' => 'github',
@@ -41,7 +41,7 @@ test('suggests classification for a work item', function () {
 });
 
 test('returns null when suggestion does not match any type label', function () {
-    AnonymousAgent::fake(['Unknown']);
+    ChatAgent::fake(['Unknown']);
 
     $project = Project::factory()->create([
         'work_item_provider' => 'github',
@@ -61,7 +61,7 @@ test('returns null when suggestion does not match any type label', function () {
 });
 
 test('handles malformed JSON response for type labels', function () {
-    AnonymousAgent::fake(['Not valid JSON']);
+    ChatAgent::fake(['Not valid JSON']);
 
     $project = Project::factory()->create([
         'work_item_provider' => 'jira',
