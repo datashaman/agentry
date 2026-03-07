@@ -19,6 +19,12 @@ return [
     'enabled' => env('WEB_TINKER_ENABLED', false),
 
     /*
+     * Comma-separated list of email addresses allowed to use web tinker
+     * in non-local environments.
+     */
+    'allowed_emails' => env('WEB_TINKER_ALLOWED_EMAILS', ''),
+
+    /*
     * This class can modify the output returned by Tinker. You can replace this with
     * any class that implements \Spatie\WebTinker\OutputModifiers\OutputModifier.
     */
