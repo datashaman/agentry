@@ -1,5 +1,6 @@
 <?php
 
+use App\Agents\ChatAgent;
 use App\Events\WorkItemClassified;
 use App\Models\AgentConversation;
 use App\Models\AgentConversationMessage;
@@ -10,7 +11,6 @@ use App\Models\User;
 use App\Models\WorkItem;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
-use Laravel\Ai\AnonymousAgent;
 use Livewire\Livewire;
 
 function createConversationWithMessages(WorkItem $workItem, array $messages): AgentConversation
@@ -122,7 +122,7 @@ test('system messages are hidden from conversation', function () {
 });
 
 test('user can send a message', function () {
-    AnonymousAgent::fake(['This is the agent response.']);
+    ChatAgent::fake(['This is the agent response.']);
 
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();
@@ -156,7 +156,7 @@ test('empty message is rejected', function () {
 });
 
 test('sending a message creates conversation if none exists', function () {
-    AnonymousAgent::fake(['Agent reply here.']);
+    ChatAgent::fake(['Agent reply here.']);
 
     $organization = Organization::factory()->create();
     $user = User::factory()->withOrganization($organization)->create();

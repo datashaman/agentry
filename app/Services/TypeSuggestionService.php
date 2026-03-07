@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
+use App\Agents\ChatAgent;
 use App\Models\Project;
 use App\Models\WorkItem;
+use Illuminate\Support\Facades\Auth;
 use Laravel\Ai\Responses\AgentResponse;
-
-use function Laravel\Ai\agent;
 
 class TypeSuggestionService
 {
@@ -62,12 +62,21 @@ class TypeSuggestionService
 
     protected function prompt(string $prompt): AgentResponse
     {
-        return agent('You are a helpful assistant that responds with precise, structured data.')
-            ->prompt(
-                $prompt,
-                provider: config('ai.classification.provider'),
-                model: config('ai.classification.model'),
-            );
+        $agent = ChatAgent::make(
+            instructions: 'You are a helpful assistant that responds with precise, structured data.',
+        );
+
+        $user = Auth::user();
+
+        if ($user) {
+            $agent->forUser($user);
+        }
+
+        return $agent->prompt(
+            $prompt,
+            provider: config('ai.classification.provider'),
+            model: config('ai.classification.model'),
+        );
     }
 
     /**
