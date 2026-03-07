@@ -41,7 +41,7 @@ class RunTeamWork implements ShouldQueue
 
     protected function buildRequest(): string
     {
-        $this->workItem->loadMissing('conversation.messages');
+        $conversation = $this->workItem->latestConversation();
 
         $parts = [];
         $parts[] = "Work Item: {$this->workItem->title}";
@@ -54,8 +54,8 @@ class RunTeamWork implements ShouldQueue
             $parts[] = "Type: {$this->workItem->classified_type}";
         }
 
-        if ($this->workItem->conversation) {
-            foreach ($this->workItem->conversation->messages as $message) {
+        if ($conversation) {
+            foreach ($conversation->messages()->oldest()->get() as $message) {
                 $parts[] = "[{$message->role}]: {$message->content}";
             }
         }

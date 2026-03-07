@@ -141,4 +141,18 @@ return [
         'model' => env('AI_CLASSIFICATION_MODEL', 'claude-sonnet-4-6'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Chat
+    |--------------------------------------------------------------------------
+    |
+    | Provider and model used for work item chat conversations.
+    |
+    */
+
+    'chat' => [
+        'provider' => env('AI_CHAT_PROVIDER', 'anthropic'),
+        'model' => env('AI_CHAT_MODEL', 'claude-sonnet-4-6'),
+    ],
+
 ];

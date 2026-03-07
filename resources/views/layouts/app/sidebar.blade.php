@@ -77,7 +77,10 @@
                     <flux:sidebar.item icon="shield-check" :href="route('agent-permissions.index')" :current="request()->routeIs('agent-permissions.*')" wire:navigate data-test="agent-permissions-nav">
                         {{ __('Agent Permissions') }}
                     </flux:sidebar.item>
-<flux:sidebar.item icon="document-text" :href="route('action-logs.index')" :current="request()->routeIs('action-logs.*')" wire:navigate data-test="action-logs-nav">
+<flux:sidebar.item icon="chat-bubble-left-right" :href="route('chats.index')" :current="request()->routeIs('chats.*')" wire:navigate data-test="chats-nav">
+                        {{ __('Chats') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="document-text" :href="route('action-logs.index')" :current="request()->routeIs('action-logs.*')" wire:navigate data-test="action-logs-nav">
                         {{ __('Action Logs') }}
                     </flux:sidebar.item>
                 </flux:sidebar.group>

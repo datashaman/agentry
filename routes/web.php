@@ -55,6 +55,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('agents/{agent}', 'pages::agents.show')->name('agents.show');
     Route::livewire('agents/{agent}/edit', 'pages::agents.edit')->name('agents.edit');
     Route::livewire('agent-permissions', 'pages::agent-permissions.index')->name('agent-permissions.index');
+    Route::livewire('chats', 'pages::chats.index')->name('chats.index');
+    Route::livewire('chats/{conversation}', 'pages::chats.show')->name('chats.show');
     Route::livewire('work-items', 'pages::work-items.index')->name('work-items.index');
     Route::livewire('escalations', 'pages::escalations.index')->name('escalations.index');
     Route::livewire('teams', 'pages::teams.index')->name('teams.index');
