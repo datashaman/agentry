@@ -26,6 +26,7 @@ class HitlEscalation extends Model
         'resolution',
         'resolved_by',
         'resolved_at',
+        'metadata',
     ];
 
     /**
@@ -36,6 +37,7 @@ class HitlEscalation extends Model
         return [
             'agent_confidence' => 'float',
             'resolved_at' => 'datetime',
+            'metadata' => 'array',
         ];
     }
 

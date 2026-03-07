@@ -163,7 +163,7 @@ new #[Title('Edit Agent Role')] #[Layout('layouts.app')] class extends Component
     public function addEventResponder(): void
     {
         $this->validate([
-            'responderWorkItemType' => ['required', 'in:story,bug,ops_request,work_item'],
+            'responderWorkItemType' => ['required', 'string'],
             'responderStatus' => ['required', 'string'],
             'responderInstructions' => ['required', 'string'],
         ]);
@@ -208,7 +208,7 @@ new #[Title('Edit Agent Role')] #[Layout('layouts.app')] class extends Component
     #[Computed]
     public function providers(): array
     {
-        return collect(config('ai.providers'))
+        return collect(config('agentry.providers'))
             ->filter(fn ($p) => ! empty($p['key']))
             ->all();
     }
@@ -223,7 +223,7 @@ new #[Title('Edit Agent Role')] #[Layout('layouts.app')] class extends Component
             return [];
         }
 
-        return config("ai.providers.{$this->default_provider}.models", []);
+        return config("agentry.providers.{$this->default_provider}.models", []);
     }
 
     #[Computed]

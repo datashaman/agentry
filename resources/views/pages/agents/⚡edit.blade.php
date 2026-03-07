@@ -91,7 +91,7 @@ new #[Title('Edit Agent')] #[Layout('layouts.app')] class extends Component {
     #[Computed]
     public function providers(): array
     {
-        return collect(config('ai.providers'))
+        return collect(config('agentry.providers'))
             ->filter(fn ($p) => ! empty($p['key']))
             ->all();
     }
@@ -106,7 +106,7 @@ new #[Title('Edit Agent')] #[Layout('layouts.app')] class extends Component {
             return [];
         }
 
-        return config("ai.providers.{$this->provider}.models", []);
+        return config("agentry.providers.{$this->provider}.models", []);
     }
 
     #[Computed]

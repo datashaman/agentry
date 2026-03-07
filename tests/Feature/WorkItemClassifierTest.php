@@ -1,40 +1,101 @@
 <?php
 
+use App\Models\Project;
 use App\Models\WorkItem;
 use App\Services\WorkItemClassifier;
 
-test('classifies bug labels as bug', function (string $type) {
-    $workItem = WorkItem::factory()->make(['type' => $type]);
+test('classifies Jira work item using type_labels config', function () {
+    $project = Project::factory()->create([
+        'work_item_provider' => 'jira',
+        'work_item_provider_config' => ['type_labels' => ['Bug', 'Story', 'Task']],
+    ]);
+
+    $workItem = WorkItem::factory()->create([
+        'project_id' => $project->id,
+        'provider' => 'jira',
+        'type' => 'Bug',
+    ]);
+
+    expect((new WorkItemClassifier)->classify($workItem))->toBe('Bug');
+});
+
+test('classifies Jira work item case-insensitively', function () {
+    $project = Project::factory()->create([
+        'work_item_provider' => 'jira',
+        'work_item_provider_config' => ['type_labels' => ['Bug', 'Story']],
+    ]);
+
+    $workItem = WorkItem::factory()->create([
+        'project_id' => $project->id,
+        'provider' => 'jira',
+        'type' => 'bug',
+    ]);
+
+    expect((new WorkItemClassifier)->classify($workItem))->toBe('Bug');
+});
+
+test('classifies GitHub work item by matching label against type_labels', function () {
+    $project = Project::factory()->create([
+        'work_item_provider' => 'github',
+        'work_item_provider_config' => ['type_labels' => ['bug', 'enhancement', 'feature']],
+    ]);
+
+    $workItem = WorkItem::factory()->create([
+        'project_id' => $project->id,
+        'provider' => 'github',
+        'type' => 'enhancement',
+    ]);
+
+    expect((new WorkItemClassifier)->classify($workItem))->toBe('enhancement');
+});
+
+test('handles comma-separated labels for GitHub', function () {
+    $project = Project::factory()->create([
+        'work_item_provider' => 'github',
+        'work_item_provider_config' => ['type_labels' => ['bug', 'enhancement']],
+    ]);
+
+    $workItem = WorkItem::factory()->create([
+        'project_id' => $project->id,
+        'provider' => 'github',
+        'type' => 'wontfix, bug',
+    ]);
 
     expect((new WorkItemClassifier)->classify($workItem))->toBe('bug');
-})->with(['bug', 'Bug', 'defect', 'error', 'bug,enhancement']);
-
-test('classifies ops labels as ops_request', function (string $type) {
-    $workItem = WorkItem::factory()->make(['type' => $type]);
-
-    expect((new WorkItemClassifier)->classify($workItem))->toBe('ops_request');
-})->with(['ops', 'operations', 'deployment', 'infrastructure', 'incident', 'Deployment']);
-
-test('ops_request takes priority over bug', function () {
-    $workItem = WorkItem::factory()->make(['type' => 'bug,infrastructure']);
-
-    expect((new WorkItemClassifier)->classify($workItem))->toBe('ops_request');
 });
 
-test('classifies everything else as story', function (string $type) {
-    $workItem = WorkItem::factory()->make(['type' => $type]);
+test('returns null when no type_labels configured', function () {
+    $project = Project::factory()->create([
+        'work_item_provider' => 'jira',
+        'work_item_provider_config' => ['project_key' => 'PROJ'],
+    ]);
 
-    expect((new WorkItemClassifier)->classify($workItem))->toBe('story');
-})->with(['enhancement', 'feature', 'Story', 'Task', 'epic', 'Issue']);
+    $workItem = WorkItem::factory()->create([
+        'project_id' => $project->id,
+        'provider' => 'jira',
+        'type' => 'Bug',
+    ]);
 
-test('classifies null type as story', function () {
-    $workItem = WorkItem::factory()->make(['type' => null]);
-
-    expect((new WorkItemClassifier)->classify($workItem))->toBe('story');
+    expect((new WorkItemClassifier)->classify($workItem))->toBeNull();
 });
 
-test('classifies empty type as story', function () {
-    $workItem = WorkItem::factory()->make(['type' => '']);
+test('returns null when type does not match any type_labels', function () {
+    $project = Project::factory()->create([
+        'work_item_provider' => 'jira',
+        'work_item_provider_config' => ['type_labels' => ['Bug', 'Story']],
+    ]);
 
-    expect((new WorkItemClassifier)->classify($workItem))->toBe('story');
+    $workItem = WorkItem::factory()->create([
+        'project_id' => $project->id,
+        'provider' => 'jira',
+        'type' => 'Epic',
+    ]);
+
+    expect((new WorkItemClassifier)->classify($workItem))->toBeNull();
+});
+
+test('returns null when work item has no project', function () {
+    $workItem = WorkItem::factory()->make(['project_id' => null]);
+
+    expect((new WorkItemClassifier)->classify($workItem))->toBeNull();
 });

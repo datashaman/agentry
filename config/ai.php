@@ -4,64 +4,141 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | AI Provider Credentials
+    | Default AI Provider Names
     |--------------------------------------------------------------------------
     |
-    | Maps provider IDs (used in agents) to their API key env vars. Aligned
-    | with Laravel AI SDK. Only providers with a non-empty key are shown
-    | in the provider dropdown.
+    | Here you may specify which of the AI providers below should be the
+    | default for AI operations when no explicit provider is provided
+    | for the operation. This should be any provider defined below.
+    |
+    */
+
+    'default' => 'openai',
+    'default_for_images' => 'gemini',
+    'default_for_audio' => 'openai',
+    'default_for_transcription' => 'openai',
+    'default_for_embeddings' => 'openai',
+    'default_for_reranking' => 'cohere',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Caching
+    |--------------------------------------------------------------------------
+    |
+    | Below you may configure caching strategies for AI related operations
+    | such as embedding generation. You are free to adjust these values
+    | based on your application's available caching stores and needs.
+    |
+    */
+
+    'caching' => [
+        'embeddings' => [
+            'cache' => false,
+            'store' => env('CACHE_STORE', 'database'),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | AI Providers
+    |--------------------------------------------------------------------------
+    |
+    | Below are each of your AI providers defined for this application. Each
+    | represents an AI provider and API key combination which can be used
+    | to perform tasks like text, image, and audio creation via agents.
     |
     */
 
     'providers' => [
         'anthropic' => [
-            'label' => 'Anthropic (Claude)',
+            'driver' => 'anthropic',
             'key' => env('ANTHROPIC_API_KEY'),
-            'models' => [
-                'claude-opus-4-6' => 'Claude Opus 4.6',
-                'claude-sonnet-4-6' => 'Claude Sonnet 4.6',
-                'claude-sonnet-4-5' => 'Claude Sonnet 4.5',
-                'claude-haiku-4-5' => 'Claude Haiku 4.5',
-            ],
         ],
-        'openai' => [
-            'label' => 'OpenAI',
-            'key' => env('OPENAI_API_KEY'),
-            'models' => [
-                'gpt-5.2' => 'GPT-5.2',
-                'gpt-5-mini' => 'GPT-5 Mini',
-                'gpt-5-nano' => 'GPT-5 Nano',
-            ],
+
+        'azure' => [
+            'driver' => 'azure',
+            'key' => env('AZURE_OPENAI_API_KEY'),
+            'url' => env('AZURE_OPENAI_URL'),
+            'api_version' => env('AZURE_OPENAI_API_VERSION', '2024-10-21'),
+            'deployment' => env('AZURE_OPENAI_DEPLOYMENT', 'gpt-4o'),
+            'embedding_deployment' => env('AZURE_OPENAI_EMBEDDING_DEPLOYMENT', 'text-embedding-3-small'),
         ],
-        'gemini' => [
-            'label' => 'Google (Gemini)',
-            'key' => env('GEMINI_API_KEY'),
-            'models' => [
-                'gemini-2.5-pro' => 'Gemini 2.5 Pro',
-                'gemini-2.5-flash' => 'Gemini 2.5 Flash',
-                'gemini-3.1-pro-preview' => 'Gemini 3.1 Pro (Preview)',
-            ],
-        ],
-        'groq' => [
-            'label' => 'Groq',
-            'key' => env('GROQ_API_KEY'),
-        ],
-        'xai' => [
-            'label' => 'xAI (Grok)',
-            'key' => env('XAI_API_KEY'),
-        ],
-        'mistral' => [
-            'label' => 'Mistral',
-            'key' => env('MISTRAL_API_KEY'),
-        ],
+
         'cohere' => [
-            'label' => 'Cohere',
+            'driver' => 'cohere',
             'key' => env('COHERE_API_KEY'),
         ],
+
         'deepseek' => [
-            'label' => 'DeepSeek',
+            'driver' => 'deepseek',
             'key' => env('DEEPSEEK_API_KEY'),
         ],
+
+        'eleven' => [
+            'driver' => 'eleven',
+            'key' => env('ELEVENLABS_API_KEY'),
+        ],
+
+        'gemini' => [
+            'driver' => 'gemini',
+            'key' => env('GEMINI_API_KEY'),
+        ],
+
+        'groq' => [
+            'driver' => 'groq',
+            'key' => env('GROQ_API_KEY'),
+        ],
+
+        'jina' => [
+            'driver' => 'jina',
+            'key' => env('JINA_API_KEY'),
+        ],
+
+        'mistral' => [
+            'driver' => 'mistral',
+            'key' => env('MISTRAL_API_KEY'),
+        ],
+
+        'ollama' => [
+            'driver' => 'ollama',
+            'key' => env('OLLAMA_API_KEY', ''),
+            'url' => env('OLLAMA_BASE_URL', 'http://localhost:11434'),
+        ],
+
+        'openai' => [
+            'driver' => 'openai',
+            'key' => env('OPENAI_API_KEY'),
+        ],
+
+        'openrouter' => [
+            'driver' => 'openrouter',
+            'key' => env('OPENROUTER_API_KEY'),
+        ],
+
+        'voyageai' => [
+            'driver' => 'voyageai',
+            'key' => env('VOYAGEAI_API_KEY'),
+        ],
+
+        'xai' => [
+            'driver' => 'xai',
+            'key' => env('XAI_API_KEY'),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Classification
+    |--------------------------------------------------------------------------
+    |
+    | Provider and model used for AI-powered work item classification and
+    | type label suggestions.
+    |
+    */
+
+    'classification' => [
+        'provider' => env('AI_CLASSIFICATION_PROVIDER', 'anthropic'),
+        'model' => env('AI_CLASSIFICATION_MODEL', 'claude-sonnet-4-6'),
     ],
 
 ];

@@ -1,7 +1,10 @@
 <?php
 
+use App\Events\WorkItemClassified;
+use App\Models\HitlEscalation;
 use App\Models\Project;
 use App\Models\WorkItem;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -16,7 +19,10 @@ new #[Title('Work Item Detail')] #[Layout('layouts.app')] class extends Componen
 
     public function mount(): void
     {
-        $this->workItem->loadMissing('conversation.messages');
+        $this->workItem->loadMissing([
+            'conversation.messages',
+            'hitlEscalations.raisedByAgent',
+        ]);
     }
 
     #[Computed]
@@ -57,6 +63,77 @@ new #[Title('Work Item Detail')] #[Layout('layouts.app')] class extends Componen
         $this->newMessage = '';
         unset($this->chatMessages);
     }
+
+    public function confirmReclassification(int $escalationId): void
+    {
+        $escalation = HitlEscalation::findOrFail($escalationId);
+
+        $escalation->update([
+            'resolution' => 'Confirmed reclassification',
+            'resolved_by' => Auth::user()->name,
+            'resolved_at' => now(),
+        ]);
+
+        $this->workItem->load('hitlEscalations.raisedByAgent');
+
+        WorkItemClassified::dispatch($this->workItem);
+    }
+
+    public function revertReclassification(int $escalationId): void
+    {
+        $escalation = HitlEscalation::findOrFail($escalationId);
+        $originalType = $escalation->metadata['original_type'] ?? null;
+
+        $this->workItem->update(['classified_type' => $originalType]);
+
+        $escalation->update([
+            'resolution' => 'Reverted to original type',
+            'resolved_by' => Auth::user()->name,
+            'resolved_at' => now(),
+        ]);
+
+        $this->workItem->load('hitlEscalations.raisedByAgent');
+
+        WorkItemClassified::dispatch($this->workItem->fresh());
+    }
+
+    public function approveTypeLabels(int $escalationId): void
+    {
+        $escalation = HitlEscalation::findOrFail($escalationId);
+        $suggestedLabels = $escalation->metadata['suggested_labels'] ?? [];
+        $projectId = $escalation->metadata['project_id'] ?? null;
+
+        if ($projectId && ! empty($suggestedLabels)) {
+            $project = \App\Models\Project::find($projectId);
+
+            if ($project) {
+                $config = $project->work_item_provider_config ?? [];
+                $config['type_labels'] = $suggestedLabels;
+                $project->update(['work_item_provider_config' => $config]);
+            }
+        }
+
+        $escalation->update([
+            'resolution' => 'Approved suggested type labels',
+            'resolved_by' => Auth::user()->name,
+            'resolved_at' => now(),
+        ]);
+
+        $this->workItem->load('hitlEscalations.raisedByAgent');
+    }
+
+    public function rejectTypeLabels(int $escalationId): void
+    {
+        $escalation = HitlEscalation::findOrFail($escalationId);
+
+        $escalation->update([
+            'resolution' => 'Rejected suggested type labels',
+            'resolved_by' => Auth::user()->name,
+            'resolved_at' => now(),
+        ]);
+
+        $this->workItem->load('hitlEscalations.raisedByAgent');
+    }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
@@ -86,10 +163,7 @@ new #[Title('Work Item Detail')] #[Layout('layouts.app')] class extends Componen
                 <flux:badge size="sm" variant="pill" data-test="work-item-priority">{{ $workItem->priority }}</flux:badge>
             @endif
             @if ($workItem->classified_type)
-                @php
-                    $classifiedColors = ['bug' => 'red', 'story' => 'blue', 'ops_request' => 'amber'];
-                @endphp
-                <flux:badge size="sm" variant="pill" :color="$classifiedColors[$workItem->classified_type] ?? 'zinc'" data-test="work-item-classified-type">{{ str_replace('_', ' ', $workItem->classified_type) }}</flux:badge>
+                <flux:badge size="sm" variant="pill" color="indigo" data-test="work-item-classified-type">{{ $workItem->classified_type }}</flux:badge>
             @endif
             @if ($workItem->assignee)
                 <flux:badge size="sm" variant="pill" data-test="work-item-assignee">{{ $workItem->assignee }}</flux:badge>
@@ -102,6 +176,58 @@ new #[Title('Work Item Detail')] #[Layout('layouts.app')] class extends Componen
         <div data-test="work-item-description">
             <flux:heading size="lg">{{ __('Description') }}</flux:heading>
             <flux:text class="mt-2 whitespace-pre-wrap">{{ $workItem->description }}</flux:text>
+        </div>
+    @endif
+
+    {{-- HITL Escalations --}}
+    @if ($workItem->hitlEscalations->isNotEmpty())
+        <div data-test="work-item-escalations">
+            <flux:heading size="lg">{{ __('HITL Escalations') }}</flux:heading>
+            <div class="mt-2 space-y-3">
+                @foreach ($workItem->hitlEscalations as $escalation)
+                    <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700" data-test="escalation-item">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <flux:badge size="sm" variant="pill">{{ $escalation->trigger_type }}</flux:badge>
+                            @if ($escalation->isResolved())
+                                <flux:badge size="sm" variant="pill" color="green">{{ __('Resolved') }}</flux:badge>
+                            @else
+                                <flux:badge size="sm" variant="pill" color="red">{{ __('Unresolved') }}</flux:badge>
+                            @endif
+                            @if ($escalation->agent_confidence !== null)
+                                <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('Confidence: :pct%', ['pct' => round($escalation->agent_confidence * 100)]) }}</flux:text>
+                            @endif
+                        </div>
+                        <flux:text class="mt-1 text-sm">{{ $escalation->reason }}</flux:text>
+                        @if ($escalation->raisedByAgent)
+                            <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ __('Raised by :agent', ['agent' => $escalation->raisedByAgent->name]) }}</flux:text>
+                        @endif
+
+                        @if ($escalation->isResolved())
+                            <div class="mt-2 rounded bg-green-50 p-3 dark:bg-green-900/20" data-test="escalation-resolution">
+                                <flux:text class="text-sm font-medium">{{ __('Resolution: :resolution', ['resolution' => $escalation->resolution]) }}</flux:text>
+                                <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('Resolved by :name on :date', ['name' => $escalation->resolved_by, 'date' => $escalation->resolved_at->format('M j, Y g:i A')]) }}</flux:text>
+                            </div>
+                        @elseif ($escalation->trigger_type === 'reclassification')
+                            <div class="mt-3 flex items-center gap-2" data-test="escalation-actions">
+                                <flux:button size="sm" variant="primary" wire:click="confirmReclassification({{ $escalation->id }})" data-test="confirm-reclassification-button">{{ __('Confirm') }}</flux:button>
+                                <flux:button size="sm" wire:click="revertReclassification({{ $escalation->id }})" data-test="revert-reclassification-button">{{ __('Revert') }}</flux:button>
+                            </div>
+                        @elseif ($escalation->trigger_type === 'type_label_suggestion')
+                            @if (! empty($escalation->metadata['suggested_labels']))
+                                <div class="mt-2 flex flex-wrap gap-1">
+                                    @foreach ($escalation->metadata['suggested_labels'] as $label)
+                                        <flux:badge size="sm" variant="outline">{{ $label }}</flux:badge>
+                                    @endforeach
+                                </div>
+                            @endif
+                            <div class="mt-3 flex items-center gap-2" data-test="escalation-actions">
+                                <flux:button size="sm" variant="primary" wire:click="approveTypeLabels({{ $escalation->id }})" data-test="approve-labels-button">{{ __('Approve') }}</flux:button>
+                                <flux:button size="sm" wire:click="rejectTypeLabels({{ $escalation->id }})" data-test="reject-labels-button">{{ __('Reject') }}</flux:button>
+                            </div>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
         </div>
     @endif
 

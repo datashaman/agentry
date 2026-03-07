@@ -11,7 +11,7 @@ class AiProviders
      */
     public static function available(): array
     {
-        $providers = config('ai.providers', []);
+        $providers = config('agentry.providers', []);
         $available = [];
 
         foreach ($providers as $id => $config) {
@@ -29,6 +29,6 @@ class AiProviders
      */
     public static function isValid(string $id): bool
     {
-        return isset(config('ai.providers', [])[$id]);
+        return isset(config('agentry.providers', [])[$id]);
     }
 }
