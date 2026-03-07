@@ -1,11 +1,14 @@
 <?php
 
+use App\Events\WorkItemClassified;
 use App\Models\Conversation;
+use App\Models\HitlEscalation;
 use App\Models\Message;
 use App\Models\Organization;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\WorkItem;
+use Illuminate\Support\Facades\Event;
 use Livewire\Livewire;
 
 test('guests are redirected from work item show page', function () {
@@ -147,4 +150,98 @@ test('sending a message creates conversation if none exists', function () {
     $workItem->refresh();
     expect($workItem->conversation)->not->toBeNull();
     expect($workItem->conversation->messages()->where('content', 'Starting a new conversation.')->exists())->toBeTrue();
+});
+
+test('displays HITL escalations on work item show page', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->withOrganization($organization)->create();
+    $project = Project::factory()->create(['organization_id' => $organization->id]);
+    $workItem = WorkItem::factory()->create(['project_id' => $project->id]);
+
+    HitlEscalation::factory()->forWorkItem($workItem)->create([
+        'trigger_type' => 'reclassification',
+        'reason' => 'AI classified this as Bug',
+        'metadata' => ['classified_type' => 'Bug', 'original_type' => 'enhancement'],
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('projects.work-items.show', [$project, $workItem]))
+        ->assertOk()
+        ->assertSee('HITL Escalations')
+        ->assertSee('AI classified this as Bug');
+});
+
+test('confirming reclassification fires WorkItemClassified', function () {
+    Event::fake([WorkItemClassified::class]);
+
+    $organization = Organization::factory()->create();
+    $user = User::factory()->withOrganization($organization)->create();
+    $project = Project::factory()->create(['organization_id' => $organization->id]);
+    $workItem = WorkItem::factory()->create([
+        'project_id' => $project->id,
+        'classified_type' => 'Bug',
+    ]);
+
+    $escalation = HitlEscalation::factory()->forWorkItem($workItem)->create([
+        'trigger_type' => 'reclassification',
+        'reason' => 'Classified as Bug',
+        'metadata' => ['classified_type' => 'Bug', 'original_type' => 'enhancement'],
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('pages::projects.work-items.show', ['project' => $project, 'workItem' => $workItem])
+        ->call('confirmReclassification', $escalation->id);
+
+    expect($escalation->fresh()->isResolved())->toBeTrue();
+    Event::assertDispatched(WorkItemClassified::class);
+});
+
+test('reverting reclassification updates classified_type and fires WorkItemClassified', function () {
+    Event::fake([WorkItemClassified::class]);
+
+    $organization = Organization::factory()->create();
+    $user = User::factory()->withOrganization($organization)->create();
+    $project = Project::factory()->create(['organization_id' => $organization->id]);
+    $workItem = WorkItem::factory()->create([
+        'project_id' => $project->id,
+        'classified_type' => 'Bug',
+    ]);
+
+    $escalation = HitlEscalation::factory()->forWorkItem($workItem)->create([
+        'trigger_type' => 'reclassification',
+        'reason' => 'Classified as Bug',
+        'metadata' => ['classified_type' => 'Bug', 'original_type' => 'enhancement'],
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('pages::projects.work-items.show', ['project' => $project, 'workItem' => $workItem])
+        ->call('revertReclassification', $escalation->id);
+
+    expect($workItem->fresh()->classified_type)->toBe('enhancement');
+    expect($escalation->fresh()->isResolved())->toBeTrue();
+    Event::assertDispatched(WorkItemClassified::class);
+});
+
+test('approving type labels saves them to project config', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->withOrganization($organization)->create();
+    $project = Project::factory()->create([
+        'organization_id' => $organization->id,
+        'work_item_provider' => 'jira',
+        'work_item_provider_config' => ['project_key' => 'PROJ'],
+    ]);
+    $workItem = WorkItem::factory()->create(['project_id' => $project->id]);
+
+    $escalation = HitlEscalation::factory()->forWorkItem($workItem)->create([
+        'trigger_type' => 'type_label_suggestion',
+        'reason' => 'No type labels configured',
+        'metadata' => ['suggested_labels' => ['Bug', 'Story', 'Task'], 'project_id' => $project->id],
+    ]);
+
+    Livewire::actingAs($user)
+        ->test('pages::projects.work-items.show', ['project' => $project, 'workItem' => $workItem])
+        ->call('approveTypeLabels', $escalation->id);
+
+    expect($escalation->fresh()->isResolved())->toBeTrue();
+    expect($project->fresh()->work_item_provider_config['type_labels'])->toBe(['Bug', 'Story', 'Task']);
 });

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class WorkItem extends Model
 {
@@ -43,5 +44,20 @@ class WorkItem extends Model
     public function conversation(): HasOne
     {
         return $this->hasOne(Conversation::class);
+    }
+
+    /**
+     * @return MorphMany<HitlEscalation, $this>
+     */
+    public function hitlEscalations(): MorphMany
+    {
+        return $this->morphMany(HitlEscalation::class, 'work_item');
+    }
+
+    public function hasPendingEscalation(): bool
+    {
+        return $this->hitlEscalations()
+            ->whereNull('resolved_at')
+            ->exists();
     }
 }

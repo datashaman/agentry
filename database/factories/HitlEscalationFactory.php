@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Agent;
 use App\Models\OpsRequest;
+use App\Models\WorkItem;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -38,6 +39,16 @@ class HitlEscalationFactory extends Factory
         return $this->state(fn () => [
             'work_item_id' => $opsRequest->id,
             'work_item_type' => OpsRequest::class,
+        ]);
+    }
+
+    public function forWorkItem(?WorkItem $workItem = null): static
+    {
+        $workItem ??= WorkItem::factory()->create();
+
+        return $this->state(fn () => [
+            'work_item_id' => $workItem->id,
+            'work_item_type' => WorkItem::class,
         ]);
     }
 

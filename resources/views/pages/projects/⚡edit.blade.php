@@ -19,6 +19,8 @@ new #[Title('Edit Project')] #[Layout('layouts.app')] class extends Component {
 
     public ?string $workItemProjectKey = null;
 
+    public string $typeLabels = '';
+
     public function mount(): void
     {
         $this->name = $this->project->name;
@@ -26,6 +28,7 @@ new #[Title('Edit Project')] #[Layout('layouts.app')] class extends Component {
         $this->instructions = $this->project->instructions ?? '';
         $this->workItemProvider = $this->project->work_item_provider;
         $this->workItemProjectKey = $this->project->work_item_provider_config['project_key'] ?? null;
+        $this->typeLabels = implode(', ', $this->project->work_item_provider_config['type_labels'] ?? []);
     }
 
     public function updateProject(): void
@@ -36,11 +39,24 @@ new #[Title('Edit Project')] #[Layout('layouts.app')] class extends Component {
             'instructions' => ['nullable', 'string', 'max:5000'],
             'workItemProvider' => ['nullable', 'string', 'in:jira,github'],
             'workItemProjectKey' => ['nullable', 'string', 'max:255'],
+            'typeLabels' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $config = null;
+        $config = $this->project->work_item_provider_config ?? [];
+
         if ($validated['workItemProjectKey']) {
-            $config = ['project_key' => $validated['workItemProjectKey']];
+            $config['project_key'] = $validated['workItemProjectKey'];
+        } else {
+            unset($config['project_key']);
+        }
+
+        if (! empty($validated['typeLabels'])) {
+            $config['type_labels'] = array_values(array_filter(
+                array_map('trim', explode(',', $validated['typeLabels'])),
+                fn (string $label): bool => $label !== '',
+            ));
+        } else {
+            unset($config['type_labels']);
         }
 
         $this->project->update([
@@ -48,7 +64,7 @@ new #[Title('Edit Project')] #[Layout('layouts.app')] class extends Component {
             'description' => $validated['description'] ?: null,
             'instructions' => $validated['instructions'] ?: null,
             'work_item_provider' => $validated['workItemProvider'] ?: null,
-            'work_item_provider_config' => $config,
+            'work_item_provider_config' => ! empty($config) ? $config : null,
         ]);
 
         $this->redirect(route('projects.show', $this->project), navigate: true);
@@ -110,6 +126,13 @@ new #[Title('Edit Project')] #[Layout('layouts.app')] class extends Component {
             <flux:input wire:model="workItemProjectKey" data-test="work-item-project-key-input" placeholder="{{ __('e.g. PROJ or owner/repo') }}" />
             <flux:description>{{ __('Jira project key or GitHub owner/repo.') }}</flux:description>
             <flux:error name="workItemProjectKey" />
+        </flux:field>
+
+        <flux:field>
+            <flux:label>{{ __('Type Labels') }}</flux:label>
+            <flux:input wire:model="typeLabels" data-test="type-labels-input" placeholder="{{ __('e.g. Bug, Story, Task, Enhancement') }}" />
+            <flux:description>{{ __('Comma-separated list of type labels used for work item classification.') }}</flux:description>
+            <flux:error name="typeLabels" />
         </flux:field>
 
         <div class="flex items-center gap-2">

@@ -18,7 +18,7 @@ class EventResponder extends Model
 
     public const AVAILABLE_STATUSES = [
         'ops_request' => ['triaged', 'planning', 'executing', 'verifying', 'new', 'closed_done', 'closed_invalid', 'closed_rejected'],
-        'work_item' => ['tracked'],
+        'work_item' => ['tracked', 'classified'],
     ];
 
     /**
