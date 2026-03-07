@@ -32,6 +32,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('projects/{project}/edit', 'pages::projects.edit')->name('projects.edit');
     Route::livewire('projects/{project}/action-logs', 'pages::projects.action-logs.index')->name('projects.action-logs.index');
     Route::livewire('projects/{project}/work-items', 'pages::projects.work-items.index')->name('projects.work-items.index');
+    Route::livewire('projects/{project}/work-items/{workItem}', 'pages::projects.work-items.show')->name('projects.work-items.show');
     Route::livewire('projects/{project}/repos', 'pages::projects.repos.index')->name('projects.repos.index');
     Route::livewire('projects/{project}/repos/create', 'pages::projects.repos.create')->name('projects.repos.create');
     Route::livewire('projects/{project}/repos/{repo}', 'pages::projects.repos.show')->name('projects.repos.show');

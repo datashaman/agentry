@@ -250,7 +250,16 @@ new #[Title('Work Items')] #[Layout('layouts.app')] class extends Component {
                                     </a>
                                 </td>
                                 <td class="px-4 py-3">
-                                    <flux:text>{{ $item['title'] }}</flux:text>
+                                    @if ($isTracked)
+                                        @php
+                                            $trackedWorkItem = $project->workItems()->where('provider_key', $item['key'])->first();
+                                        @endphp
+                                        <a href="{{ route('projects.work-items.show', [$project, $trackedWorkItem]) }}" wire:navigate class="font-medium hover:underline" data-test="work-item-link">
+                                            {{ $item['title'] }}
+                                        </a>
+                                    @else
+                                        <flux:text>{{ $item['title'] }}</flux:text>
+                                    @endif
                                 </td>
                                 <td class="px-4 py-3">
                                     <flux:badge size="sm">{{ $item['type'] }}</flux:badge>
