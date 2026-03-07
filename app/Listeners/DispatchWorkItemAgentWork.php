@@ -45,8 +45,20 @@ class DispatchWorkItemAgentWork implements ShouldHandleEventsAfterCommit
         $this->escalateForReclassification($workItem, $classifiedType);
     }
 
+    protected function hasPendingEscalationOfType($workItem, string $triggerType): bool
+    {
+        return $workItem->hitlEscalations()
+            ->where('trigger_type', $triggerType)
+            ->whereNull('resolved_at')
+            ->exists();
+    }
+
     protected function escalateForTypeLabels($workItem, $project): void
     {
+        if ($this->hasPendingEscalationOfType($workItem, 'type_label_suggestion')) {
+            return;
+        }
+
         $suggestions = $this->suggestionService->suggestTypeLabels($project);
 
         $workItem->hitlEscalations()->create([
@@ -62,6 +74,10 @@ class DispatchWorkItemAgentWork implements ShouldHandleEventsAfterCommit
 
     protected function escalateForReclassification($workItem, ?string $classifiedType): void
     {
+        if ($this->hasPendingEscalationOfType($workItem, 'reclassification')) {
+            return;
+        }
+
         $workItem->hitlEscalations()->create([
             'work_item_type' => $workItem::class,
             'trigger_type' => 'reclassification',

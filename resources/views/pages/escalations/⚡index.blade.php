@@ -2,6 +2,7 @@
 
 use App\Models\HitlEscalation;
 use App\Models\OpsRequest;
+use App\Models\WorkItem;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -45,10 +46,19 @@ new #[Title('Escalations')] #[Layout('layouts.app')] class extends Component {
         $query = HitlEscalation::query()
             ->whereNull('resolved_at')
             ->with(['raisedByAgent'])
-            ->where('work_item_type', OpsRequest::class)
-            ->whereIn('work_item_id', OpsRequest::query()
-                ->whereIn('project_id', $this->projectIds)
-                ->select('id'));
+            ->where(function ($q) {
+                $q->where(function ($q) {
+                    $q->where('work_item_type', OpsRequest::class)
+                        ->whereIn('work_item_id', OpsRequest::query()
+                            ->whereIn('project_id', $this->projectIds)
+                            ->select('id'));
+                })->orWhere(function ($q) {
+                    $q->where('work_item_type', WorkItem::class)
+                        ->whereIn('work_item_id', WorkItem::query()
+                            ->whereIn('project_id', $this->projectIds)
+                            ->select('id'));
+                });
+            });
 
         if ($this->triggerType !== '') {
             $query->where('trigger_type', $this->triggerType);
@@ -57,6 +67,7 @@ new #[Title('Escalations')] #[Layout('layouts.app')] class extends Component {
         if ($this->workItemType !== '') {
             $typeClass = match ($this->workItemType) {
                 'ops' => OpsRequest::class,
+                'work_item' => WorkItem::class,
                 default => null,
             };
             if ($typeClass) {
@@ -72,7 +83,7 @@ new #[Title('Escalations')] #[Layout('layouts.app')] class extends Component {
     #[Computed]
     public function triggerTypes(): array
     {
-        return ['confidence', 'risk', 'policy', 'ambiguity'];
+        return ['confidence', 'risk', 'policy', 'ambiguity', 'reclassification', 'type_label_suggestion'];
     }
 
     public function updatedTriggerType(): void
@@ -94,6 +105,7 @@ new #[Title('Escalations')] #[Layout('layouts.app')] class extends Component {
 
         return match ($escalation->work_item_type) {
             OpsRequest::class => route('projects.ops-requests.show', [$workItem->project, $workItem]),
+            WorkItem::class => route('projects.work-items.show', [$workItem->project, $workItem]),
             default => null,
         };
     }
@@ -102,6 +114,7 @@ new #[Title('Escalations')] #[Layout('layouts.app')] class extends Component {
     {
         return match ($escalation->work_item_type) {
             OpsRequest::class => 'Ops Request',
+            WorkItem::class => 'Work Item',
             default => 'Unknown',
         };
     }
@@ -128,6 +141,7 @@ new #[Title('Escalations')] #[Layout('layouts.app')] class extends Component {
         <select wire:model.live="workItemType" class="rounded-md border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-600 dark:bg-zinc-800" data-test="work-item-type-filter">
             <option value="">{{ __('All Work Items') }}</option>
             <option value="ops">{{ __('Ops Requests') }}</option>
+            <option value="work_item">{{ __('Work Items') }}</option>
         </select>
     </div>
 

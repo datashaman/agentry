@@ -105,6 +105,30 @@ test('does not dispatch WorkItemClassified when escalation is pending', function
     expect($workItem->hasPendingEscalation())->toBeTrue();
 });
 
+test('does not create duplicate escalation when pending escalation exists', function () {
+    Event::fake([WorkItemClassified::class]);
+    AnonymousAgent::fake(['["Bug", "Story", "Task"]', '["Bug", "Story", "Task"]']);
+
+    $project = Project::factory()->create([
+        'work_item_provider' => 'jira',
+        'work_item_provider_config' => ['project_key' => 'PROJ'],
+    ]);
+
+    $workItem = WorkItem::factory()->create([
+        'project_id' => $project->id,
+        'type' => 'Bug',
+    ]);
+
+    $listener = app(DispatchWorkItemAgentWork::class);
+    $event = new WorkItemTracked($workItem);
+
+    $listener->handle($event);
+    expect($workItem->hitlEscalations()->count())->toBe(1);
+
+    $listener->handle($event);
+    expect($workItem->hitlEscalations()->count())->toBe(1);
+});
+
 test('stores classified_type even when creating reclassification escalation', function () {
     Event::fake([WorkItemClassified::class]);
 
