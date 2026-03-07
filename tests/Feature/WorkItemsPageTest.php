@@ -3,6 +3,7 @@
 use App\Contracts\WorkItemProvider;
 use App\Events\WorkItemTracked;
 use App\Events\WorkItemUntracked;
+use App\Exceptions\GitHubTokenExpiredException;
 use App\Models\Organization;
 use App\Models\Project;
 use App\Models\User;
@@ -182,6 +183,30 @@ test('untracking an issue deletes the work item record and dispatches event', fu
     Event::assertDispatched(WorkItemUntracked::class, function (WorkItemUntracked $event) use ($project) {
         return $event->project->is($project) && $event->providerKey === '#42';
     });
+});
+
+test('shows reconnect button when GitHub token is expired', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->withOrganization($organization)->create();
+    $project = Project::factory()->create([
+        'organization_id' => $organization->id,
+        'work_item_provider' => 'github',
+        'work_item_provider_config' => ['project_key' => 'owner/repo'],
+    ]);
+
+    $fakeProvider = Mockery::mock(WorkItemProvider::class);
+    $fakeProvider->allows('listIssues')->andThrow(new GitHubTokenExpiredException);
+
+    $fakeManager = Mockery::mock(WorkItemProviderManager::class);
+    $fakeManager->allows('resolve')->andReturn($fakeProvider);
+    $this->app->instance(WorkItemProviderManager::class, $fakeManager);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::projects.work-items.index', ['project' => $project])
+        ->call('loadIssues')
+        ->assertSet('tokenExpired', true)
+        ->assertSee('Reconnect GitHub');
 });
 
 test('project edit page shows work item provider fields', function () {

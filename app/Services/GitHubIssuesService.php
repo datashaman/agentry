@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Contracts\WorkItemProvider;
+use App\Exceptions\GitHubTokenExpiredException;
 use App\Models\Organization;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -26,6 +28,23 @@ class GitHubIssuesService implements WorkItemProvider
         $user = Auth::user();
 
         return $user?->github_token;
+    }
+
+    /**
+     * Check if a response indicates an expired/revoked token and clear it.
+     */
+    protected function handleUnauthorized(Response $response): void
+    {
+        if ($response->status() === 401) {
+            $user = Auth::user();
+
+            if ($user?->github_token) {
+                $user->update(['github_token' => null]);
+                Log::warning('GitHub: cleared expired user OAuth token', ['user_id' => $user->id]);
+            }
+
+            throw new GitHubTokenExpiredException;
+        }
     }
 
     public function name(): string
@@ -81,6 +100,8 @@ class GitHubIssuesService implements WorkItemProvider
             ->accept('application/vnd.github+json')
             ->get("https://api.github.com/repos/{$projectKey}/issues", $query);
 
+        $this->handleUnauthorized($response);
+
         if (! $response->successful()) {
             Log::warning('GitHub Issues: failed to list issues', [
                 'status' => $response->status(),
@@ -110,6 +131,8 @@ class GitHubIssuesService implements WorkItemProvider
             ->accept('application/vnd.github+json')
             ->get("https://api.github.com/repos/{$issueKey}");
 
+        $this->handleUnauthorized($response);
+
         if (! $response->successful()) {
             return null;
         }
@@ -128,6 +151,8 @@ class GitHubIssuesService implements WorkItemProvider
         $response = Http::withToken($token)
             ->accept('application/vnd.github+json')
             ->get("https://api.github.com/repos/{$projectKey}/labels", ['per_page' => 100]);
+
+        $this->handleUnauthorized($response);
 
         if (! $response->successful()) {
             return [];
@@ -158,6 +183,8 @@ class GitHubIssuesService implements WorkItemProvider
                 'q' => $searchQuery,
                 'per_page' => 25,
             ]);
+
+        $this->handleUnauthorized($response);
 
         if (! $response->successful()) {
             return [];

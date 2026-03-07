@@ -2,6 +2,7 @@
 
 use App\Events\WorkItemTracked;
 use App\Events\WorkItemUntracked;
+use App\Exceptions\GitHubTokenExpiredException;
 use App\Models\Project;
 use App\Services\WorkItemProviderManager;
 use Livewire\Attributes\Computed;
@@ -21,6 +22,8 @@ new #[Title('Work Items')] #[Layout('layouts.app')] class extends Component {
     public bool $loading = true;
 
     public ?string $error = null;
+
+    public bool $tokenExpired = false;
 
     #[Computed]
     public function organization(): ?\App\Models\Organization
@@ -75,10 +78,18 @@ new #[Title('Work Items')] #[Layout('layouts.app')] class extends Component {
             return;
         }
 
-        if ($this->search !== '') {
-            $this->providerIssues = $provider->searchIssues($this->project->organization, $this->search);
-        } else {
-            $this->providerIssues = $provider->listIssues($this->project->organization, $projectKey);
+        try {
+            if ($this->search !== '') {
+                $this->providerIssues = $provider->searchIssues($this->project->organization, $this->search);
+            } else {
+                $this->providerIssues = $provider->listIssues($this->project->organization, $projectKey);
+            }
+        } catch (GitHubTokenExpiredException $e) {
+            $this->tokenExpired = true;
+            $this->error = $e->getMessage();
+            $this->loading = false;
+
+            return;
         }
 
         $this->loading = false;
@@ -196,6 +207,13 @@ new #[Title('Work Items')] #[Layout('layouts.app')] class extends Component {
     @elseif ($error)
         <div class="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20" data-test="work-items-error">
             <flux:text class="text-red-800 dark:text-red-200">{{ $error }}</flux:text>
+            @if ($tokenExpired)
+                <div class="mt-3">
+                    <flux:button variant="primary" :href="route('github.redirect')" data-test="reconnect-github-button">
+                        {{ __('Reconnect GitHub') }}
+                    </flux:button>
+                </div>
+            @endif
         </div>
     @elseif ($loading)
         <div class="flex flex-1 items-center justify-center">
