@@ -16,7 +16,7 @@ return [
      * By default this package will only run in local development.
      * Do not change this, unless you know what you are doing.
      */
-    'enabled' => env('APP_ENV') === 'local',
+    'enabled' => env('WEB_TINKER_ENABLED', false),
 
     /*
     * This class can modify the output returned by Tinker. You can replace this with
