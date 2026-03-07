@@ -59,6 +59,9 @@
                     <flux:sidebar.item icon="folder" :href="route('projects.index')" :current="request()->routeIs('projects.*')" wire:navigate>
                         {{ __('Projects') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="clipboard-document-list" :href="route('work-items.index')" :current="request()->routeIs('work-items.*')" wire:navigate>
+                        {{ __('Work Items') }}
+                    </flux:sidebar.item>
                     <flux:sidebar.item icon="exclamation-triangle" :href="route('escalations.index')" :current="request()->routeIs('escalations.*')" wire:navigate>
                         {{ __('Escalations') }}
                     </flux:sidebar.item>
