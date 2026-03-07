@@ -4,12 +4,15 @@ use App\Contracts\WorkItemProvider;
 use App\Events\WorkItemTracked;
 use App\Events\WorkItemUntracked;
 use App\Exceptions\GitHubTokenExpiredException;
+use App\Models\AgentConversation;
+use App\Models\AgentConversationMessage;
 use App\Models\Organization;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\WorkItem;
 use App\Services\WorkItemProviderManager;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
 
 test('guests are redirected from work items page', function () {
@@ -185,6 +188,76 @@ test('untracking an issue deletes the work item record and dispatches event', fu
     Event::assertDispatched(WorkItemUntracked::class, function (WorkItemUntracked $event) use ($project) {
         return $event->project->is($project) && $event->providerKey === '#42';
     });
+});
+
+test('untracking an issue cleans up orphaned agent conversations', function () {
+    Event::fake([WorkItemUntracked::class]);
+
+    $organization = Organization::factory()->create();
+    $user = User::factory()->withOrganization($organization)->create();
+    $project = Project::factory()->create([
+        'organization_id' => $organization->id,
+        'work_item_provider' => 'github',
+        'work_item_provider_config' => ['project_key' => 'owner/repo'],
+    ]);
+
+    $workItem = WorkItem::factory()->create([
+        'project_id' => $project->id,
+        'provider' => 'github',
+        'provider_key' => '#99',
+        'title' => 'Test cleanup',
+        'url' => 'https://github.com/owner/repo/issues/99',
+    ]);
+
+    $conversation = AgentConversation::create([
+        'id' => (string) Str::uuid7(),
+        'user_id' => $user->id,
+        'title' => 'Test conversation',
+    ]);
+    $workItem->agentConversations()->attach($conversation);
+
+    AgentConversationMessage::create([
+        'id' => (string) Str::uuid7(),
+        'conversation_id' => $conversation->id,
+        'user_id' => $user->id,
+        'agent' => 'anonymous',
+        'role' => 'user',
+        'content' => 'Hello',
+        'attachments' => [],
+        'tool_calls' => [],
+        'tool_results' => [],
+        'usage' => [],
+        'meta' => [],
+    ]);
+
+    $fakeProvider = Mockery::mock(WorkItemProvider::class);
+    $fakeProvider->allows('listIssues')->andReturn([
+        [
+            'key' => '#99',
+            'title' => 'Test cleanup',
+            'description' => null,
+            'type' => 'bug',
+            'status' => 'open',
+            'priority' => null,
+            'assignee' => null,
+            'url' => 'https://github.com/owner/repo/issues/99',
+            'created_at' => '2026-01-01T00:00:00Z',
+            'updated_at' => '2026-01-01T00:00:00Z',
+        ],
+    ]);
+
+    $fakeManager = Mockery::mock(WorkItemProviderManager::class);
+    $fakeManager->allows('resolve')->andReturn($fakeProvider);
+    $this->app->instance(WorkItemProviderManager::class, $fakeManager);
+
+    $this->actingAs($user);
+
+    Livewire::test('pages::projects.work-items.index', ['project' => $project])
+        ->call('loadIssues')
+        ->call('untrackIssue', '#99');
+
+    expect(AgentConversation::find($conversation->id))->toBeNull();
+    expect(AgentConversationMessage::where('conversation_id', $conversation->id)->exists())->toBeFalse();
 });
 
 test('shows reconnect button when GitHub token is expired', function () {

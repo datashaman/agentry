@@ -196,8 +196,25 @@ new #[Title('Work Items')] #[Layout('layouts.app')] class extends Component {
         $workItem = $this->project->workItems()->where('provider_key', $key)->first();
 
         if ($workItem) {
+            $conversationIds = $workItem->agentConversations()->pluck('agent_conversations.id');
             $workItem->hitlEscalations()->delete();
             $workItem->delete();
+
+            if ($conversationIds->isNotEmpty()) {
+                $orphanIds = \App\Models\AgentConversation::query()
+                    ->whereIn('id', $conversationIds)
+                    ->whereDoesntHave('workItems')
+                    ->pluck('id');
+
+                if ($orphanIds->isNotEmpty()) {
+                    \App\Models\AgentConversationMessage::query()
+                        ->whereIn('conversation_id', $orphanIds)
+                        ->delete();
+                    \App\Models\AgentConversation::query()
+                        ->whereIn('id', $orphanIds)
+                        ->delete();
+                }
+            }
         }
 
         WorkItemUntracked::dispatch($this->project, $key);
