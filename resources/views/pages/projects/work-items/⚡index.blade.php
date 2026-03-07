@@ -166,7 +166,12 @@ new #[Title('Work Items')] #[Layout('layouts.app')] class extends Component {
 
     public function untrackIssue(string $key): void
     {
-        $this->project->workItems()->where('provider_key', $key)->delete();
+        $workItem = $this->project->workItems()->where('provider_key', $key)->first();
+
+        if ($workItem) {
+            $workItem->hitlEscalations()->delete();
+            $workItem->delete();
+        }
 
         WorkItemUntracked::dispatch($this->project, $key);
 
