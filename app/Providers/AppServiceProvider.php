@@ -13,6 +13,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -39,6 +40,20 @@ class AppServiceProvider extends ServiceProvider
 
         Event::listen(function (\SocialiteProviders\Manager\SocialiteWasCalled $event) {
             $event->extendSocialite('atlassian', \SocialiteProviders\Atlassian\Provider::class);
+        });
+
+        Gate::define('viewWebTinker', function ($user = null) {
+            if (app()->environment('local')) {
+                return true;
+            }
+
+            if (! $user) {
+                return false;
+            }
+
+            $emails = array_filter(array_map('trim', explode(',', config('web-tinker.allowed_emails', ''))));
+
+            return in_array($user->email, $emails);
         });
     }
 
