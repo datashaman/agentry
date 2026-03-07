@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "57eb51783c4c2c9912029c08595c2d52",
+    "content-hash": "735f2340dba5e3a433501c1ba4c65f15",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -4423,6 +4423,79 @@
                 "source": "https://github.com/socialiteproviders/manager"
             },
             "time": "2025-02-24T19:33:30+00:00"
+        },
+        {
+            "name": "spatie/laravel-web-tinker",
+            "version": "1.10.5",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/spatie/laravel-web-tinker.git",
+                "reference": "5eea61d4e63f18f418ca320ec09a35e520fb530d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/spatie/laravel-web-tinker/zipball/5eea61d4e63f18f418ca320ec09a35e520fb530d",
+                "reference": "5eea61d4e63f18f418ca320ec09a35e520fb530d",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/cookie": "^10.0|^11.0|^12.0|^13.0",
+                "illuminate/session": "^10.0|^11.0|^12.0|^13.0",
+                "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
+                "laravel/tinker": "^2.0|^3.0",
+                "php": "^8.2",
+                "psy/psysh": "^0.12"
+            },
+            "require-dev": {
+                "orchestra/testbench": "^8.22|^9.6|^10.0|^11.0",
+                "phpunit/phpunit": "^9.0|^10.5|^11.5.3|^12.5.12"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Spatie\\WebTinker\\WebTinkerServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Spatie\\WebTinker\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Freek Van der Herten",
+                    "email": "freek@spatie.be",
+                    "homepage": "https://spatie.be",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Artisan Tinker in your browser",
+            "homepage": "https://github.com/spatie/laravel-web-tinker",
+            "keywords": [
+                "Tinker",
+                "debug",
+                "development",
+                "laravel",
+                "spatie",
+                "web-tinker"
+            ],
+            "support": {
+                "issues": "https://github.com/spatie/laravel-web-tinker/issues",
+                "source": "https://github.com/spatie/laravel-web-tinker/tree/1.10.5"
+            },
+            "funding": [
+                {
+                    "url": "https://spatie.be/open-source/support-us",
+                    "type": "custom"
+                }
+            ],
+            "time": "2026-02-21T21:16:52+00:00"
         },
         {
             "name": "symfony/clock",
@@ -10378,79 +10451,6 @@
                 }
             ],
             "time": "2025-02-07T05:00:38+00:00"
-        },
-        {
-            "name": "spatie/laravel-web-tinker",
-            "version": "1.10.5",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/spatie/laravel-web-tinker.git",
-                "reference": "5eea61d4e63f18f418ca320ec09a35e520fb530d"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/spatie/laravel-web-tinker/zipball/5eea61d4e63f18f418ca320ec09a35e520fb530d",
-                "reference": "5eea61d4e63f18f418ca320ec09a35e520fb530d",
-                "shasum": ""
-            },
-            "require": {
-                "illuminate/cookie": "^10.0|^11.0|^12.0|^13.0",
-                "illuminate/session": "^10.0|^11.0|^12.0|^13.0",
-                "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
-                "laravel/tinker": "^2.0|^3.0",
-                "php": "^8.2",
-                "psy/psysh": "^0.12"
-            },
-            "require-dev": {
-                "orchestra/testbench": "^8.22|^9.6|^10.0|^11.0",
-                "phpunit/phpunit": "^9.0|^10.5|^11.5.3|^12.5.12"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "Spatie\\WebTinker\\WebTinkerServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Spatie\\WebTinker\\": "src"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Freek Van der Herten",
-                    "email": "freek@spatie.be",
-                    "homepage": "https://spatie.be",
-                    "role": "Developer"
-                }
-            ],
-            "description": "Artisan Tinker in your browser",
-            "homepage": "https://github.com/spatie/laravel-web-tinker",
-            "keywords": [
-                "Tinker",
-                "debug",
-                "development",
-                "laravel",
-                "spatie",
-                "web-tinker"
-            ],
-            "support": {
-                "issues": "https://github.com/spatie/laravel-web-tinker/issues",
-                "source": "https://github.com/spatie/laravel-web-tinker/tree/1.10.5"
-            },
-            "funding": [
-                {
-                    "url": "https://spatie.be/open-source/support-us",
-                    "type": "custom"
-                }
-            ],
-            "time": "2026-02-21T21:16:52+00:00"
         },
         {
             "name": "staabm/side-effects-detector",
